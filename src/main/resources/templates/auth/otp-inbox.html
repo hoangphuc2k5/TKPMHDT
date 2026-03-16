@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('OTP Inbox (Giả lập)')}"></head>
+<body class="bg-light">
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 m-0">OTP Inbox (Email giả lập)</h1>
+        <a class="btn btn-sm btn-outline-dark" th:href="@{/auth/register}">Đăng ký mới</a>
+    </div>
+
+    <div class="alert alert-warning small">
+        Đây là inbox giả lập để demo OTP. Khi triển khai thật, thay bằng SMTP/Provider email.
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>To</th>
+                    <th>Subject</th>
+                    <th>Body</th>
+                    <th class="text-end">SentAt</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(mails)}">
+                    <td colspan="4" class="text-center text-muted py-4">Chưa có email nào.</td>
+                </tr>
+                <tr th:each="m : ${mails}">
+                    <td class="text-nowrap" th:text="${m.to()}">to</td>
+                    <td class="text-nowrap" th:text="${m.subject()}">subject</td>
+                    <td><pre class="m-0 small" th:text="${m.body()}">body</pre></td>
+                    <td class="text-end text-nowrap" th:text="${m.sentAtEpochMs()}">time</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="~{fragments/scripts :: scripts}"></div>
+</body>
+</html>
+

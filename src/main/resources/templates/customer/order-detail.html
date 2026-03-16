@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Chi tiết đơn hàng')}"></head>
+<body class="bg-light">
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="container py-5" th:if="${order != null}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h4 m-0">Đơn <span th:text="${order.maDonHang}">DH</span></h1>
+            <div class="text-muted small">Trạng thái: <span class="badge bg-secondary" th:text="${order.trangThai}">status</span></div>
+        </div>
+        <a class="btn btn-sm btn-outline-dark" th:href="@{/customer/orders(khachHangId=${order.khachHangId})}">Quay lại</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th class="text-end">Đơn giá</th>
+                            <th class="text-end">SL</th>
+                            <th class="text-end">Thành tiền</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="i : ${order.items}">
+                            <td>
+                                <div class="fw-semibold" th:text="${i.tenSanPham}">Tên</div>
+                                <div class="text-muted small" th:if="${i.tuyChinh != null}">
+                                    Đường: <span th:text="${i.tuyChinh.mucDuong}">100</span>% •
+                                    Đá: <span th:text="${i.tuyChinh.mucDa}">100</span>% •
+                                    Topping: <span th:text="${i.tuyChinh.topping}">-</span>
+                                </div>
+                            </td>
+                            <td class="text-end" th:text="${i.donGia}">0</td>
+                            <td class="text-end" th:text="${i.soLuong}">1</td>
+                            <td class="text-end fw-semibold" th:text="${i.thanhTien}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="fw-semibold mb-2">Tổng kết</div>
+                    <div class="d-flex justify-content-between">
+                        <div class="text-muted">Tiền hàng</div>
+                        <div th:text="${order.tongTienHang}">0</div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <div class="text-muted">Giảm giá</div>
+                        <div th:text="${order.giamGia}">0</div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <div>Tổng thanh toán</div>
+                        <div th:text="${order.tongThanhToan}">0</div>
+                    </div>
+                    <hr>
+                    <div class="fw-semibold mb-1">Thanh toán</div>
+                    <div class="small text-muted" th:if="${order.thanhToan != null}">
+                        Phương thức: <span th:text="${order.thanhToan.phuongThuc}">COD</span><br>
+                        Trạng thái: <span th:text="${order.thanhToan.trangThai}">CHO</span><br>
+                        Mã GD: <span th:text="${order.thanhToan.maGiaoDich}">-</span>
+                    </div>
+                    <div class="small text-muted" th:if="${order.thanhToan == null}">Chưa có thông tin thanh toán.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace="~{fragments/scripts :: scripts}"></div>
+</body>
+</html>
+
