@@ -1,21 +1,17 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-@Getter
-@Setter
+@Entity
+@Table(name = "nhan_vien_ban_hang")
+@Data
+@EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@DiscriminatorValue("NHAN_VIEN_BAN_HANG")
 public class NhanVienBanHang extends NhanVien {
+    private Integer soDonDaBan;
 }
-

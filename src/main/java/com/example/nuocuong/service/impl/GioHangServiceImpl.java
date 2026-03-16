@@ -1,126 +1,112 @@
 package com.example.nuocuong.service.impl;
 
-import com.example.nuocuong.dto.CartAddItemRequest;
-import com.example.nuocuong.dto.CartDto;
-import com.example.nuocuong.dto.CartItemDto;
-import com.example.nuocuong.entity.ChiTietGioHang;
-import com.example.nuocuong.entity.GioHang;
-import com.example.nuocuong.entity.KhachHang;
-import com.example.nuocuong.entity.SanPham;
-import com.example.nuocuong.exception.NotFoundException;
-import com.example.nuocuong.repository.ChiTietGioHangRepository;
-import com.example.nuocuong.repository.GioHangRepository;
-import com.example.nuocuong.repository.KhachHangRepository;
-import com.example.nuocuong.repository.SanPhamRepository;
+import com.example.nuocuong.dto.ChiTietGioHangResponse;
+import com.example.nuocuong.dto.GioHangResponse;
+import com.example.nuocuong.dto.ThemGioHangRequest;
+import com.example.nuocuong.entity.*;
+import com.example.nuocuong.repository.*;
 import com.example.nuocuong.service.GioHangService;
-import java.math.BigDecimal;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+
 @Service
+@RequiredArgsConstructor
 public class GioHangServiceImpl implements GioHangService {
-	private final GioHangRepository gioHangRepository;
-	private final ChiTietGioHangRepository chiTietGioHangRepository;
-	private final KhachHangRepository khachHangRepository;
-	private final SanPhamRepository sanPhamRepository;
 
-	public GioHangServiceImpl(
-		GioHangRepository gioHangRepository,
-		ChiTietGioHangRepository chiTietGioHangRepository,
-		KhachHangRepository khachHangRepository,
-		SanPhamRepository sanPhamRepository
-	) {
-		this.gioHangRepository = gioHangRepository;
-		this.chiTietGioHangRepository = chiTietGioHangRepository;
-		this.khachHangRepository = khachHangRepository;
-		this.sanPhamRepository = sanPhamRepository;
-	}
+    private final GioHangRepository gioHangRepository;
+    private final ChiTietGioHangRepository chiTietGioHangRepository;
+    private final KhachHangRepository khachHangRepository;
+    private final SanPhamRepository sanPhamRepository;
+    private final CongThucRepository congThucRepository;
+    private final TuyChinhKhachHangRepository tuyChinhKhachHangRepository;
 
-	@Override
-	@Transactional
-	public CartDto xemGioHang(Long khachHangId) {
-		GioHang gh = ensureCart(khachHangId);
-		return toDto(gh);
-	}
+    @Override
+    public GioHangResponse getGioHang() {
+        GioHang gh = getCurrentGioHang();
+        return mapToResponse(gh);
+    }
 
-	@Override
-	@Transactional
-	public CartDto themVaoGio(Long khachHangId, CartAddItemRequest request) {
-		GioHang gh = ensureCart(khachHangId);
-		SanPham sp = sanPhamRepository.findById(request.getSanPhamId())
-			.orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm"));
+    @Override
+    @Transactional
+    public void themVaoGioHang(ThemGioHangRequest request) {
+        GioHang gh = getCurrentGioHang();
+        SanPham sp = sanPhamRepository.findById(request.getSanPhamId())
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
-		ChiTietGioHang existing = gh.getChiTietGioHangs()
-			.stream()
-			.filter(i -> i.getSanPham().getId().equals(sp.getId()))
-			.findFirst()
-			.orElse(null);
+        TuyChinhKhachHang tuyChinh = null;
+        if (request.getTuyChinh() != null) {
+            CongThuc ct = congThucRepository.findById(request.getTuyChinh().getCongThucId())
+                    .orElseThrow(() -> new RuntimeException("Công thức không tồn tại"));
+            
+            tuyChinh = TuyChinhKhachHang.builder()
+                    .khachHang(gh.getKhachHang())
+                    .congThuc(ct)
+                    .tuyChinh(request.getTuyChinh().getTuyChinh())
+                    .build();
+            tuyChinh = tuyChinhKhachHangRepository.save(tuyChinh);
+        }
 
-		if (existing == null) {
-			ChiTietGioHang ct = ChiTietGioHang.builder()
-				.gioHang(gh)
-				.sanPham(sp)
-				.soLuong(request.getSoLuong())
-				.donGia(sp.getGiaBan())
-				.build();
-			gh.getChiTietGioHangs().add(ct);
-		} else {
-			existing.setSoLuong(existing.getSoLuong() + request.getSoLuong());
-		}
+        ChiTietGioHang item = ChiTietGioHang.builder()
+                .gioHang(gh)
+                .sanPham(sp)
+                .soLuong(request.getSoLuong())
+                .tuyChinh(tuyChinh)
+                .giaTaiThoiDiem(sp.getGia())
+                .build();
+        
+        chiTietGioHangRepository.save(item);
+    }
 
-		gh = gioHangRepository.save(gh);
-		return toDto(gh);
-	}
+    @Override
+    @Transactional
+    public void xoaKhoiGioHang(Long chiTietId) {
+        chiTietGioHangRepository.deleteById(chiTietId);
+    }
 
-	@Override
-	@Transactional
-	public CartDto xoaItem(Long khachHangId, Long chiTietGioHangId) {
-		GioHang gh = ensureCart(khachHangId);
-		gh.getChiTietGioHangs().removeIf(i -> i.getId().equals(chiTietGioHangId));
-		gh = gioHangRepository.save(gh);
-		return toDto(gh);
-	}
+    @Override
+    @Transactional
+    public void capNhatSoLuong(Long chiTietId, Integer soLuong) {
+        ChiTietGioHang item = chiTietGioHangRepository.findById(chiTietId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm trong giỏ"));
+        item.setSoLuong(soLuong);
+        chiTietGioHangRepository.save(item);
+    }
 
-	@Override
-	@Transactional
-	public CartDto xoaHet(Long khachHangId) {
-		GioHang gh = ensureCart(khachHangId);
-		gh.getChiTietGioHangs().clear();
-		gh = gioHangRepository.save(gh);
-		return toDto(gh);
-	}
+    private GioHang getCurrentGioHang() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        KhachHang kh = khachHangRepository.findByTenDangNhap(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+        
+        return gioHangRepository.findByKhachHang(kh)
+                .orElseGet(() -> {
+                    GioHang newGh = GioHang.builder().khachHang(kh).danhSachChiTiet(new ArrayList<>()).build();
+                    return gioHangRepository.save(newGh);
+                });
+    }
 
-	private GioHang ensureCart(Long khachHangId) {
-		return gioHangRepository.findByKhachHangId(khachHangId)
-			.orElseGet(() -> {
-				KhachHang kh = khachHangRepository.findById(khachHangId)
-					.orElseThrow(() -> new NotFoundException("Không tìm thấy khách hàng"));
-				GioHang gh = GioHang.builder().khachHang(kh).build();
-				return gioHangRepository.save(gh);
-			});
-	}
-
-	private CartDto toDto(GioHang gh) {
-		List<CartItemDto> items = gh.getChiTietGioHangs().stream().map(i -> {
-			BigDecimal thanhTien = i.getDonGia().multiply(BigDecimal.valueOf(i.getSoLuong()));
-			return CartItemDto.builder()
-				.id(i.getId())
-				.sanPhamId(i.getSanPham().getId())
-				.tenSanPham(i.getSanPham().getTen())
-				.soLuong(i.getSoLuong())
-				.donGia(i.getDonGia())
-				.thanhTien(thanhTien)
-				.build();
-		}).toList();
-
-		BigDecimal tong = items.stream().map(CartItemDto::getThanhTien).reduce(BigDecimal.ZERO, BigDecimal::add);
-		return CartDto.builder()
-			.gioHangId(gh.getId())
-			.khachHangId(gh.getKhachHang().getId())
-			.items(items)
-			.tongTien(tong)
-			.build();
-	}
+    private GioHangResponse mapToResponse(GioHang gh) {
+        var items = gh.getDanhSachChiTiet().stream()
+                .map(item -> ChiTietGioHangResponse.builder()
+                        .id(item.getId())
+                        .sanPhamId(item.getSanPham().getId())
+                        .tenSanPham(item.getSanPham().getTen())
+                        .gia(item.getGiaTaiThoiDiem())
+                        .soLuong(item.getSoLuong())
+                        .tuyChinh(item.getTuyChinh() != null ? item.getTuyChinh().getTuyChinh() : null)
+                        .thanhTien(item.getGiaTaiThoiDiem() * item.getSoLuong())
+                        .build())
+                .collect(Collectors.toList());
+        
+        double tongTien = items.stream().mapToDouble(ChiTietGioHangResponse::getThanhTien).sum();
+        
+        return GioHangResponse.builder()
+                .items(items)
+                .tongTien(tongTien)
+                .build();
+    }
 }
-

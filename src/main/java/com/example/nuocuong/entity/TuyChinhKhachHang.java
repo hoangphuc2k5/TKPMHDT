@@ -1,40 +1,36 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-@Getter
-@Setter
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "tuy_chinh_khach_hang")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TuyChinhKhachHang {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	// Strategy/Factory sẽ diễn giải các lựa chọn này khi tạo đồ uống đặt
-	@Column(nullable = false)
-	private int mucDuong = 100; // %
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "khach_hang_id")
+    private KhachHang khachHang;
 
-	@Column(nullable = false)
-	private int mucDa = 100; // %
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cong_thuc_id")
+    private CongThuc congThuc;
 
-	@Column(length = 255)
-	private String topping; // ví dụ: "tranChau,thachPhoMai"
+    private String tuyChinh; // Ví dụ: "ít đường, nhiều đá"
 
-	@Column(length = 255)
-	private String ghiChu;
+    @CreationTimestamp
+    private LocalDateTime ngayTao;
+
+    @UpdateTimestamp
+    private LocalDateTime ngayCapNhat;
 }
-

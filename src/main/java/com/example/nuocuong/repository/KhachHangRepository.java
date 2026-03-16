@@ -1,11 +1,12 @@
 package com.example.nuocuong.repository;
 
 import com.example.nuocuong.entity.KhachHang;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
+@Repository
 public interface KhachHangRepository extends JpaRepository<KhachHang, Long> {
-	Optional<KhachHang> findByEmail(String email);
-	boolean existsByEmail(String email);
+    Optional<KhachHang> findByTenDangNhap(String tenDangNhap);
 }
-

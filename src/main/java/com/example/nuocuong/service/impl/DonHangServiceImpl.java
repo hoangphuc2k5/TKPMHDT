@@ -1,181 +1,161 @@
 package com.example.nuocuong.service.impl;
 
-import com.example.nuocuong.dto.OrderCreateRequest;
-import com.example.nuocuong.dto.OrderDto;
-import com.example.nuocuong.dto.OrderItemDto;
-import com.example.nuocuong.dto.PaymentDto;
-import com.example.nuocuong.dto.TuyChinhDto;
-import com.example.nuocuong.entity.ChiTietDonHang;
-import com.example.nuocuong.entity.DonHang;
-import com.example.nuocuong.entity.KhachHang;
-import com.example.nuocuong.entity.MaGiamGia;
-import com.example.nuocuong.entity.SanPham;
-import com.example.nuocuong.entity.ThanhToan;
-import com.example.nuocuong.exception.NotFoundException;
-import com.example.nuocuong.factory.CustomDrinkFactory;
-import com.example.nuocuong.repository.DonHangRepository;
-import com.example.nuocuong.repository.KhachHangRepository;
-import com.example.nuocuong.repository.SanPhamRepository;
+import com.example.nuocuong.dto.ChiTietDonHangResponse;
+import com.example.nuocuong.dto.DonHangResponse;
+import com.example.nuocuong.dto.ThanhToanRequest;
+import com.example.nuocuong.entity.*;
+import com.example.nuocuong.repository.*;
 import com.example.nuocuong.service.DonHangService;
-import com.example.nuocuong.service.MaGiamGiaService;
-import com.example.nuocuong.service.impl.builder.ChiTietDonHangBuilder;
-import com.example.nuocuong.service.impl.builder.DonHangBuilder;
-import com.example.nuocuong.strategy.StrategyRegistry;
-import java.math.BigDecimal;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Service
+@RequiredArgsConstructor
 public class DonHangServiceImpl implements DonHangService {
-	private final DonHangRepository donHangRepository;
-	private final KhachHangRepository khachHangRepository;
-	private final SanPhamRepository sanPhamRepository;
-	private final MaGiamGiaService maGiamGiaService;
-	private final StrategyRegistry strategyRegistry;
-	private final CustomDrinkFactory customDrinkFactory;
 
-	public DonHangServiceImpl(
-		DonHangRepository donHangRepository,
-		KhachHangRepository khachHangRepository,
-		SanPhamRepository sanPhamRepository,
-		MaGiamGiaService maGiamGiaService,
-		StrategyRegistry strategyRegistry,
-		CustomDrinkFactory customDrinkFactory
-	) {
-		this.donHangRepository = donHangRepository;
-		this.khachHangRepository = khachHangRepository;
-		this.sanPhamRepository = sanPhamRepository;
-		this.maGiamGiaService = maGiamGiaService;
-		this.strategyRegistry = strategyRegistry;
-		this.customDrinkFactory = customDrinkFactory;
-	}
+    private final DonHangRepository donHangRepository;
+    private final GioHangRepository gioHangRepository;
+    private final KhachHangRepository khachHangRepository;
+    private final MaGiamGiaRepository maGiamGiaRepository;
+    private final ThanhToanRepository thanhToanRepository;
 
-	@Override
-	@Transactional
-	public OrderDto taoDon(OrderCreateRequest request) {
-		KhachHang kh = khachHangRepository.findById(request.getKhachHangId())
-			.orElseThrow(() -> new NotFoundException("Không tìm thấy khách hàng"));
+    @Override
+    @Transactional
+    public DonHangResponse thanhToan(ThanhToanRequest request) {
+        KhachHang kh = getCurrentKhachHang();
+        GioHang gh = gioHangRepository.findByKhachHang(kh)
+                .orElseThrow(() -> new RuntimeException("Giỏ hàng trống"));
 
-		MaGiamGia mg = maGiamGiaService.timMaHopLe(request.getMaGiamGia());
+        if (gh.getDanhSachChiTiet().isEmpty()) {
+            throw new RuntimeException("Giỏ hàng trống");
+        }
 
-		DonHang donHang = DonHangBuilder.builder()
-			.khachHang(kh)
-			.diaChiGiaoHang(request.getDiaChiGiaoHang())
-			.maGiamGia(mg)
-			.build();
+        double tongTien = gh.getDanhSachChiTiet().stream()
+                .mapToDouble(item -> item.getGiaTaiThoiDiem() * item.getSoLuong())
+                .sum();
 
-		// Builder Pattern: dựng danh sách chi tiết theo từng bước
-		for (var itemReq : request.getItems()) {
-			SanPham sp = sanPhamRepository.findById(itemReq.getSanPhamId())
-				.orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm id=" + itemReq.getSanPhamId()));
+        double giamGia = 0;
+        if (request.getMaGiamGia() != null && !request.getMaGiamGia().isEmpty()) {
+            MaGiamGia ma = maGiamGiaRepository.findByMaAndIsDeletedFalse(request.getMaGiamGia())
+                    .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ"));
+            
+            if (ma.getNgayKetThuc().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Mã giảm giá đã hết hạn");
+            }
+            if (ma.getSoLuongDaSuDung() >= ma.getSoLuongSuDungToiDa()) {
+                throw new RuntimeException("Mã giảm giá đã hết lượt sử dụng");
+            }
 
-			var tuyChinhEntity = customDrinkFactory.taoTuyChinh(itemReq.getTuyChinh());
-			BigDecimal donGia = sp.getGiaBan();
+            if (ma.getLoaiGiamGia() == LoaiGiamGia.PHAN_TRAM) {
+                giamGia = tongTien * (ma.getGiaTriGiam() / 100.0);
+            } else {
+                giamGia = ma.getGiaTriGiam();
+            }
+            ma.setSoLuongDaSuDung(ma.getSoLuongDaSuDung() + 1);
+            maGiamGiaRepository.save(ma);
+        }
 
-			ChiTietDonHang ct = ChiTietDonHangBuilder.builder()
-				.donHang(donHang)
-				.sanPham(sp)
-				.soLuong(itemReq.getSoLuong())
-				.donGia(donGia)
-				.tuyChinh(tuyChinhEntity)
-				.build();
+        DonHang dh = DonHang.builder()
+                .maDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .khachHang(kh)
+                .tongTien(tongTien)
+                .giamGia(giamGia)
+                .thanhTien(Math.max(0, tongTien - giamGia))
+                .trangThai(TrangThaiDonHang.MOI_TAO)
+                .diaChiGiaoHang(request.getDiaChiGiaoHang())
+                .soDienThoaiGiaoHang(request.getSoDienThoaiGiaoHang())
+                .ghiChu(request.getGhiChu())
+                .build();
 
-			donHang.getChiTietDonHangs().add(ct);
-		}
+        List<ChiTietDonHang> items = gh.getDanhSachChiTiet().stream()
+                .map(item -> ChiTietDonHang.builder()
+                        .donHang(dh)
+                        .sanPham(item.getSanPham())
+                        .soLuong(item.getSoLuong())
+                        .tuyChinh(item.getTuyChinh())
+                        .giaTaiThoiDiem(item.getGiaTaiThoiDiem())
+                        .build())
+                .collect(Collectors.toList());
+        
+        dh.setDanhSachChiTiet(items);
+        donHangRepository.save(dh);
 
-		BigDecimal tongTienHang = donHang.getChiTietDonHangs()
-			.stream()
-			.map(ChiTietDonHang::getThanhTien)
-			.reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Mô phỏng thanh toán
+        ThanhToan tt = ThanhToan.builder()
+                .donHang(dh)
+                .phuongThuc(PhuongThucThanhToan.valueOf(request.getPhuongThucThanhToan()))
+                .trangThai(TrangThaiThanhToan.DA_THANH_TOAN) // Giả định thanh toán thành công
+                .soTien(dh.getThanhTien())
+                .maGiaoDich("TRANS" + UUID.randomUUID().toString().substring(0, 10).toUpperCase())
+                .build();
+        thanhToanRepository.save(tt);
 
-		donHang.setTongTienHang(tongTienHang);
+        // Xóa giỏ hàng
+        gh.getDanhSachChiTiet().clear();
+        gioHangRepository.save(gh);
 
-		// Strategy Pattern: tính giảm giá theo loại mã
-		BigDecimal giamGia = BigDecimal.ZERO;
-		if (mg != null) {
-			maGiamGiaService.validateDieuKien(tongTienHang, mg);
-			giamGia = strategyRegistry.discount(mg.getLoai()).tinhGiamGia(tongTienHang, mg);
-		}
-		donHang.setGiamGia(giamGia);
-		donHang.setTongThanhToan(tongTienHang.subtract(giamGia).max(BigDecimal.ZERO));
+        return mapToResponse(dh);
+    }
 
-		// Strategy Pattern: thanh toán
-		ThanhToan thanhToan = strategyRegistry.payment(request.getPhuongThucThanhToan())
-			.thucHienThanhToan(donHang, donHang.getTongThanhToan());
-		donHang.setThanhToan(thanhToan);
+    @Override
+    public List<DonHangResponse> getLichSuDonHang() {
+        KhachHang kh = getCurrentKhachHang();
+        return donHangRepository.findByKhachHang(kh).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
-		DonHang saved = donHangRepository.save(donHang);
-		return toDto(saved);
-	}
+    @Override
+    public DonHangResponse getChiTietDonHang(Long id) {
+        DonHang dh = donHangRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+        return mapToResponse(dh);
+    }
 
-	@Override
-	@Transactional(readOnly = true)
-	public List<OrderDto> lichSuDon(Long khachHangId) {
-		return donHangRepository.findByKhachHangIdOrderByCreatedAtDesc(khachHangId)
-			.stream()
-			.map(this::toDto)
-			.toList();
-	}
+    @Override
+    @Transactional
+    public void huyDonHang(Long id) {
+        DonHang dh = donHangRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+        if (dh.getTrangThai() != TrangThaiDonHang.MOI_TAO && dh.getTrangThai() != TrangThaiDonHang.CHO_XU_LY) {
+            throw new RuntimeException("Không thể hủy đơn hàng ở trạng thái này");
+        }
+        dh.setTrangThai(TrangThaiDonHang.DA_HUY);
+        donHangRepository.save(dh);
+    }
 
-	@Override
-	@Transactional(readOnly = true)
-	public OrderDto chiTiet(Long donHangId) {
-		DonHang dh = donHangRepository.findById(donHangId)
-			.orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
-		return toDto(dh);
-	}
+    private KhachHang getCurrentKhachHang() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return khachHangRepository.findByTenDangNhap(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+    }
 
-	private OrderDto toDto(DonHang dh) {
-		PaymentDto payment = null;
-		if (dh.getThanhToan() != null) {
-			ThanhToan tt = dh.getThanhToan();
-			payment = PaymentDto.builder()
-				.id(tt.getId())
-				.phuongThuc(tt.getPhuongThuc())
-				.trangThai(tt.getTrangThai())
-				.soTien(tt.getSoTien())
-				.maGiaoDich(tt.getMaGiaoDich())
-				.thanhToanLuc(tt.getThanhToanLuc())
-				.build();
-		}
-
-		List<OrderItemDto> items = dh.getChiTietDonHangs().stream().map(ct -> {
-			TuyChinhDto tuyChinh = null;
-			if (ct.getTuyChinhKhachHang() != null) {
-				tuyChinh = TuyChinhDto.builder()
-					.mucDuong(ct.getTuyChinhKhachHang().getMucDuong())
-					.mucDa(ct.getTuyChinhKhachHang().getMucDa())
-					.topping(ct.getTuyChinhKhachHang().getTopping())
-					.ghiChu(ct.getTuyChinhKhachHang().getGhiChu())
-					.build();
-			}
-
-			return OrderItemDto.builder()
-				.id(ct.getId())
-				.sanPhamId(ct.getSanPham().getId())
-				.tenSanPham(ct.getSanPham().getTen())
-				.soLuong(ct.getSoLuong())
-				.donGia(ct.getDonGia())
-				.thanhTien(ct.getThanhTien())
-				.tuyChinh(tuyChinh)
-				.build();
-		}).toList();
-
-		return OrderDto.builder()
-			.id(dh.getId())
-			.maDonHang(dh.getMaDonHang())
-			.khachHangId(dh.getKhachHang().getId())
-			.trangThai(dh.getTrangThai())
-			.diaChiGiaoHang(dh.getDiaChiGiaoHang())
-			.tongTienHang(dh.getTongTienHang())
-			.giamGia(dh.getGiamGia())
-			.tongThanhToan(dh.getTongThanhToan())
-			.createdAt(dh.getCreatedAt())
-			.thanhToan(payment)
-			.maGiamGia(dh.getMaGiamGia() == null ? null : dh.getMaGiamGia().getMa())
-			.items(items)
-			.build();
-	}
+    private DonHangResponse mapToResponse(DonHang dh) {
+        return DonHangResponse.builder()
+                .id(dh.getId())
+                .maDonHang(dh.getMaDonHang())
+                .tongTien(dh.getTongTien())
+                .giamGia(dh.getGiamGia())
+                .thanhTien(dh.getThanhTien())
+                .trangThai(dh.getTrangThai().name())
+                .ngayTao(dh.getNgayTao())
+                .diaChiGiaoHang(dh.getDiaChiGiaoHang())
+                .items(dh.getDanhSachChiTiet().stream()
+                        .map(item -> ChiTietDonHangResponse.builder()
+                                .tenSanPham(item.getSanPham().getTen())
+                                .gia(item.getGiaTaiThoiDiem())
+                                .soLuong(item.getSoLuong())
+                                .tuyChinh(item.getTuyChinh() != null ? item.getTuyChinh().getTuyChinh() : null)
+                                .thanhTien(item.getGiaTaiThoiDiem() * item.getSoLuong())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+    }
 }
-

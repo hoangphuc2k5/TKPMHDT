@@ -1,12 +1,11 @@
 package com.example.nuocuong.service;
 
-import com.example.nuocuong.dto.CartAddItemRequest;
-import com.example.nuocuong.dto.CartDto;
+import com.example.nuocuong.dto.GioHangResponse;
+import com.example.nuocuong.dto.ThemGioHangRequest;
 
 public interface GioHangService {
-	CartDto xemGioHang(Long khachHangId);
-	CartDto themVaoGio(Long khachHangId, CartAddItemRequest request);
-	CartDto xoaItem(Long khachHangId, Long chiTietGioHangId);
-	CartDto xoaHet(Long khachHangId);
+    GioHangResponse getGioHang();
+    void themVaoGioHang(ThemGioHangRequest request);
+    void xoaKhoiGioHang(Long chiTietId);
+    void capNhatSoLuong(Long chiTietId, Integer soLuong);
 }
-

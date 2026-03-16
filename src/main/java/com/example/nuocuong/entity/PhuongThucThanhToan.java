@@ -1,7 +1,7 @@
 package com.example.nuocuong.entity;
 
 public enum PhuongThucThanhToan {
-	COD,
-	ONLINE_MOCK
+    TIEN_MAT,
+    CHUYEN_KHOAN,
+    VI_DIEN_TU
 }
-

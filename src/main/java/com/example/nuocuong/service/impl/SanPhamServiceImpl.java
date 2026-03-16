@@ -1,39 +1,75 @@
 package com.example.nuocuong.service.impl;
 
-import com.example.nuocuong.dto.SanPhamDto;
+import com.example.nuocuong.dto.NuocUongSanResponse;
+import com.example.nuocuong.dto.SanPhamResponse;
+import com.example.nuocuong.entity.NuocUongSan;
+import com.example.nuocuong.entity.NguyenLieu;
 import com.example.nuocuong.entity.SanPham;
-import com.example.nuocuong.exception.NotFoundException;
 import com.example.nuocuong.repository.SanPhamRepository;
 import com.example.nuocuong.service.SanPhamService;
-import java.util.List;
-import org.modelmapper.ModelMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SanPhamServiceImpl implements SanPhamService {
-	private final SanPhamRepository sanPhamRepository;
-	private final ModelMapper modelMapper;
 
-	public SanPhamServiceImpl(SanPhamRepository sanPhamRepository, ModelMapper modelMapper) {
-		this.sanPhamRepository = sanPhamRepository;
-		this.modelMapper = modelMapper;
-	}
+    private final SanPhamRepository sanPhamRepository;
 
-	@Override
-	@Transactional(readOnly = true)
-	public List<SanPhamDto> danhSachSanPhamDangKinhDoanh() {
-		return sanPhamRepository.findAllDangKinhDoanh()
-			.stream()
-			.map(sp -> modelMapper.map(sp, SanPhamDto.class))
-			.toList();
-	}
+    @Override
+    public List<SanPhamResponse> searchSanPham(String query, Double giaMin, Double giaMax, String loai) {
+        List<SanPham> results = sanPhamRepository.search(query, giaMin, giaMax);
+        
+        return results.stream()
+                .filter(s -> loai == null || getLoaiSanPham(s).equalsIgnoreCase(loai))
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 
-	@Override
-	@Transactional(readOnly = true)
-	public SanPhamDto chiTiet(Long id) {
-		SanPham sp = sanPhamRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm"));
-		return modelMapper.map(sp, SanPhamDto.class);
-	}
+    @Override
+    public SanPhamResponse getSanPhamById(Long id) {
+        SanPham s = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+        return mapToResponse(s);
+    }
+
+    private SanPhamResponse mapToResponse(SanPham s) {
+        if (s instanceof NuocUongSan n) {
+            return NuocUongSanResponse.builder()
+                    .id(n.getId())
+                    .ten(n.getTen())
+                    .moTa(n.getMoTa())
+                    .gia(n.getGia())
+                    .hinhAnh(n.getHinhAnh())
+                    .loaiSanPham("NUOC_UONG_SAN")
+                    .dungTich(n.getDungTich())
+                    .loaiNuoc(n.getLoaiNuoc())
+                    .build();
+        } else if (s instanceof NguyenLieu n) {
+            return SanPhamResponse.builder()
+                    .id(n.getId())
+                    .ten(n.getTen())
+                    .moTa(n.getMoTa())
+                    .gia(n.getGia())
+                    .hinhAnh(n.getHinhAnh())
+                    .loaiSanPham("NGUYEN_LIEU")
+                    .build();
+        }
+        return SanPhamResponse.builder()
+                .id(s.getId())
+                .ten(s.getTen())
+                .moTa(s.getMoTa())
+                .gia(s.getGia())
+                .hinhAnh(s.getHinhAnh())
+                .build();
+    }
+
+    private String getLoaiSanPham(SanPham s) {
+        if (s instanceof NuocUongSan) return "NUOC_UONG_SAN";
+        if (s instanceof NguyenLieu) return "NGUYEN_LIEU";
+        return "UNKNOWN";
+    }
 }
-

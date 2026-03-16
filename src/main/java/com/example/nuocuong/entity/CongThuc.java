@@ -1,47 +1,40 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
 
-@Getter
-@Setter
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "cong_thuc")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CongThuc {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@ManyToOne
-	@JoinColumn(name = "nuoc_uong_san_id", nullable = false)
-	private NuocUongSan nuocUongSan;
+    @Column(nullable = false)
+    private String ten;
 
-	@Column(nullable = false, length = 120)
-	private String tenCongThuc;
+    private String moTa;
 
-	@OneToMany(mappedBy = "congThuc", cascade = CascadeType.ALL, orphanRemoval = true)
-	@ToString.Exclude
-	@EqualsAndHashCode.Exclude
-	private List<LuongNguyenLieu> luongNguyenLieus = new ArrayList<>();
+    @Builder.Default
+    private boolean isDeleted = false;
+
+    @OneToMany(mappedBy = "congThuc", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<LuongNguyenLieu> danhSachNguyenLieu = new ArrayList<>();
+
+    @CreationTimestamp
+    private LocalDateTime ngayTao;
+
+    @UpdateTimestamp
+    private LocalDateTime ngayCapNhat;
 }
-

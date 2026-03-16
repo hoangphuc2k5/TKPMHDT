@@ -1,54 +1,43 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-@Getter
-@Setter
+import java.time.LocalDateTime;
+
+@Data
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "san_pham")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "loai_san_pham")
+@Inheritance(strategy = InheritanceType.JOINED)
+@EntityListeners(AuditingEntityListener.class)
 public abstract class SanPham {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false, length = 160)
-	private String ten;
+    @Column(nullable = false)
+    private String ten;
 
-	@Column(length = 255)
-	private String moTa;
+    private String moTa;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal giaBan;
+    @Column(nullable = false)
+    private Double gia;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private LoaiSanPham loai;
+    private String hinhAnh;
 
-	@Column(length = 255)
-	private String hinhAnhUrl;
+    @Builder.Default
+    private boolean isDeleted = false;
 
-	@Column(nullable = false)
-	private boolean dangKinhDoanh = true;
+    @CreationTimestamp
+    private LocalDateTime ngayTao;
+
+    @UpdateTimestamp
+    private LocalDateTime ngayCapNhat;
 }
-

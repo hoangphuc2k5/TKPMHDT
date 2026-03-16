@@ -1,53 +1,46 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-@Getter
-@Setter
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "ma_giam_gia")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MaGiamGia {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false, unique = true, length = 40)
-	private String ma;
+    @Column(unique = true, nullable = false)
+    private String ma;
 
-	@Column(length = 255)
-	private String moTa;
+    private String moTa;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private LoaiMaGiamGia loai;
+    @Column(nullable = false)
+    private Double giaTriGiam;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal giaTri; // % hoặc số tiền cố định, diễn giải theo strategy
+    @Enumerated(EnumType.STRING)
+    private LoaiGiamGia loaiGiamGia;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal donToiThieu = BigDecimal.ZERO;
+    private LocalDateTime ngayBatDau;
+    private LocalDateTime ngayKetThuc;
 
-	@Column(nullable = false)
-	private boolean kichHoat = true;
+    private Integer soLuongSuDungToiDa;
+    private Integer soLuongDaSuDung;
 
-	private LocalDateTime batDauLuc;
-	private LocalDateTime ketThucLuc;
+    @Builder.Default
+    private boolean isDeleted = false;
+
+    @CreationTimestamp
+    private LocalDateTime ngayTao;
+
+    @UpdateTimestamp
+    private LocalDateTime ngayCapNhat;
 }
-

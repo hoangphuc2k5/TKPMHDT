@@ -1,57 +1,35 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
-@Getter
-@Setter
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "thanh_toan")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ThanhToan {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@OneToOne
-	@JoinColumn(name = "don_hang_id", nullable = false, unique = true)
-	@ToString.Exclude
-	@EqualsAndHashCode.Exclude
-	private DonHang donHang;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "don_hang_id")
+    private DonHang donHang;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private PhuongThucThanhToan phuongThuc;
+    @Enumerated(EnumType.STRING)
+    private PhuongThucThanhToan phuongThuc;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private TrangThaiThanhToan trangThai = TrangThaiThanhToan.CHO_THANH_TOAN;
+    @Enumerated(EnumType.STRING)
+    private TrangThaiThanhToan trangThai;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal soTien;
+    private Double soTien;
+    private String maGiaoDich;
 
-	@Column(length = 80)
-	private String maGiaoDich;
-
-	private LocalDateTime thanhToanLuc;
+    @CreationTimestamp
+    private LocalDateTime ngayThanhToan;
 }
-

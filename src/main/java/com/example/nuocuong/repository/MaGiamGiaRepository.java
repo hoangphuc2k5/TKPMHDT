@@ -1,10 +1,12 @@
 package com.example.nuocuong.repository;
 
 import com.example.nuocuong.entity.MaGiamGia;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
+@Repository
 public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Long> {
-	Optional<MaGiamGia> findByMa(String ma);
+    Optional<MaGiamGia> findByMaAndIsDeletedFalse(String ma);
 }
-

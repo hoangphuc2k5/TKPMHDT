@@ -1,11 +1,10 @@
 package com.example.nuocuong.entity;
 
 public enum TrangThaiDonHang {
-	TAO_MOI,
-	CHO_XAC_NHAN,
-	DANG_CHUAN_BI,
-	DANG_GIAO,
-	DA_GIAO,
-	DA_HUY
+    MOI_TAO,
+    CHO_XU_LY,
+    DANG_CHE_BIEN,
+    DANG_GIAO,
+    HOAN_THANH,
+    DA_HUY
 }
-

@@ -1,47 +1,49 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-@Getter
-@Setter
+import java.time.LocalDateTime;
+
+@Data
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "nguoi_dung")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "loai_nguoi_dung")
+@Inheritance(strategy = InheritanceType.JOINED)
+@EntityListeners(AuditingEntityListener.class)
 public abstract class NguoiDung {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false, unique = true, length = 120)
-	private String email;
+    @Column(unique = true, nullable = false)
+    private String tenDangNhap;
 
-	@Column(nullable = false)
-	private String matKhauMaHoa;
+    @Column(nullable = false)
+    private String matKhau;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 40)
-	private VaiTro vaiTro;
+    private String hoTen;
+    private String email;
+    private String soDienThoai;
+    private String diaChi;
 
-	@Column(nullable = false)
-	private boolean kichHoat = true;
+    @Enumerated(EnumType.STRING)
+    private Role vaiTro;
+
+    @Builder.Default
+    private boolean isDeleted = false;
+
+    @CreationTimestamp
+    private LocalDateTime ngayTao;
+
+    @UpdateTimestamp
+    private LocalDateTime ngayCapNhat;
 }
-

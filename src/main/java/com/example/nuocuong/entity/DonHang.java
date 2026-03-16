@@ -1,78 +1,53 @@
 package com.example.nuocuong.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
 
-@Getter
-@Setter
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "don_hang")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DonHang {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false, unique = true, length = 30)
-	private String maDonHang;
+    private String maDonHang;
 
-	@ManyToOne
-	@JoinColumn(name = "khach_hang_id", nullable = false)
-	private KhachHang khachHang;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "khach_hang_id")
+    private KhachHang khachHang;
 
-	@OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
-	@ToString.Exclude
-	@EqualsAndHashCode.Exclude
-	private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nhan_vien_ban_hang_id")
+    private NhanVienBanHang nhanVienBanHang;
 
-	@OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
-	private ThanhToan thanhToan;
+    @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ChiTietDonHang> danhSachChiTiet = new ArrayList<>();
 
-	@ManyToOne
-	@JoinColumn(name = "ma_giam_gia_id")
-	private MaGiamGia maGiamGia;
+    private Double tongTien;
+    private Double giamGia;
+    private Double thanhTien;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private TrangThaiDonHang trangThai = TrangThaiDonHang.TAO_MOI;
+    @Enumerated(EnumType.STRING)
+    private TrangThaiDonHang trangThai;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal tongTienHang = BigDecimal.ZERO;
+    private String diaChiGiaoHang;
+    private String soDienThoaiGiaoHang;
+    private String ghiChu;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal giamGia = BigDecimal.ZERO;
+    @CreationTimestamp
+    private LocalDateTime ngayTao;
 
-	@Column(nullable = false, precision = 18, scale = 2)
-	private BigDecimal tongThanhToan = BigDecimal.ZERO;
-
-	@Column(nullable = false)
-	private LocalDateTime createdAt = LocalDateTime.now();
-
-	@Column(length = 255)
-	private String diaChiGiaoHang;
+    @UpdateTimestamp
+    private LocalDateTime ngayCapNhat;
 }
-

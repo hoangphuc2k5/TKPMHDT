@@ -1,16 +1,14 @@
 package com.example.nuocuong.repository;
 
 import com.example.nuocuong.entity.DonHang;
-import java.util.List;
-import java.util.Optional;
+import com.example.nuocuong.entity.KhachHang;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
+@Repository
 public interface DonHangRepository extends JpaRepository<DonHang, Long> {
-	Optional<DonHang> findByMaDonHang(String maDonHang);
-
-	@Query("select dh from DonHang dh where dh.khachHang.id = :khId order by dh.createdAt desc")
-	List<DonHang> findByKhachHangIdOrderByCreatedAtDesc(@Param("khId") Long khachHangId);
+    List<DonHang> findByKhachHang(KhachHang khachHang);
+    List<DonHang> findByMaDonHang(String maDonHang);
 }
-

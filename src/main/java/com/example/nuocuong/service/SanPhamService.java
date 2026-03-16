@@ -1,10 +1,9 @@
 package com.example.nuocuong.service;
 
-import com.example.nuocuong.dto.SanPhamDto;
+import com.example.nuocuong.dto.SanPhamResponse;
 import java.util.List;
 
 public interface SanPhamService {
-	List<SanPhamDto> danhSachSanPhamDangKinhDoanh();
-	SanPhamDto chiTiet(Long id);
+    List<SanPhamResponse> searchSanPham(String query, Double giaMin, Double giaMax, String loai);
+    SanPhamResponse getSanPhamById(Long id);
 }
-
