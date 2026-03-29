@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Thanh toán - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('payments')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 class="brand-font">Cổng Thanh Toán</h1>
+        <p class="muted">Tích hợp đa phương thức thanh toán an toàn và bảo mật.</p>
+    </div>
+
+    <div class="grid">
+        <!-- Initialize (Customer/Staff) -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Khởi tạo giao dịch</h3>
+                <label>Mã đơn hàng<input id="tt_donHangId" placeholder="Nhập mã đơn..."></label>
+                <label>Phương thức
+                    <select id="tt_phuongThuc">
+                        <option value="VNPAY">Cổng VNPAY</option>
+                        <option value="MOMO">Ví MoMo</option>
+                        <option value="TIEN_MAT">Tiền mặt (COD)</option>
+                        <option value="THE">Thẻ ngân hàng</option>
+                    </select>
+                </label>
+                <button onclick="taoThanhToan()" style="width: 100%;">Tạo thanh toán</button>
+            </div>
+        </div>
+
+        <!-- Admin Only Status Update -->
+        <div sec:authorize="hasRole('QUAN_TRI_VIEN')" class="card">
+            <div class="card-content">
+                <h3>Xác nhận thanh toán</h3>
+                <label>Mã giao dịch<input id="tt_thanhToanId" placeholder="Nhập mã giao dịch..."></label>
+                <label>Trạng thái
+                    <select id="tt_trangThai">
+                        <option value="CHO_XU_LY">Đang xử lý</option>
+                        <option value="THANH_CONG">Thành công</option>
+                        <option value="THAT_BAI">Thất bại</option>
+                    </select>
+                </label>
+                <button class="btn-highlight" onclick="capNhatTrangThaiTT()" style="width: 100%;">Cập nhật trạng thái</button>
+            </div>
+        </div>
+
+        <!-- Lookup -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Tra cứu giao dịch</h3>
+                <label>Mã đơn hàng<input id="tt_timDonHangId" placeholder="Nhập mã đơn hàng..."></label>
+                <button class="btn-secondary" onclick="layTTTheoDonHang()" style="width: 100%;">Lấy thông tin</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <h2 class="brand-font">Chi tiết thanh toán</h2>
+        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Thông tin giao dịch sẽ hiển thị tại đây...</pre>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    async function taoThanhToan() {
+        const id = document.getElementById("tt_donHangId").value;
+        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("POST", "/api/thanh-toan", {
+            donHangId: id,
+            phuongThuc: document.getElementById("tt_phuongThuc").value
+        }).catch(e => e.message));
+    }
+    async function capNhatTrangThaiTT() {
+        const id = document.getElementById("tt_thanhToanId").value;
+        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("PATCH", "/api/thanh-toan/" + id + "/trang-thai", {
+            trangThaiMoi: document.getElementById("tt_trangThai").value
+        }).catch(e => e.message));
+    }
+    async function layTTTheoDonHang() {
+        const id = document.getElementById("tt_timDonHangId").value;
+        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("GET", "/api/thanh-toan/don-hang/" + id).catch(e => e.message));
+    }
+</script>
+</body>
+</html>
+

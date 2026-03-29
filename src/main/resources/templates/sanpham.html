@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Sản phẩm - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('products')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 class="brand-font">Danh Mục Sản Phẩm</h1>
+        <p class="muted">Thưởng thức hương vị trà và cà phê nguyên bản từ drink.</p>
+    </div>
+
+    <!-- Admin/Staff Tools (Collapsible or Separate) -->
+    <div sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')" class="card" style="margin-bottom: 40px; border-left: 5px solid var(--phuclong-green);">
+        <div class="card-content">
+            <h3 style="margin-top: 0;">🛠️ Công cụ quản lý kho</h3>
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                <button class="btn-secondary" onclick="dsNguyenLieu()">Xem nguyên liệu</button>
+                <button class="btn-secondary" onclick="document.getElementById('admin-upload-section').scrollIntoView()">Upload hình ảnh</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Search Card -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Tìm nước uống</h3>
+                <label>Tên sản phẩm<input id="sp_tenNuoc" placeholder="Ví dụ: Trà Đào, Cà phê..."></label>
+                <button onclick="timNuocUong()" style="width: 100%;">Tìm kiếm ngay</button>
+                <button class="btn-secondary" onclick="dsNuocUong()" style="width: 100%; margin-top: 10px;">Xem tất cả menu</button>
+            </div>
+        </div>
+
+        <!-- Admin Upload Card -->
+        <div sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')" class="card" id="admin-upload-section">
+            <div class="card-content">
+                <h3>Upload hình ảnh</h3>
+                <label>ID sản phẩm (UUID)<input id="sp_id" placeholder="Nhập mã sản phẩm..."></label>
+                <label>Chọn tệp ảnh<input type="file" id="sp_hinhAnh" multiple></label>
+                <button class="btn-highlight" onclick="uploadHinhAnh()" style="width: 100%;">Tải lên hệ thống</button>
+            </div>
+        </div>
+
+        <!-- Admin Recipe Card -->
+        <div sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')" class="card">
+            <div class="card-content">
+                <h3>Tìm nguyên liệu</h3>
+                <label>Tên nguyên liệu<input id="sp_tenNL" placeholder="Ví dụ: Sữa, Trà..."></label>
+                <button class="btn-secondary" onclick="timNguyenLieu()" style="width: 100%;">Tra cứu kho</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <h2 class="brand-font">Kết quả tìm kiếm</h2>
+        <div id="image-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; margin-bottom: 24px;"></div>
+        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd; box-shadow: none;">Kết quả sẽ hiển thị chi tiết tại đây...</pre>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    async function dsNuocUong() {
+        const data = await api("GET", "/api/san-pham/nuoc-uong").catch(e => e.message);
+        showResult("result", data);
+        renderImages(data);
+    }
+    async function timNuocUong() {
+        const ten = document.getElementById("sp_tenNuoc").value;
+        const data = await api("GET", "/api/san-pham/nuoc-uong/tim?ten=" + encodeURIComponent(ten)).catch(e => e.message);
+        showResult("result", data);
+        renderImages(data);
+    }
+    async function dsNguyenLieu() {
+        showResult("result", await api("GET", "/api/san-pham/nguyen-lieu").catch(e => e.message));
+    }
+    async function timNguyenLieu() {
+        const ten = document.getElementById("sp_tenNL").value;
+        showResult("result", await api("GET", "/api/san-pham/nguyen-lieu/tim?ten=" + encodeURIComponent(ten)).catch(e => e.message));
+    }
+    async function uploadHinhAnh() {
+        const id = document.getElementById("sp_id").value;
+        const files = document.getElementById("sp_hinhAnh").files;
+        if (!id || files.length === 0) {
+            alert("Vui lòng nhập ID và chọn ít nhất một ảnh");
+            return;
+        }
+        if (!isUUID(id)) {
+            alert("Vui lòng nhập ID đúng định dạng UUID");
+            return;
+        }
+        const formData = new FormData();
+        for (let file of files) {
+            formData.append("hinhAnh", file);
+        }
+        const data = await apiUpload("/api/san-pham/nuoc-uong/" + id + "/hinh-anh", formData).catch(e => e.message);
+        showResult("result", data);
+        renderImages([data]);
+    }
+
+    function renderImages(products) {
+        const container = document.getElementById("image-preview");
+        container.innerHTML = "";
+        if (Array.isArray(products)) {
+            products.forEach(p => {
+                if (p.hinhAnh && Array.isArray(p.hinhAnh)) {
+                    p.hinhAnh.forEach(url => {
+                        const img = document.createElement("img");
+                        img.src = url;
+                        img.style.width = "100px";
+                        img.style.height = "100px";
+                        img.style.objectFit = "cover";
+                        container.appendChild(img);
+                    });
+                }
+            });
+        }
+    }
+</script>
+</body>
+</html>
+

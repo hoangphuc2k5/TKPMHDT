@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Đơn hàng - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('orders')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 class="brand-font">Quản Lý Đơn Hàng</h1>
+        <p class="muted">Xử lý quy trình đặt hàng và giao nhận chuyên nghiệp.</p>
+    </div>
+
+    <div class="grid">
+        <!-- Create Order (Customer) -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Thanh toán giỏ hàng</h3>
+                <label>Mã khách hàng<input id="dh_khachHangId" placeholder="Nhập mã của bạn..."></label>
+                <label>Mã khuyến mãi (nếu có)<input id="dh_maGiamGia" placeholder="Ví dụ: PHUCLONG2026"></label>
+                <button onclick="taoDon()" style="width: 100%;">Xác nhận đặt hàng</button>
+            </div>
+        </div>
+
+        <!-- Update Status (Staff Only) -->
+        <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')" class="card">
+            <div class="card-content">
+                <h3>Cập nhật trạng thái</h3>
+                <label>Mã đơn hàng<input id="dh_donHangId" placeholder="Nhập mã đơn..."></label>
+                <label>Trạng thái mới
+                    <select id="dh_trangThai">
+                        <option value="CHO_XAC_NHAN">Chờ xác nhận</option>
+                        <option value="DA_XAC_NHAN">Đã xác nhận</option>
+                        <option value="DANG_CHUAN_BI">Đang chuẩn bị</option>
+                        <option value="DANG_GIAO">Đang giao hàng</option>
+                        <option value="DA_GIAO">Đã giao hàng</option>
+                        <option value="DA_HUY">Đã hủy</option>
+                    </select>
+                </label>
+                <button class="btn-secondary" onclick="capNhatTrangThai()" style="width: 100%;">Cập nhật ngay</button>
+            </div>
+        </div>
+
+        <!-- Lookup (All) -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Tra cứu lịch sử</h3>
+                <label>Mã khách hàng<input id="dh_timKhachHangId" placeholder="Nhập mã khách hàng..."></label>
+                <button class="btn-secondary" onclick="layTheoKhachHang()" style="width: 100%;">Xem danh sách đơn</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <h2 class="brand-font">Danh sách đơn hàng</h2>
+        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Thông tin đơn hàng sẽ hiển thị tại đây...</pre>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    async function taoDon() {
+        const kh = document.getElementById("dh_khachHangId").value;
+        if (!isUUID(kh)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("POST", "/api/don-hang/tao-tu-gio-hang", {
+            khachHangId: kh,
+            maGiamGiaCode: document.getElementById("dh_maGiamGia").value
+        }).catch(e => e.message));
+    }
+    async function capNhatTrangThai() {
+        const id = document.getElementById("dh_donHangId").value;
+        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("PATCH", "/api/don-hang/" + id + "/trang-thai", {
+            trangThaiMoi: document.getElementById("dh_trangThai").value
+        }).catch(e => e.message));
+    }
+    async function layTheoKhachHang() {
+        const khId = document.getElementById("dh_timKhachHangId").value;
+        if (!isUUID(khId)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("GET", "/api/don-hang/khach-hang/" + khId).catch(e => e.message));
+    }
+</script>
+</body>
+</html>
+

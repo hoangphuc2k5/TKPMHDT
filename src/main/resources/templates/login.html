@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Đăng nhập - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('login')}"></header>
+
+<div class="container" style="max-width: 480px; padding-top: 100px;">
+    <div class="card" style="text-align: center;">
+        <div style="margin-bottom: 2rem;">
+            <h1 style="margin-bottom: 0.5rem;">Chào mừng trở lại!</h1>
+            <p class="muted">Đăng nhập để tiếp tục mua sắm và quản lý đơn hàng.</p>
+        </div>
+        
+        <form method="post" th:action="@{/login}" style="text-align: left;">
+            <label>Tên đăng nhập
+                <input type="text" name="username" placeholder="Nhập tên đăng nhập của bạn..." required autofocus>
+            </label>
+            <label>Mật khẩu
+                <input type="password" name="password" placeholder="••••••••" required>
+            </label>
+            <button type="submit" class="btn-secondary" style="margin-top: 2rem;">Đăng nhập ngay</button>
+        </form>
+        
+        <div th:if="${param.error}" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: #fee2e2; color: #991b1b; font-size: 0.875rem; font-weight: 500;">
+            Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại!
+        </div>
+        <div th:if="${param.logout}" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: #dcfce7; color: #166534; font-size: 0.875rem; font-weight: 500;">
+            Bạn đã đăng xuất thành công.
+        </div>
+        
+        <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <p class="muted" style="font-size: 0.875rem;">
+                Vui lòng sử dụng tài khoản đã đăng ký trong hệ thống để truy cập.
+            </p>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>
+

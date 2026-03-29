@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Giỏ hàng - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('cart')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 class="brand-font">Giỏ Hàng Của Bạn</h1>
+        <p class="muted">Kiểm tra các món đồ uống yêu thích và chuẩn bị đặt hàng.</p>
+    </div>
+
+    <div class="grid">
+        <!-- View Cart -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Xem giỏ hàng</h3>
+                <label>Mã khách hàng (UUID)<input id="gh_khachHangId" placeholder="Nhập mã của bạn..."></label>
+                <button onclick="layGioHang()" style="width: 100%;">Kiểm tra giỏ</button>
+            </div>
+        </div>
+
+        <!-- Add Item (Staff/Admin/Testing) -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Thêm món nhanh</h3>
+                <label>Mã khách hàng<input id="gh_them_khachHangId" placeholder="Nhập mã..."></label>
+                <label>Mã sản phẩm<input id="gh_nuocUongId" placeholder="Nhập mã món..."></label>
+                <label>Số lượng<input id="gh_soLuong" type="number" value="1" min="1"></label>
+                <button class="btn-highlight" onclick="themMatHang()" style="width: 100%;">Thêm vào giỏ</button>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Thao tác khác</h3>
+                <label>Xóa món cụ thể (Mã chi tiết)<input id="gh_chiTietId" placeholder="Nhập mã chi tiết..."></label>
+                <button class="btn-secondary" onclick="xoaMatHang()" style="width: 100%;">Xóa món này</button>
+                <button class="btn-secondary" onclick="xoaHet()" style="width: 100%; margin-top: 15px; border-color: #e74c3c; color: #e74c3c;">Làm trống giỏ hàng</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <h2 class="brand-font">Chi tiết giỏ hàng</h2>
+        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Giỏ hàng trống hoặc chưa tải dữ liệu...</pre>
+        <div style="margin-top: 20px; text-align: right;">
+            <a th:href="@{/ui/don-hang}"><button class="btn-highlight" style="padding: 15px 40px;">Tiến hành đặt hàng &rarr;</button></a>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    async function layGioHang() {
+        const id = document.getElementById("gh_khachHangId").value;
+        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("GET", "/api/gio-hang/" + id).catch(e => e.message));
+    }
+    async function themMatHang() {
+        const kh = document.getElementById("gh_them_khachHangId").value;
+        const sp = document.getElementById("gh_nuocUongId").value;
+        if (!isUUID(kh) || !isUUID(sp)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("POST", "/api/gio-hang/them-mat-hang", {
+            khachHangId: kh,
+            nuocUongId: sp,
+            soLuong: Number(document.getElementById("gh_soLuong").value)
+        }).catch(e => e.message));
+    }
+    async function xoaMatHang() {
+        const kh = document.getElementById("gh_xoa_khachHangId").value;
+        const ct = document.getElementById("gh_chiTietId").value;
+        if (!isUUID(kh) || !isUUID(ct)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("DELETE", "/api/gio-hang/" + kh + "/mat-hang/" + ct).catch(e => e.message));
+    }
+    async function xoaHet() {
+        const kh = document.getElementById("gh_clear_khachHangId").value;
+        if (!isUUID(kh)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
+        showResult("result", await api("DELETE", "/api/gio-hang/" + kh + "/xoa-het").catch(e => e.message));
+    }
+</script>
+</body>
+</html>
+

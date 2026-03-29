@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('home')}"></header>
+
+<div class="container">
+    <!-- Hero Section (drink Style) -->
+    <div style="background: var(--phuclong-green); color: white; padding: 60px; border-radius: var(--radius-lg); margin-bottom: 50px; display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative;">
+        <div style="max-width: 600px; z-index: 1;">
+            <h1 style="color: white; font-size: 3.5rem; margin-bottom: 1rem;">Khởi đầu ngày mới với tách cà phê đậm đà</h1>
+            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem;">Từ những búp trà xanh và hạt cà phê chất lượng nhất, chúng tôi mang đến cho bạn hương vị nguyên bản của drink.</p>
+            <div style="display: flex; gap: 15px;">
+                <a th:href="@{/ui/san-pham}"><button class="btn-highlight">Khám phá menu</button></a>
+                <span sec:authorize="!isAuthenticated()">
+                    <a th:href="@{/login}"><button class="btn-secondary" style="border-color: white; color: white;">Đăng nhập ngay</button></a>
+                </span>
+            </div>
+        </div>
+        <div style="font-size: 200px; opacity: 0.1; position: absolute; right: -50px; bottom: -50px; pointer-events: none;">🍃</div>
+    </div>
+
+    <!-- Role-based Dashboards -->
+    
+    <!-- Customer View (Featured Products) -->
+    <div sec:authorize="hasRole('KHACH_HANG') or !isAuthenticated()">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>Sản phẩm nổi bật</h2>
+            <a th:href="@{/ui/san-pham}" style="color: var(--phuclong-green); font-weight: 600;">Xem tất cả &rarr;</a>
+        </div>
+        
+        <!-- Hiển thị sản phẩm thực tế từ Database -->
+        <div class="grid" th:if="${products != null and !products.empty}">
+            <div class="card" th:each="p : ${products}">
+                <!-- Lấy hình ảnh đầu tiên nếu có, nếu không dùng ảnh mặc định -->
+                <img th:src="${p.hinhAnh != null and !p.hinhAnh.empty ? p.hinhAnh[0] : 'https://images.unsplash.com/photo-1544787210-282725509ce8?auto=format&fit=crop&w=800&q=80'}" 
+                     class="product-img" th:alt="${p.ten}">
+                <div class="card-content">
+                    <h3 th:text="${p.ten}">Tên sản phẩm</h3>
+                    <p class="muted" th:text="${p.moTa}">Mô tả sản phẩm</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                        <span style="font-weight: 700; color: var(--phuclong-green);" 
+                              th:text="${#numbers.formatDecimal(p.gia, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</span>
+                        <button class="btn-secondary" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
+                                th:onclick="'alert(\'Vui lòng đăng nhập để thêm vào giỏ!\')'">Thêm vào giỏ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Thông báo nếu không có sản phẩm nào trong database -->
+        <div class="card" th:if="${products == null or products.empty}" style="padding: 40px; text-align: center;">
+            <p class="muted">Hiện chưa có sản phẩm nào trong cửa hàng. Vui lòng quay lại sau!</p>
+        </div>
+    </div>
+
+    <!-- Staff & Admin Dashboard -->
+    <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_LY_KHO', 'QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
+        <h2 style="border-bottom: 2px solid var(--phuclong-green); display: inline-block; padding-bottom: 5px;">Bảng điều khiển quản trị</h2>
+        <div class="grid">
+            <div class="card" sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 24px;">👤</span>
+                        <span class="badge badge-green">Quản trị</span>
+                    </div>
+                    <h3>Quản lý Người dùng</h3>
+                    <p class="muted">Quản lý hồ sơ khách hàng, phân quyền nhân viên và bảo mật hệ thống.</p>
+                    <a th:href="@{/ui/nguoi-dung}"><button style="width: 100%;">Truy cập ngay</button></a>
+                </div>
+            </div>
+            
+            <div class="card" sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 24px;">📦</span>
+                        <span class="badge badge-green">Vận hành</span>
+                    </div>
+                    <h3>Quản lý Đơn hàng</h3>
+                    <p class="muted">Xử lý quy trình đơn hàng, in hóa đơn và cập nhật trạng thái giao hàng.</p>
+                    <a th:href="@{/ui/don-hang}"><button style="width: 100%;">Truy cập ngay</button></a>
+                </div>
+            </div>
+
+            <div class="card" sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 24px;">🥤</span>
+                        <span class="badge badge-gold">Kho hàng</span>
+                    </div>
+                    <h3>Sản phẩm & Kho</h3>
+                    <p class="muted">Quản lý danh mục đồ uống, nguyên liệu và tồn kho sản phẩm.</p>
+                    <a th:href="@{/ui/san-pham}"><button class="btn-highlight" style="width: 100%;">Truy cập ngay</button></a>
+                </div>
+            </div>
+
+            <div class="card" sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 24px;">💳</span>
+                        <span class="badge badge-green">Tài chính</span>
+                    </div>
+                    <h3>Giao dịch & Thanh toán</h3>
+                    <p class="muted">Theo dõi dòng tiền, lịch sử giao dịch MOMO, VNPAY và đối soát tài chính.</p>
+                    <a th:href="@{/ui/thanh-toan}"><button style="width: 100%;">Truy cập ngay</button></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
+

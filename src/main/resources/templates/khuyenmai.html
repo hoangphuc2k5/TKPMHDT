@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Chương trình Khuyến mãi - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('promotions')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 class="brand-font">Ưu Đãi & Khuyến Mãi</h1>
+        <p class="muted">Săn ngay các mã giảm giá hấp dẫn để thưởng thức đồ uống với giá ưu đãi.</p>
+    </div>
+
+    <div class="grid">
+        <!-- Public Check -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Kiểm tra mã giảm giá</h3>
+                <label>Mã code<input id="km_ma" placeholder="VÍ DỤ: PHUCLONG50"></label>
+                <button class="btn-highlight" onclick="timMa()" style="width: 100%;">Kiểm tra ngay</button>
+            </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Tính tiền giảm</h3>
+                <label>Mã áp dụng<input id="km_maTinh" placeholder="Nhập mã ưu đãi..."></label>
+                <label>Tổng đơn hàng (VNĐ)<input id="km_tongTien" type="number" value="100000"></label>
+                <button onclick="tinhTienGiam()" style="width: 100%;">Tính toán ưu đãi</button>
+            </div>
+        </div>
+
+        <!-- Admin Only: Create Promotion -->
+        <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')" class="card">
+            <div class="card-content">
+                <h3>Quản lý mã (Staff)</h3>
+                <p class="muted">Nhân viên có thể kiểm tra danh sách mã hiện có trong hệ thống.</p>
+                <button class="btn-secondary" onclick="dsMa()" style="width: 100%;">Xem tất cả mã</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <h2 class="brand-font">Thông tin ưu đãi</h2>
+        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Kết quả kiểm tra mã sẽ hiển thị tại đây...</pre>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    async function timMa() {
+        const ma = document.getElementById("km_ma").value;
+        showResult("result", await api("GET", "/api/khuyen-mai/ma/" + ma).catch(e => e.message));
+    }
+    async function tinhTienGiam() {
+        showResult("result", await api("POST", "/api/khuyen-mai/tinh-tien-giam", {
+            maCode: document.getElementById("km_maTinh").value,
+            tongTienTruocGiam: Number(document.getElementById("km_tongTien").value)
+        }).catch(e => e.message));
+    }
+    async function dsMa() {
+        showResult("result", await api("GET", "/api/khuyen-mai").catch(e => e.message));
+    }
+</script>
+</body>
+</html>
+

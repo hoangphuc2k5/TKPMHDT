@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Người dùng - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('users')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 class="brand-font">Quản Lý Người Dùng</h1>
+        <p class="muted">Hệ thống quản lý tài khoản và phân quyền nhân viên.</p>
+    </div>
+
+    <div class="grid">
+        <!-- Register Section (Public/Admin) -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Tạo tài khoản khách hàng</h3>
+                <label>Tên đăng nhập<input id="dk_tenDangNhap" placeholder="Nhập tên đăng nhập..."></label>
+                <label>Email<input id="dk_email" placeholder="example@email.com"></label>
+                <label>Mật khẩu<input type="password" id="dk_matKhauHash" placeholder="••••••••"></label>
+                <button onclick="dangKyKhachHang()" style="width: 100%;">Đăng ký ngay</button>
+            </div>
+        </div>
+
+        <!-- Search Section (Admin Only) -->
+        <div sec:authorize="hasRole('QUAN_TRI_VIEN')" class="card">
+            <div class="card-content">
+                <h3>Tra cứu người dùng</h3>
+                <label>UUID Người dùng<input id="ud_id" placeholder="Nhập mã UUID..."></label>
+                <button class="btn-secondary" onclick="timTheoId()" style="width: 100%;">Tìm theo ID</button>
+                
+                <label style="margin-top: 20px;">Tên đăng nhập<input id="ud_tenDangNhap" placeholder="Nhập tên..."></label>
+                <button class="btn-secondary" onclick="timTheoTenDangNhap()" style="width: 100%;">Tìm theo tên</button>
+            </div>
+        </div>
+
+        <!-- Avatar Section (Self/Admin) -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Cập nhật Ảnh đại diện</h3>
+                <label>ID Người dùng (UUID)<input id="av_id" placeholder="Nhập mã UUID..."></label>
+                <label>Chọn ảnh đại diện<input type="file" id="av_file"></label>
+                <button class="btn-highlight" onclick="uploadAvatar()" style="width: 100%;">Tải lên Avatar</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem; text-align: center;">
+        <h2 class="brand-font">Thông tin chi tiết</h2>
+        <div id="avatar-preview" style="display: flex; justify-content: center; margin-bottom: 24px;"></div>
+        <pre id="result" style="text-align: left; background: #f8f9fa; color: #333; border: 1px solid #ddd; max-width: 800px; margin: 0 auto;">Dữ liệu người dùng sẽ hiển thị tại đây...</pre>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    async function dangKyKhachHang() {
+        const data = await api("POST", "/api/nguoi-dung/dang-ky-khach-hang", {
+            tenDangNhap: document.getElementById("dk_tenDangNhap").value,
+            email: document.getElementById("dk_email").value,
+            matKhauHash: document.getElementById("dk_matKhauHash").value
+        }).catch(e => e.message);
+        showResult("result", data);
+        renderAvatar(data);
+    }
+    async function timTheoId() {
+        const id = document.getElementById("ud_id").value;
+        if (!isUUID(id)) {
+            alert("Vui lòng nhập ID đúng định dạng UUID");
+            return;
+        }
+        const data = await api("GET", "/api/nguoi-dung/" + id).catch(e => e.message);
+        showResult("result", data);
+        renderAvatar(data);
+    }
+    async function timTheoTenDangNhap() {
+        const ten = document.getElementById("ud_tenDangNhap").value;
+        const data = await api("GET", "/api/nguoi-dung/ten-dang-nhap/" + ten).catch(e => e.message);
+        showResult("result", data);
+        renderAvatar(data);
+    }
+    async function timTheoEmail() {
+        const data = await api("POST", "/api/nguoi-dung/tim-theo-email", {
+            email: document.getElementById("ud_email").value
+        }).catch(e => e.message);
+        showResult("result", data);
+        renderAvatar(data);
+    }
+    async function uploadAvatar() {
+        const id = document.getElementById("av_id").value;
+        const file = document.getElementById("av_file").files[0];
+        if (!id || !file) {
+            alert("Vui lòng nhập ID và chọn ảnh");
+            return;
+        }
+        if (!isUUID(id)) {
+            alert("Vui lòng nhập ID đúng định dạng UUID");
+            return;
+        }
+        const formData = new FormData();
+        formData.append("avatar", file);
+        const data = await apiUpload("/api/nguoi-dung/" + id + "/avatar", formData).catch(e => e.message);
+        showResult("result", data);
+        renderAvatar(data);
+    }
+
+    function renderAvatar(user) {
+        const container = document.getElementById("avatar-preview");
+        container.innerHTML = "";
+        if (user && user.avatar) {
+            const img = document.createElement("img");
+            img.src = user.avatar;
+            img.style.width = "100px";
+            img.style.height = "100px";
+            img.style.borderRadius = "50%";
+            img.style.objectFit = "cover";
+            container.appendChild(img);
+        }
+    }
+</script>
+</body>
+</html>
+
