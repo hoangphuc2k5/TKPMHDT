@@ -44,6 +44,11 @@ public class SanPhamService {
         return nuocUongSanRepository.save(nuocUongSan);
     }
 
+    @Transactional
+    public void xoaNuocUong(UUID id) {
+        nuocUongSanRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public List<NguyenLieu> layDanhSachNguyenLieu() {
         return nguyenLieuRepository.findAll();
@@ -57,6 +62,21 @@ public class SanPhamService {
     @Transactional
     public NguyenLieu luuNguyenLieu(NguyenLieu nguyenLieu) {
         return nguyenLieuRepository.save(nguyenLieu);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<NguyenLieu> layNguyenLieuTheoId(UUID id) {
+        return nguyenLieuRepository.findById(id);
+    }
+
+    @Transactional
+    public void xoaNguyenLieu(UUID id) {
+        nguyenLieuRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<NguyenLieu> layNguyenLieuCanhBao() {
+        return nguyenLieuRepository.findNguyenLieuCanhBao();
     }
 }
 

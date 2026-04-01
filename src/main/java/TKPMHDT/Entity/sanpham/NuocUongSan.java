@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,9 +38,36 @@ public class NuocUongSan extends SanPham {
             joinColumns = @JoinColumn(name = "nuoc_uong_san_id"),
             inverseJoinColumns = @JoinColumn(name = "nguyen_lieu_id")
     )
+    @Builder.Default
     private Set<NguyenLieu> nguyenLieuSuDung = new HashSet<>();
 
     @Column(name = "co_the_tuy_chinh", nullable = false)
+    @Builder.Default
     private boolean coTheTuyChinh = true;
+
+    @Column(name = "muc_duong_tuy_chon", length = 500)
+    private String mucDuongTuyChon;
+
+    @Column(name = "muc_duong_mac_dinh", length = 100)
+    private String mucDuongMacDinh;
+
+    @Column(name = "muc_da_tuy_chon", length = 500)
+    private String mucDaTuyChon;
+
+    @Column(name = "muc_da_mac_dinh", length = 100)
+    private String mucDaMacDinh;
+
+    @Column(name = "kich_co_tuy_chon", length = 500)
+    private String kichCoTuyChon;
+
+    @Column(name = "kich_co_mac_dinh", length = 100)
+    private String kichCoMacDinh;
+
+    @Column(name = "co_ap_dung_size")
+    @Builder.Default
+    private Boolean coApDungSize = true;
+
+    @Column(name = "topping_cho_phep", length = 2000)
+    private String toppingChoPhep;
 }
 
