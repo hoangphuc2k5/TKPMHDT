@@ -16,8 +16,7 @@ public class FileStorageService {
     private final Path storageLocation;
 
     public FileStorageService() {
-        // Lưu vào src/main/resources/static/uploads
-        this.storageLocation = Paths.get("src/main/resources/static/uploads")
+        this.storageLocation = Paths.get("src/main/resources/static/upload")
                 .toAbsolutePath().normalize();
         
         try {
@@ -35,7 +34,6 @@ public class FileStorageService {
                 throw new RuntimeException("Filename contains invalid path sequence " + fileName);
             }
 
-            // Đổi tên file để tránh trùng lặp
             String extension = "";
             int i = fileName.lastIndexOf('.');
             if (i > 0) {
@@ -46,7 +44,7 @@ public class FileStorageService {
             Path targetLocation = this.storageLocation.resolve(newFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            return "/uploads/" + newFileName;
+            return "/upload/" + newFileName;
         } catch (IOException e) {
             throw new RuntimeException("Could not store file " + fileName + ". Please try again!", e);
         }

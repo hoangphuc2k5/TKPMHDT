@@ -7,5 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NuocUongSanRepository extends JpaRepository<NuocUongSan, UUID> {
     List<NuocUongSan> findByTenContainingIgnoreCase(String ten);
+    List<NuocUongSan> findByDanhMucIgnoreCase(String danhMuc);
+    long countByCongThucCoBanId(UUID congThucId);
 }
 

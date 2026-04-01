@@ -14,6 +14,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -46,12 +47,27 @@ public class MaGiamGia {
     @Column(name = "gia_tri", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaTri;
 
+    @Column(name = "ngay_bat_dau")
+    private LocalDate ngayBatDau;
+
+    @Column(name = "ngay_ket_thuc")
+    private LocalDate ngayKetThuc;
+
+    @Column(name = "kich_hoat")
+    @Builder.Default
+    private boolean kichHoat = true;
+
+    @Column(name = "ap_dung_toan_he_thong")
+    @Builder.Default
+    private boolean apDungToanHeThong = false;
+
     @ManyToMany
     @JoinTable(
             name = "ma_giam_gia_san_pham",
             joinColumns = @JoinColumn(name = "ma_giam_gia_id"),
             inverseJoinColumns = @JoinColumn(name = "san_pham_id")
     )
+    @Builder.Default
     private Set<SanPham> sanPhamApDung = new HashSet<>();
 }
 

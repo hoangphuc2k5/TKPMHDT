@@ -40,5 +40,9 @@ public class NguyenLieu {
 
     @Column(name = "gia_don_vi", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaDonVi;
+
+    @Column(name = "nguong_canh_bao", precision = 18, scale = 3)
+    @Builder.Default
+    private BigDecimal nguongCanhBao = BigDecimal.ZERO;
 }
 

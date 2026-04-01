@@ -54,5 +54,6 @@ public class DiaChi {
     private String tinhThanhPho;
 
     @Column(name = "la_mac_dinh", nullable = false)
+    @lombok.Builder.Default
     private boolean laMacDinh = false;
 }

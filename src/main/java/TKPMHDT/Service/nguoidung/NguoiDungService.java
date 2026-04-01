@@ -7,6 +7,7 @@ import TKPMHDT.Entity.nguoidung.enums.VaiTro;
 import TKPMHDT.Repository.nguoidung.KhachHangRepository;
 import TKPMHDT.Repository.nguoidung.NhanVienBanHangRepository;
 import TKPMHDT.Repository.nguoidung.NguoiDungRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,7 +77,7 @@ public class NguoiDungService {
 
     @Transactional(readOnly = true)
     public List<NguoiDung> danhSachNhanVien() {
-        return nguoiDungRepository.findByVaiTro(VaiTro.NHAN_VIEN_BAN_HANG);
+        return nguoiDungRepository.findByVaiTroIn(List.of(VaiTro.NHAN_VIEN_BAN_HANG, VaiTro.QUAN_LY_KHO));
     }
 
     @Transactional
@@ -105,6 +106,41 @@ public class NguoiDungService {
                 .trangThaiHoatDong(true)
                 .build();
         return nhanVienBanHangRepository.save(nhanVien);
+    }
+
+    @Transactional
+    public NhanVienBanHang taoNhanVien(String tenDangNhap, String email, String matKhau, VaiTro vaiTro) {
+        NhanVienBanHang nhanVien = taoNhanVien(tenDangNhap, email, matKhau);
+        if (vaiTro != null && (vaiTro == VaiTro.NHAN_VIEN_BAN_HANG || vaiTro == VaiTro.QUAN_LY_KHO)) {
+            nhanVien.setVaiTro(vaiTro);
+        }
+        return nhanVienBanHangRepository.save(nhanVien);
+    }
+
+    @Transactional
+    public NguoiDung capNhatNhanVien(UUID id, String email, VaiTro vaiTro, Boolean kichHoat) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay nhan vien"));
+        if (email != null && !email.isBlank()) {
+            nguoiDung.setEmail(email.trim());
+        }
+        if (vaiTro != null && (vaiTro == VaiTro.NHAN_VIEN_BAN_HANG || vaiTro == VaiTro.QUAN_LY_KHO)) {
+            nguoiDung.setVaiTro(vaiTro);
+        }
+        if (kichHoat != null) {
+            nguoiDung.setTrangThaiHoatDong(kichHoat);
+        }
+        return nguoiDungRepository.save(nguoiDung);
+    }
+
+    @Transactional
+    public void xoaNguoiDung(UUID id) {
+        nguoiDungRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<NguoiDung> tatCaNguoiDung() {
+        return new ArrayList<>(nguoiDungRepository.findAll());
     }
 
     @Transactional

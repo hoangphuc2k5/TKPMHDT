@@ -5,144 +5,16 @@
 <header th:replace="~{fragments/layout :: header('admin')}"></header>
 
 <div class="container">
-    <div style="margin-bottom: 2rem;">
-        <h1 class="brand-font">Quản Lý Khách Hàng</h1>
-        <p class="muted">Xem danh sách khách hàng, khóa tài khoản, xem lịch sử mua hàng</p>
-    </div>
-
-    <!-- Search & Filter -->
-    <div class="card" style="margin-bottom: 2rem;">
-        <div class="card-content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; align-items: flex-end;">
-                <div>
-                    <label for="searchKH">Tìm kiếm</label>
-                    <input type="text" id="searchKH" placeholder="Tên hoặc email..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                </div>
-                <div>
-                    <label for="filterStatus">Trạng thái</label>
-                    <select id="filterStatus" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <option value="">Tất cả</option>
-                        <option value="active">Hoạt động</option>
-                        <option value="inactive">Đã khóa</option>
-                    </select>
-                </div>
-                <button onclick="filterCustomers()" class="btn-highlight" style="padding: 8px;">Lọc</button>
-            </div>
+    <div class="card">
+        <div class="card-content" style="text-align:center;">
+            <h1 class="brand-font">Quản lý khách hàng nằm trong Dashboard Admin</h1>
+            <p class="muted">Bạn có thể xem lịch sử mua hàng, khóa/mở khóa tài khoản và chỉnh sửa thông tin tại dashboard mới.</p>
+            <a href="/ui/admin/dashboard" class="btn-highlight" style="text-decoration:none; display:inline-block;">Mở Dashboard Admin</a>
         </div>
-    </div>
-
-    <!-- Customer List -->
-    <div id="customersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem;">
-        <!-- Customers will be loaded here -->
-    </div>
-
-    <!-- Empty State -->
-    <div id="emptyState" style="text-align: center; padding: 3rem; display: none;">
-        <p class="muted" style="font-size: 1.2rem;">Không tìm thấy khách hàng</p>
     </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
-
-<script th:inline="javascript">
-    let allCustomers = [];
-
-    document.addEventListener('DOMContentLoaded', loadCustomers);
-
-    async function loadCustomers() {
-        try {
-            allCustomers = await api('GET', '/api/admin/khach-hang') || [];
-            renderCustomers(allCustomers);
-        } catch (e) {
-            console.error('Error loading customers:', e);
-            const container = document.getElementById('customersList');
-            container.innerHTML = '';
-            document.getElementById('emptyState').style.display = 'block';
-        }
-    }
-
-    function renderCustomers(customers) {
-        const container = document.getElementById('customersList');
-        const emptyState = document.getElementById('emptyState');
-
-        if (!customers || customers.length === 0) {
-            container.innerHTML = '';
-            emptyState.style.display = 'block';
-            return;
-        }
-
-        container.innerHTML = '';
-        emptyState.style.display = 'none';
-
-        customers.forEach(customer => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="card-content">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                        <div>
-                            <h4 style="margin: 0;">${customer.hoTen || customer.tenDangNhap}</h4>
-                            <p class="muted" style="margin: 0; font-size: 0.875rem;">${customer.email}</p>
-                        </div>
-                        <span style="color: ${customer.active ? '#16a34a' : '#e74c3c'}; font-weight: 600;">
-                            ${customer.active ? '✓ Hoạt động' : '✕ Đã khóa'}
-                        </span>
-                    </div>
-
-                    <div style="background: var(--bg-subtle); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
-                        <p style="margin: 0.25rem 0;"><strong>📞</strong> ${customer.soDienThoai || 'Chưa cập nhật'}</p>
-                        <p style="margin: 0.25rem 0;"><strong>📍</strong> ${customer.diaChi || 'Chưa cập nhật'}</p>
-                        <p style="margin: 0.25rem 0;"><strong>📅</strong> Tham gia: ${new Date(customer.ngayTao).toLocaleDateString('vi-VN')}</p>
-                    </div>
-
-                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                        <button onclick="viewCustomerOrders('${customer.id}')" class="btn-secondary" style="flex: 1; padding: 8px; font-size: 0.85rem;">Xem đơn hàng</button>
-                        <button onclick="toggleCustomerStatus('${customer.id}', ${customer.active})" class="btn-secondary" style="flex: 1; padding: 8px; font-size: 0.85rem; color: ${customer.active ? '#e74c3c' : '#16a34a'};">
-                            ${customer.active ? 'Khóa' : 'Mở khóa'}
-                        </button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
-
-    function filterCustomers() {
-        const search = document.getElementById('searchKH').value.toLowerCase();
-        const status = document.getElementById('filterStatus').value;
-
-        const filtered = allCustomers.filter(customer => {
-            const matchesSearch = (customer.hoTen && customer.hoTen.toLowerCase().includes(search)) ||
-                                 (customer.email && customer.email.toLowerCase().includes(search));
-            const matchesStatus = !status || (status === 'active' ? customer.active : !customer.active);
-            
-            return matchesSearch && matchesStatus;
-        });
-
-        renderCustomers(filtered);
-    }
-
-    async function toggleCustomerStatus(customerId, isActive) {
-        const action = isActive ? 'Khóa' : 'Mở khóa';
-        if (!confirm(`Bạn có chắc muốn ${action.toLowerCase()} tài khoản khách hàng này?`)) return;
-
-        try {
-            await api('PATCH', '/api/admin/tai-khoan/trang-thai', {
-                nguoiDungId: customerId,
-                active: !isActive
-            });
-
-            alert(`${action} tài khoản thành công!`);
-            await loadCustomers();
-        } catch (e) {
-            alert('Lỗi: ' + e.message);
-        }
-    }
-
-    function viewCustomerOrders(customerId) {
-        window.location.href = '/ui/don-hang?customer=' + customerId;
-    }
-</script>
 
 </body>
 </html>

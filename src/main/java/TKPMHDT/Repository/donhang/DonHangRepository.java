@@ -13,6 +13,7 @@ import TKPMHDT.Entity.donhang.DonHang;
 
 public interface DonHangRepository extends JpaRepository<DonHang, UUID> {
     List<DonHang> findByKhachHangId(UUID khachHangId);
+    List<DonHang> findByNgayDatBetween(LocalDateTime from, LocalDateTime to);
 
     @Query("select d from DonHang d where d.trangThaiDb = :trangThai")
     List<DonHang> findByTrangThai(@Param("trangThai") String trangThai);
