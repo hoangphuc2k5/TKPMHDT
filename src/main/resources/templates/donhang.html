@@ -1,85 +1,537 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Quản lý Đơn hàng - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Thanh toán & Đơn hàng - drink')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header('orders')}"></header>
+<header th:replace="~{fragments/layout :: header('order')}"></header>
 
 <div class="container">
     <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 class="brand-font">Quản Lý Đơn Hàng</h1>
-        <p class="muted">Xử lý quy trình đặt hàng và giao nhận chuyên nghiệp.</p>
+        <h1 class="brand-font">Thanh Toán & Đơn Hàng</h1>
+        <p class="muted">Hoàn tất thông tin để drink chuẩn bị đồ uống cho bạn.</p>
     </div>
 
-    <div class="grid">
-        <!-- Create Order (Customer) -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Thanh toán giỏ hàng</h3>
-                <label>Mã khách hàng<input id="dh_khachHangId" placeholder="Nhập mã của bạn..."></label>
-                <label>Mã khuyến mãi (nếu có)<input id="dh_maGiamGia" placeholder="Ví dụ: PHUCLONG2026"></label>
-                <button onclick="taoDon()" style="width: 100%;">Xác nhận đặt hàng</button>
-            </div>
-        </div>
+    <div id="checkout-section" style="display: none;">
+        <div class="grid" style="grid-template-columns: 1.5fr 1fr; gap: 2rem;">
+            <!-- Left: Address & Payment Method -->
+            <div>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-content">
+                        <h3 class="brand-font" style="margin-top: 0;">1. Địa chỉ giao hàng</h3>
+                        <div id="address-list" style="margin-top: 1rem;">
+                            <!-- Address items via JS -->
+                        </div>
+                        <button onclick="openAddAddressModal()" class="btn-secondary" style="width: 100%; margin-top: 1rem;">
+                            + Thêm địa chỉ mới
+                        </button>
+                    </div>
+                </div>
 
-        <!-- Update Status (Staff Only) -->
-        <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')" class="card">
-            <div class="card-content">
-                <h3>Cập nhật trạng thái</h3>
-                <label>Mã đơn hàng<input id="dh_donHangId" placeholder="Nhập mã đơn..."></label>
-                <label>Trạng thái mới
-                    <select id="dh_trangThai">
-                        <option value="CHO_XAC_NHAN">Chờ xác nhận</option>
-                        <option value="DA_XAC_NHAN">Đã xác nhận</option>
-                        <option value="DANG_CHUAN_BI">Đang chuẩn bị</option>
-                        <option value="DANG_GIAO">Đang giao hàng</option>
-                        <option value="DA_GIAO">Đã giao hàng</option>
-                        <option value="DA_HUY">Đã hủy</option>
-                    </select>
-                </label>
-                <button class="btn-secondary" onclick="capNhatTrangThai()" style="width: 100%;">Cập nhật ngay</button>
+                <div class="card">
+                    <div class="card-content">
+                        <h3 class="brand-font" style="margin-top: 0;">2. Phương thức thanh toán</h3>
+                        <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="TIEN_MAT" checked>
+                                <span>Tiền mặt khi nhận hàng (COD)</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="VNPAY">
+                                <span>Cổng thanh toán VNPay</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="MOMO">
+                                <span>Ví điện tử MoMo</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Lookup (All) -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Tra cứu lịch sử</h3>
-                <label>Mã khách hàng<input id="dh_timKhachHangId" placeholder="Nhập mã khách hàng..."></label>
-                <button class="btn-secondary" onclick="layTheoKhachHang()" style="width: 100%;">Xem danh sách đơn</button>
+            <!-- Right: Order Summary -->
+            <div class="card" style="height: fit-content;">
+                <div class="card-content">
+                    <h3 class="brand-font" style="margin-top: 0;">Tóm tắt đơn hàng</h3>
+                    <div id="checkout-items" style="margin-top: 1rem;">
+                        <!-- Items summary via JS -->
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; color: var(--phuclong-green);">
+                        <span>Tổng cộng:</span>
+                        <span id="checkout-total">0đ</span>
+                    </div>
+                    <button onclick="createOrder()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
+                        Xác nhận đặt hàng
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div style="margin-top: 4rem;">
-        <h2 class="brand-font">Danh sách đơn hàng</h2>
-        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Thông tin đơn hàng sẽ hiển thị tại đây...</pre>
+    <!-- History Section -->
+    <div id="history-section" style="margin-top: 4rem;">
+        <h2 class="brand-font">Lịch sử đơn hàng</h2>
+        <div id="orders-history">
+            <!-- Order history list via JS -->
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" style="text-align: center; padding: 3rem;">
+        <div class="brand-font" style="font-size: 1.5rem;">Đang xử lý dữ liệu...</div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div id="order-detail-modal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 800px; margin: auto; max-height: 90vh; overflow-y: auto;">
+        <div class="card-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 class="brand-font" style="margin: 0;">Chi tiết đơn hàng</h2>
+                <button onclick="closeOrderDetailModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">✕</button>
+            </div>
+            <div id="order-detail-content">
+                <!-- Order details will be loaded here -->
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                <button onclick="closeOrderDetailModal()" class="btn-secondary">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Address Modal -->
+<div id="address-modal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 500px; margin: auto;">
+        <div class="card-content">
+            <h2 class="brand-font">Thêm địa chỉ mới</h2>
+            <div style="margin-top: 1rem;">
+                <label>Họ tên người nhận</label>
+                <input id="addr-name" type="text" style="width: 100%; margin-bottom: 1rem;">
+                
+                <label>Số điện thoại</label>
+                <input id="addr-phone" type="text" style="width: 100%; margin-bottom: 1rem;">
+                
+                <label>Số nhà, tên đường</label>
+                <input id="addr-detail" type="text" style="width: 100%; margin-bottom: 1rem;">
+                
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label>Phường/Xã</label>
+                        <input id="addr-ward" type="text" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label>Quận/Huyện</label>
+                        <input id="addr-district" type="text" style="width: 100%;">
+                    </div>
+                </div>
+
+                <label>Tỉnh/Thành phố</label>
+                <input id="addr-city" type="text" style="width: 100%; margin-bottom: 1.5rem;">
+
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="closeAddressModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
+                    <button onclick="saveAddress()" class="btn-highlight" style="flex: 1;">Lưu địa chỉ</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
 <script>
-    async function taoDon() {
-        const kh = document.getElementById("dh_khachHangId").value;
-        if (!isUUID(kh)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("POST", "/api/don-hang/tao-tu-gio-hang", {
-            khachHangId: kh,
-            maGiamGiaCode: document.getElementById("dh_maGiamGia").value
-        }).catch(e => e.message));
+    let currentUser = null;
+    let selectedAddressId = null;
+
+    document.addEventListener('DOMContentLoaded', initOrderPage);
+
+    async function initOrderPage() {
+        showLoading(true);
+        try {
+            currentUser = await api("GET", "/api/nguoi-dung/me");
+            const isStaff = currentUser.vaiTro === 'NHAN_VIEN_BAN_HANG' || currentUser.vaiTro === 'QUAN_TRI_VIEN';
+            
+            // Hiển thị checkout section chỉ cho khách hàng
+            if (!isStaff) {
+                document.getElementById('checkout-section').style.display = 'block';
+                await Promise.all([loadAddresses(), loadCartSummary(), loadOrderHistory()]);
+            } else {
+                // Nhân viên chỉ xem lịch sử đơn hàng
+                await loadOrderHistory();
+            }
+        } catch (e) {
+            console.error(e);
+            window.location.href = "/login";
+        } finally {
+            showLoading(false);
+        }
     }
-    async function capNhatTrangThai() {
-        const id = document.getElementById("dh_donHangId").value;
-        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("PATCH", "/api/don-hang/" + id + "/trang-thai", {
-            trangThaiMoi: document.getElementById("dh_trangThai").value
-        }).catch(e => e.message));
+
+    async function loadAddresses() {
+        const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
+        const list = document.getElementById("address-list");
+        list.innerHTML = "";
+        
+        if (addresses.length === 0) {
+            list.innerHTML = "<p class='muted'>Bạn chưa có địa chỉ nào. Vui lòng thêm địa chỉ.</p>";
+            return;
+        }
+
+        addresses.forEach((addr, index) => {
+            if (index === 0 && !selectedAddressId) selectedAddressId = addr.id;
+            const isSelected = selectedAddressId === addr.id;
+            list.innerHTML += `
+                <label class="address-item ${isSelected ? 'selected' : ''}" onclick="selectAddress('${addr.id}')">
+                    <input type="radio" name="addr" value="${addr.id}" ${isSelected ? 'checked' : ''} style="display:none">
+                    <div style="font-weight: bold;">${addr.tenNguoiNhan} | ${addr.soDienThoai}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        ${addr.diaChiCuThe}, ${addr.phuongXa}, ${addr.quanHuyen}, ${addr.tinhThanhPho}
+                    </div>
+                </label>
+            `;
+        });
     }
-    async function layTheoKhachHang() {
-        const khId = document.getElementById("dh_timKhachHangId").value;
-        if (!isUUID(khId)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("GET", "/api/don-hang/khach-hang/" + khId).catch(e => e.message));
+
+    function selectAddress(id) {
+        selectedAddressId = id;
+        loadAddresses();
     }
+
+    async function loadCartSummary() {
+        const cart = await api("GET", "/api/gio-hang/" + currentUser.id);
+        const section = document.getElementById("checkout-section");
+        const itemsList = document.getElementById("checkout-items");
+        
+        if (!cart || cart.cacMatHang.length === 0) {
+            section.style.display = "none";
+            return;
+        }
+        
+        section.style.display = "block";
+        itemsList.innerHTML = "";
+        cart.cacMatHang.forEach(item => {
+            itemsList.innerHTML += `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    <span>${item.soLuong} x ${item.nuocUong.ten}</span>
+                    <span>${formatPrice(item.thanhTien)}</span>
+                </div>
+            `;
+        });
+        document.getElementById("checkout-total").innerText = formatPrice(cart.tongTien);
+    }
+
+    async function createOrder() {
+        if (!selectedAddressId) {
+            alert("Vui lòng chọn địa chỉ giao hàng!");
+            return;
+        }
+        
+        showLoading(true);
+        try {
+            const order = await api("POST", "/api/don-hang/tao-tu-gio-hang", {
+                khachHangId: currentUser.id,
+                diaChiId: selectedAddressId
+            });
+            alert("Đặt hàng thành công! Mã đơn hàng: " + order.id);
+            window.location.reload();
+        } catch (e) {
+            alert("Lỗi đặt hàng: " + e.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function loadOrderHistory() {
+        const isStaff = currentUser.vaiTro === 'NHAN_VIEN_BAN_HANG' || currentUser.vaiTro === 'QUAN_TRI_VIEN';
+        const endpoint = isStaff ? "/api/don-hang/all" : "/api/don-hang/me";
+        const orders = await api("GET", endpoint);
+        const list = document.getElementById("orders-history");
+        list.innerHTML = "";
+        
+        if (orders.length === 0) {
+            list.innerHTML = "<p class='muted'>Bạn chưa có đơn hàng nào.</p>";
+            return;
+        }
+
+        orders.sort((a, b) => new Date(b.ngayDat) - new Date(a.ngayDat)).forEach(o => {
+            list.innerHTML += `
+                <div class="card" style="margin-bottom: 1rem; border-left: 4px solid ${getStatusColor(o.trangThaiDb)};">
+                    <div class="card-content" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; color: var(--phuclong-green);">Mã đơn: ${o.id.substring(0, 8)}...</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">${new Date(o.ngayDat).toLocaleString('vi-VN')}</div>
+                            <div style="margin-top: 5px;">
+                                <span class="status-badge" style="background: ${getStatusColor(o.trangThaiDb)}22; color: ${getStatusColor(o.trangThaiDb)};">
+                                    ${o.trangThaiDb}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: bold; font-size: 1.1rem;">${formatPrice(o.tongTien)}</div>
+                            <button onclick="viewOrderDetail('${o.id}')" class="btn-secondary" style="margin-top: 5px; padding: 4px 12px; font-size: 0.8rem;">Chi tiết</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function getStatusColor(status) {
+        switch(status) {
+            case 'CHO_XAC_NHAN': return '#f39c12';
+            case 'DA_XAC_NHAN': return '#3498db';
+            case 'DANG_GIAO': return '#9b59b6';
+            case 'DA_GIAO': return '#27ae60';
+            case 'DA_HUY': return '#e74c3c';
+            default: return '#7f8c8d';
+        }
+    }
+
+    async function viewOrderDetail(orderId) {
+        try {
+            const order = await api("GET", "/api/don-hang/" + orderId);
+            const modal = document.getElementById("order-detail-modal");
+            const content = document.getElementById("order-detail-content");
+            
+            let itemsHTML = '';
+            if (order.chiTietDonHangs && order.chiTietDonHangs.length > 0) {
+                itemsHTML = order.chiTietDonHangs.map(item => `
+                    <div style="padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: bold;">${item.nuocUong.ten}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">Số lượng: ${item.soLuong}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: bold;">${formatPrice(item.thanhTien)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            content.innerHTML = `
+                <div style="margin-bottom: 1.5rem;">
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="font-weight: bold; color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Mã đơn hàng</label>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: var(--phuclong-green);">${order.id}</div>
+                        </div>
+                        <div>
+                            <label style="font-weight: bold; color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Trạng thái</label>
+                            <span class="status-badge" style="background: ${getStatusColor(order.trangThaiDb)}22; color: ${getStatusColor(order.trangThaiDb)}; display: inline-block;">
+                                ${order.trangThaiDb}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="font-weight: bold; color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Ngày đặt</label>
+                            <div>${new Date(order.ngayDat).toLocaleString('vi-VN')}</div>
+                        </div>
+                        <div>
+                            <label style="font-weight: bold; color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Khách hàng</label>
+                            <div>${order.khachHang?.hoTen || order.khachHang?.tenDangNhap}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="margin-top: 0; margin-bottom: 1rem;">Chi tiết sản phẩm</h3>
+                    <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                        ${itemsHTML}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="margin-top: 0; margin-bottom: 1rem;">Địa chỉ giao hàng</h3>
+                    <div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: var(--radius-md);">
+                        <div><strong>${order.diaChiGiaoHang?.tenNguoiNhan}</strong></div>
+                        <div>${order.diaChiGiaoHang?.diaChiCuThe}, ${order.diaChiGiaoHang?.phuongXa}, ${order.diaChiGiaoHang?.quanHuyen}, ${order.diaChiGiaoHang?.tinhThanhPho}</div>
+                        <div style="margin-top: 0.5rem; color: var(--text-muted);">☎️ ${order.diaChiGiaoHang?.soDienThoai}</div>
+                    </div>
+                </div>
+                
+                <div style="padding-top: 1rem; border-top: 2px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--phuclong-green);">
+                        <span>Tổng cộng:</span>
+                        <span>${formatPrice(order.tongTien)}</span>
+                    </div>
+                </div>
+                
+                ${currentUser.vaiTro === 'NHAN_VIEN_BAN_HANG' || currentUser.vaiTro === 'QUAN_TRI_VIEN' ? `
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                    <h4 style="margin-top: 0;">Hành động</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        ${order.trangThaiDb === 'CHO_XAC_NHAN' ? `<button onclick="updateOrderStatus('${order.id}', 'xac-nhan')" class="btn-highlight" style="background: #3498db; padding: 8px;">✓ Xác nhận</button>` : ''}
+                        ${order.trangThaiDb === 'DA_XAC_NHAN' ? `<button onclick="updateOrderStatus('${order.id}', 'giao-hang')" class="btn-highlight" style="background: #9b59b6; padding: 8px;">📦 Giao hàng</button>` : ''}
+                        ${order.trangThaiDb === 'DANG_GIAO' ? `<button onclick="updateOrderStatus('${order.id}', 'hoan-thanh')" class="btn-highlight" style="background: #27ae60; padding: 8px;">✅ Hoàn thành</button>` : ''}
+                        <button onclick="printInvoice('${order.id}')" class="btn-secondary" style="padding: 8px;">🖨️ In hóa đơn</button>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            modal.style.display = 'flex';
+        } catch (e) {
+            alert("Lỗi tải chi tiết đơn hàng: " + e.message);
+            console.error(e);
+        }
+    }
+
+    function closeOrderDetailModal() {
+        document.getElementById("order-detail-modal").style.display = "none";
+    }
+
+    async function updateOrderStatus(orderId, action) {
+        try {
+            const endpoint = `/api/don-hang/${orderId}/${action}`;
+            const order = await api("POST", endpoint, {});
+            alert("Cập nhật trạng thái thành công!");
+            location.reload();
+        } catch (e) {
+            alert("Lỗi: " + e.message);
+        }
+    }
+
+    async function printInvoice(orderId) {
+        try {
+            const order = await api("GET", `/api/don-hang/${orderId}`);
+            
+            let itemsHTML = '';
+            if (order.chiTietDonHangs && order.chiTietDonHangs.length > 0) {
+                itemsHTML = order.chiTietDonHangs.map((item, idx) => `
+                    <tr>
+                        <td style="text-align: center;">${idx + 1}</td>
+                        <td>${item.nuocUong?.ten || 'N/A'}</td>
+                        <td style="text-align: center;">${item.soLuong}</td>
+                        <td style="text-align: right;">${formatPrice(item.thanhTien)}</td>
+                    </tr>
+                `).join('');
+            }
+
+            const printWindow = window.open('', 'PRINT', 'width=800,height=600');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Hóa đơn ${order.id.substring(0, 8)}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                        .header h1 { margin: 0; font-size: 24px; }
+                        .info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+                        .info-col { }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background: #f8f9fa; font-weight: bold; }
+                        .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }
+                        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>HÓA ĐƠN BÁN HÀNG</h1>
+                        <p>Mã: ${order.id}</p>
+                    </div>
+                    
+                    <div class="info">
+                        <div class="info-col">
+                            <strong>Ngày:</strong> ${new Date(order.ngayDat).toLocaleString('vi-VN')}<br>
+                            <strong>Trạng thái:</strong> ${order.trangThaiDb}
+                        </div>
+                        <div class="info-col">
+                            <strong>Khách hàng:</strong> ${order.khachHang?.hoTen || order.khachHang?.tenDangNhap || 'Khách vãng lai'}<br>
+                            <strong>Địa chỉ:</strong> ${order.diaChiGiaoHang?.diaChiCuThe || 'Không có'}
+                        </div>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">STT</th>
+                                <th style="width: 50%;">Tên sản phẩm</th>
+                                <th style="width: 15%; text-align: center;">Số lượng</th>
+                                <th style="width: 30%; text-align: right;">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHTML}
+                        </tbody>
+                    </table>
+                    
+                    <div class="total">
+                        Tổng cộng: <span style="color: #16a34a;">${formatPrice(order.tongTien)}</span>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Cảm ơn quý khách đã mua hàng!</p>
+                        <p>DRINK - Cà phê & Trà</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 100);
+        } catch (e) {
+            alert("Lỗi: " + e.message);
+            console.error(e);
+        }
+    }
+    }
+
+    function openAddAddressModal() { document.getElementById("address-modal").style.display = "flex"; }
+    function closeAddressModal() { document.getElementById("address-modal").style.display = "none"; }
+
+    async function saveAddress() {
+        const data = {
+            tenNguoiNhan: document.getElementById("addr-name").value,
+            soDienThoai: document.getElementById("addr-phone").value,
+            diaChiCuThe: document.getElementById("addr-detail").value,
+            phuongXa: document.getElementById("addr-ward").value,
+            quanHuyen: document.getElementById("addr-district").value,
+            tinhThanhPho: document.getElementById("addr-city").value
+        };
+        try {
+            await api("POST", "/api/dia-chi/" + currentUser.id, data);
+            closeAddressModal();
+            loadAddresses();
+        } catch (e) { alert("Lỗi: " + e.message); }
+    }
+
+    function formatPrice(price) { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price); }
+    function showLoading(show) { document.getElementById("loading").style.display = show ? "block" : "none"; }
 </script>
+
+<style>
+    .address-item {
+        display: block;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .address-item:hover { border-color: var(--phuclong-green); }
+    .address-item.selected { border-color: var(--phuclong-green); background: #0c713d08; }
+    
+    .payment-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+    }
+    .status-badge {
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    input { padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+</style>
 </body>
 </html>
-

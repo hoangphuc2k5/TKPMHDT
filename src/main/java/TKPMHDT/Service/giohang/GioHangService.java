@@ -4,6 +4,7 @@ import TKPMHDT.Entity.giohang.ChiTietGioHang;
 import TKPMHDT.Entity.giohang.GioHang;
 import TKPMHDT.Entity.nguoidung.KhachHang;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
+import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
 import TKPMHDT.Repository.giohang.GioHangRepository;
 import TKPMHDT.Repository.nguoidung.KhachHangRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
@@ -63,17 +64,21 @@ public class GioHangService {
             ChiTietGioHang item = tonTai.get();
             item.setSoLuong(item.getSoLuong() + soLuong);
             item.setThanhTien(nuocUong.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())));
-            item.setMucDuong(mucDuong);
-            item.setMucDa(mucDa);
-            item.setGhiChuTuyChinh(ghiChu);
+            item.setTuyChinh(TuyChinhKhachHang.builder()
+                    .mucDuong(mucDuong)
+                    .mucDa(mucDa)
+                    .ghiChu(ghiChu)
+                    .build());
         } else {
             ChiTietGioHang itemMoi = ChiTietGioHang.builder()
                     .gioHang(gioHang)
                     .nuocUong(nuocUong)
                     .soLuong(soLuong)
-                    .mucDuong(mucDuong)
-                    .mucDa(mucDa)
-                    .ghiChuTuyChinh(ghiChu)
+                    .tuyChinh(TuyChinhKhachHang.builder()
+                            .mucDuong(mucDuong)
+                            .mucDa(mucDa)
+                            .ghiChu(ghiChu)
+                            .build())
                     .thanhTien(nuocUong.getGia().multiply(BigDecimal.valueOf(soLuong)))
                     .build();
             gioHang.getCacMatHang().add(itemMoi);

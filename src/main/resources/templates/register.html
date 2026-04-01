@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Đăng ký tài khoản - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('register')}"></header>
+
+<div class="container" style="max-width: 600px; padding-top: 60px; padding-bottom: 60px;">
+    <div class="card">
+        <div style="margin-bottom: 2rem; text-align: center;">
+            <h1 style="margin-bottom: 0.5rem;">Tạo Tài Khoản Mới</h1>
+            <p class="muted">Đăng ký để bắt đầu mua sắm tại TKPMHDT</p>
+        </div>
+
+        <form method="post" th:action="@{/api/nguoi-dung/dang-ky-khach-hang}" id="registerForm" style="display: none;">
+            <!-- Form sẽ được xử lý bằng JavaScript -->
+        </form>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+            <!-- Họ và tên -->
+            <div>
+                <label for="fullName">Họ và tên</label>
+                <input type="text" id="fullName" placeholder="Nhập họ và tên của bạn..." required>
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="name@example.com" required>
+            </div>
+
+            <!-- Số điện thoại -->
+            <div>
+                <label for="phone">Số điện thoại</label>
+                <input type="tel" id="phone" placeholder="0123456789" required>
+            </div>
+
+            <!-- Tên đăng nhập -->
+            <div>
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" placeholder="Chọn tên đăng nhập..." required>
+            </div>
+
+            <!-- Mật khẩu -->
+            <div>
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" placeholder="Mật khẩu phải có ít nhất 8 ký tự" required>
+                <small class="muted" style="display: block; margin-top: 0.5rem;">
+                    ✓ Ít nhất 8 ký tự &nbsp; ✓ Bao gồm chữ hoa, chữ thường, số
+                </small>
+            </div>
+
+            <!-- Xác nhận mật khẩu -->
+            <div>
+                <label for="passwordConfirm">Xác nhận mật khẩu</label>
+                <input type="password" id="passwordConfirm" placeholder="Nhập lại mật khẩu..." required>
+            </div>
+
+            <!-- Địa chỉ -->
+            <div>
+                <label for="address">Địa chỉ giao hàng</label>
+                <input type="text" id="address" placeholder="123 Đường ABC, Quận X, TP. Hồ Chí Minh" required>
+            </div>
+
+            <!-- Checkbox đồng ý -->
+            <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 0.5rem;">
+                <input type="checkbox" id="agreeTerms" required style="margin-top: 3px;">
+                <label for="agreeTerms" style="margin-bottom: 0;">
+                    <span class="muted">Tôi đã đọc và đồng ý với </span>
+                    <a href="#" style="color: var(--phuclong-green); text-decoration: none;">Điều khoản dịch vụ</a>
+                    <span class="muted"> và </span>
+                    <a href="#" style="color: var(--phuclong-green); text-decoration: none;">Chính sách bảo mật</a>
+                </label>
+            </div>
+        </div>
+
+        <button onclick="dkTaiKhoan()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 12px;">Đăng ký ngay</button>
+
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center;">
+            <p class="muted" style="font-size: 0.875rem;">
+                Đã có tài khoản? 
+                <a th:href="@{/login}" style="color: var(--phuclong-green); text-decoration: none; font-weight: 600;">Đăng nhập tại đây</a>
+            </p>
+        </div>
+
+        <div id="errorMsg" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: #fee2e2; color: #991b1b; display: none;"></div>
+        <div id="successMsg" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: #dcfce7; color: #166534; display: none;"></div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script th:inline="javascript">
+    // Validation
+    function validatePassword(password) {
+        return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password);
+    }
+
+    function validateEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    async function dkTaiKhoan() {
+        const fullName = document.getElementById('fullName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const passwordConfirm = document.getElementById('passwordConfirm').value;
+        const address = document.getElementById('address').value.trim();
+        const agreeTerms = document.getElementById('agreeTerms').checked;
+
+        // Validate
+        if (!fullName || !email || !phone || !username || !password || !address) {
+            showError('Vui lòng điền đầy đủ thông tin');
+            return;
+        }
+
+        if (!validateEmail(email)) {
+            showError('Email không hợp lệ');
+            return;
+        }
+
+        if (!validatePassword(password)) {
+            showError('Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số');
+            return;
+        }
+
+        if (password !== passwordConfirm) {
+            showError('Mật khẩu xác nhận không khớp');
+            return;
+        }
+
+        if (!agreeTerms) {
+            showError('Bạn phải đồng ý với điều khoản dịch vụ');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/nguoi-dung/dang-ky-khach-hang', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tenDangNhap: username,
+                    email: email,
+                    matKhauHash: password
+                })
+            });
+
+            if (response.ok) {
+                showSuccess('Đăng ký thành công! Đang chuyển hướng...');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+            } else if (response.status === 409) {
+                showError('Tên đăng nhập hoặc email đã được sử dụng');
+            } else {
+                showError('Đăng ký thất bại. Vui lòng thử lại');
+            }
+        } catch (error) {
+            showError('Lỗi: ' + error.message);
+        }
+    }
+
+    function showError(message) {
+        const errorEl = document.getElementById('errorMsg');
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+        document.getElementById('successMsg').style.display = 'none';
+    }
+
+    function showSuccess(message) {
+        const successEl = document.getElementById('successMsg');
+        successEl.textContent = message;
+        successEl.style.display = 'block';
+        document.getElementById('errorMsg').style.display = 'none';
+    }
+
+    // Validate on change
+    document.getElementById('password').addEventListener('change', () => {
+        const pwd = document.getElementById('password').value;
+        const isValid = validatePassword(pwd);
+        const btn = document.querySelector('button');
+        if (isValid) {
+            btn.style.opacity = '1';
+        }
+    });
+</script>
+
+</body>
+</html>

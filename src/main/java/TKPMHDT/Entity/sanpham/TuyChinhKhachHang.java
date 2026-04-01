@@ -20,18 +20,23 @@ import lombok.Setter;
 @Embeddable
 public class TuyChinhKhachHang {
 
-    @Column(name = "muc_duong_tuy_chinh")
-    private Integer mucDuongTuyChinh;
+    @Column(name = "muc_duong")
+    private Integer mucDuong;
 
-    @Column(name = "muc_da_tuy_chinh")
-    private Integer mucDaTuyChinh;
+    @Column(name = "muc_da")
+    private Integer mucDa;
+
+    @Column(name = "ghi_chu", length = 500)
+    private String ghiChu;
 
     @Transient
     @Builder.Default
     private List<LuongNguyenLieu> nguyenLieuThem = new ArrayList<>();
 
     public BigDecimal tinhGiaCuoiCung(BigDecimal giaCoBan) {
-        return giaCoBan == null ? BigDecimal.ZERO : giaCoBan;
+        // Logic tính toán giá có thể thêm vào đây khi có topping (nguyenLieuThem)
+        BigDecimal tong = giaCoBan == null ? BigDecimal.ZERO : giaCoBan;
+        return tong;
     }
 }
 

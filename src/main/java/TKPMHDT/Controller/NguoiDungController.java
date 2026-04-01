@@ -7,6 +7,8 @@ import TKPMHDT.Service.nguoidung.NguoiDungService;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +28,17 @@ public class NguoiDungController {
     public NguoiDungController(NguoiDungService nguoiDungService, FileStorageService fileStorageService) {
         this.nguoiDungService = nguoiDungService;
         this.fileStorageService = fileStorageService;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<NguoiDung> getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(401).build();
+        }
+        return nguoiDungService.timTheoTenDangNhap(auth.getName())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(401).build());
     }
 
     @PostMapping("/dang-ky-khach-hang")

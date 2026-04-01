@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Admin Dashboard - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('admin')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 3rem;">
+        <h1 class="brand-font">Dashboard Quản Trị</h1>
+        <p class="muted">Tổng quan về hoạt động hệ thống bán hàng</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <div class="card">
+            <div class="card-content">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <p class="muted" style="margin: 0 0 0.5rem;">Tổng doanh thu</p>
+                        <h2 style="margin: 0; color: var(--phuclong-green); font-size: 2rem;" id="totalRevenue">0 đ</h2>
+                    </div>
+                    <span style="font-size: 2rem;">💰</span>
+                </div>
+                <p class="muted" style="margin-top: 1rem; font-size: 0.875rem;">Hôm nay: <span id="todayRevenue">0 đ</span></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-content">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <p class="muted" style="margin: 0 0 0.5rem;">Đơn hàng</p>
+                        <h2 style="margin: 0; color: var(--phuclong-green); font-size: 2rem;" id="totalOrders">0</h2>
+                    </div>
+                    <span style="font-size: 2rem;">📦</span>
+                </div>
+                <p class="muted" style="margin-top: 1rem; font-size: 0.875rem;">Chưa xác nhận: <span id="pendingOrders">0</span></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-content">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <p class="muted" style="margin: 0 0 0.5rem;">Khách hàng</p>
+                        <h2 style="margin: 0; color: var(--phuclong-green); font-size: 2rem;" id="totalCustomers">0</h2>
+                    </div>
+                    <span style="font-size: 2rem;">👥</span>
+                </div>
+                <p class="muted" style="margin-top: 1rem; font-size: 0.875rem;">Hôm nay: <span id="newCustomers">0</span></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-content">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <p class="muted" style="margin: 0 0 0.5rem;">Sản phẩm</p>
+                        <h2 style="margin: 0; color: var(--phuclong-green); font-size: 2rem;" id="totalProducts">0</h2>
+                    </div>
+                    <span style="font-size: 2rem;">🥤</span>
+                </div>
+                <p class="muted" style="margin-top: 1rem; font-size: 0.875rem;">Hết hàng: <span id="outOfStock">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <!-- Recent Orders -->
+        <div class="card">
+            <div class="card-content">
+                <h3 style="margin-top: 0;">Đơn hàng gần đây</h3>
+                <div id="recentOrders" style="display: grid; gap: 1rem;">
+                    <!-- Items will be loaded via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="card">
+            <div class="card-content">
+                <h3 style="margin-top: 0;">Sản phẩm bán chạy</h3>
+                <div id="topProducts" style="display: grid; gap: 1rem;">
+                    <!-- Items will be loaded via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue Chart Section -->
+    <div class="card" style="margin-top: 2rem;">
+        <div class="card-content">
+            <h3 style="margin-top: 0;">Doanh thu theo ngày</h3>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <input type="date" id="fromDate" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                <input type="date" id="toDate" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                <button onclick="loadRevenueReport()" class="btn-highlight">Lọc</button>
+            </div>
+            <div id="revenueChart" style="height: 300px; background: var(--bg-subtle); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <p class="muted">Biểu đồ doanh thu sẽ hiển thị tại đây</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', async () => {
+        const today = new Date();
+        const pastDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        
+        document.getElementById('fromDate').valueAsDate = pastDate;
+        document.getElementById('toDate').valueAsDate = today;
+
+        await loadDashboardData();
+    });
+
+    async function loadDashboardData() {
+        try {
+            // Load basic stats
+            const stats = {
+                totalRevenue: 0,
+                todayRevenue: 0,
+                totalOrders: 0,
+                pendingOrders: 0,
+                totalCustomers: 0,
+                newCustomers: 0,
+                totalProducts: 0,
+                outOfStock: 0
+            };
+
+            // Try loading from API - if endpoints exist
+            try {
+                const revenueData = await api('GET', '/api/admin/bao-cao/doanh-thu');
+                stats.totalRevenue = revenueData.tongDoanh || 0;
+            } catch (e) {
+                console.log('Revenue API not available');
+            }
+
+            // Update UI with stats
+            document.getElementById('totalRevenue').textContent = formatCurrency(stats.totalRevenue);
+            document.getElementById('todayRevenue').textContent = formatCurrency(stats.todayRevenue);
+            document.getElementById('totalOrders').textContent = stats.totalOrders;
+            document.getElementById('pendingOrders').textContent = stats.pendingOrders;
+            document.getElementById('totalCustomers').textContent = stats.totalCustomers;
+            document.getElementById('newCustomers').textContent = stats.newCustomers;
+            document.getElementById('totalProducts').textContent = stats.totalProducts;
+            document.getElementById('outOfStock').textContent = stats.outOfStock;
+
+            renderPlaceholders();
+        } catch (e) {
+            console.error('Error loading dashboard:', e);
+        }
+    }
+
+    function renderPlaceholders() {
+        // Recent Orders Placeholder
+        const ordersHtml = `
+            <div style="padding: 1rem; background: var(--bg-subtle); border-radius: 6px;">
+                <p class="muted" style="margin: 0;">Đơn hàng #001 - 250,000 đ</p>
+                <small class="muted">Chờ xác nhận - 5 phút trước</small>
+            </div>
+            <div style="padding: 1rem; background: var(--bg-subtle); border-radius: 6px;">
+                <p class="muted" style="margin: 0;">Đơn hàng #002 - 180,000 đ</p>
+                <small class="muted">Đang giao - 30 phút trước</small>
+            </div>
+        `;
+        document.getElementById('recentOrders').innerHTML = ordersHtml;
+
+        // Top Products Placeholder
+        const productsHtml = `
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                <span>Cà phê đen đá</span>
+                <span style="color: var(--phuclong-green); font-weight: 600;">245 cái</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                <span>Trà sữa trân châu</span>
+                <span style="color: var(--phuclong-green); font-weight: 600;">189 cái</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                <span>Smoothie dâu tây</span>
+                <span style="color: var(--phuclong-green); font-weight: 600;">156 cái</span>
+            </div>
+        `;
+        document.getElementById('topProducts').innerHTML = productsHtml;
+    }
+
+    async function loadRevenueReport() {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        
+        if (!fromDate || !toDate) {
+            alert('Vui lòng chọn khoảng thời gian');
+            return;
+        }
+
+        try {
+            // Can extend this with actual API call
+            alert('Báo cáo doanh thu từ ' + fromDate + ' đến ' + toDate);
+        } catch (e) {
+            alert('Lỗi: ' + e.message);
+        }
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+    }
+</script>
+
+</body>
+</html>

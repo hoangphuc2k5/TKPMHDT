@@ -1,124 +1,427 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Quản lý Người dùng - TKPMHDT')}"></head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Tài khoản của tôi - TKPMHDT')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header('users')}"></header>
+<header th:replace="~{fragments/layout :: header('account')}"></header>
 
 <div class="container">
-    <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 class="brand-font">Quản Lý Người Dùng</h1>
-        <p class="muted">Hệ thống quản lý tài khoản và phân quyền nhân viên.</p>
+    <!-- Tab Navigation -->
+    <div style="display: flex; gap: 10px; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); overflow-x: auto;">
+        <button onclick="switchTab('profile')" id="tab-profile-btn" class="tab-btn active" style="padding: 12px 20px; border: none; background: none; cursor: pointer; border-bottom: 3px solid var(--phuclong-green); color: var(--phuclong-green); font-weight: 600;">
+            Thông tin cá nhân
+        </button>
+        <button sec:authorize="hasRole('KHACH_HANG')" onclick="switchTab('address')" id="tab-address-btn" class="tab-btn" style="padding: 12px 20px; border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 600;">
+            Địa chỉ giao hàng
+        </button>
+        <button sec:authorize="hasRole('KHACH_HANG')" onclick="switchTab('orders')" id="tab-orders-btn" class="tab-btn" style="padding: 12px 20px; border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 600;">
+            Lịch sử đơn hàng
+        </button>
+        <button sec:authorize="hasAnyRole('QUAN_TRI_VIEN')" onclick="switchTab('admin')" id="tab-admin-btn" class="tab-btn" style="padding: 12px 20px; border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 600;">
+            Quản lý hệ thống
+        </button>
     </div>
 
-    <div class="grid">
-        <!-- Register Section (Public/Admin) -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Tạo tài khoản khách hàng</h3>
-                <label>Tên đăng nhập<input id="dk_tenDangNhap" placeholder="Nhập tên đăng nhập..."></label>
-                <label>Email<input id="dk_email" placeholder="example@email.com"></label>
-                <label>Mật khẩu<input type="password" id="dk_matKhauHash" placeholder="••••••••"></label>
-                <button onclick="dangKyKhachHang()" style="width: 100%;">Đăng ký ngay</button>
-            </div>
-        </div>
+    <!-- Tab Content -->
 
-        <!-- Search Section (Admin Only) -->
-        <div sec:authorize="hasRole('QUAN_TRI_VIEN')" class="card">
-            <div class="card-content">
-                <h3>Tra cứu người dùng</h3>
-                <label>UUID Người dùng<input id="ud_id" placeholder="Nhập mã UUID..."></label>
-                <button class="btn-secondary" onclick="timTheoId()" style="width: 100%;">Tìm theo ID</button>
-                
-                <label style="margin-top: 20px;">Tên đăng nhập<input id="ud_tenDangNhap" placeholder="Nhập tên..."></label>
-                <button class="btn-secondary" onclick="timTheoTenDangNhap()" style="width: 100%;">Tìm theo tên</button>
-            </div>
-        </div>
+    <!-- 1. Thông tin cá nhân -->
+    <div id="tab-profile" class="tab-content" style="display: block;">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <!-- Profile Info Card -->
+            <div class="card">
+                <div class="card-content">
+                    <h3 style="margin-bottom: 1.5rem;">Thông tin tài khoản</h3>
+                    
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <img id="profileAvatar" src="/default-avatar.png" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--phuclong-green); display: none;">
+                        <div id="profileAvatarPlaceholder" style="width: 100px; height: 100px; border-radius: 50%; background: var(--phuclong-green); color: white; font-size: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">👤</div>
+                    </div>
 
-        <!-- Avatar Section (Self/Admin) -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Cập nhật Ảnh đại diện</h3>
-                <label>ID Người dùng (UUID)<input id="av_id" placeholder="Nhập mã UUID..."></label>
-                <label>Chọn ảnh đại diện<input type="file" id="av_file"></label>
-                <button class="btn-highlight" onclick="uploadAvatar()" style="width: 100%;">Tải lên Avatar</button>
+                    <div id="profileInfo">
+                        <p><strong>Tên:</strong> <span id="pf-name">Đang tải...</span></p>
+                        <p><strong>Email:</strong> <span id="pf-email">Đang tải...</span></p>
+                        <p><strong>Số điện thoại:</strong> <span id="pf-phone">Đang tải...</span></p>
+                        <p><strong>Ngày tạo:</strong> <span id="pf-created">Đang tải...</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Card -->
+            <div class="card">
+                <div class="card-content">
+                    <h3 style="margin-bottom: 1.5rem;">Cập nhật thông tin</h3>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="editName">Họ và tên</label>
+                        <input type="text" id="editName" placeholder="Nhập họ và tên...">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="editPhone">Số điện thoại</label>
+                        <input type="tel" id="editPhone" placeholder="0123456789">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="editAvatar">Ảnh đại diện</label>
+                        <input type="file" id="editAvatar" accept="image/*">
+                    </div>
+
+                    <button onclick="updateProfile()" class="btn-highlight" style="width: 100%; margin-bottom: 1rem;">Cập nhật</button>
+
+                    <hr style="margin: 1.5rem 0;">
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="oldPassword">Mật khẩu hiện tại</label>
+                        <input type="password" id="oldPassword" placeholder="Nhập mật khẩu hiện tại...">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="newPassword">Mật khẩu mới</label>
+                        <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới...">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="confirmPassword">Xác nhận mật khẩu</label>
+                        <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu...">
+                    </div>
+
+                    <button onclick="changePassword()" class="btn-secondary" style="width: 100%;">Đổi mật khẩu</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div style="margin-top: 4rem; text-align: center;">
-        <h2 class="brand-font">Thông tin chi tiết</h2>
-        <div id="avatar-preview" style="display: flex; justify-content: center; margin-bottom: 24px;"></div>
-        <pre id="result" style="text-align: left; background: #f8f9fa; color: #333; border: 1px solid #ddd; max-width: 800px; margin: 0 auto;">Dữ liệu người dùng sẽ hiển thị tại đây...</pre>
+    <!-- 2. Địa chỉ giao hàng -->
+    <div id="tab-address" class="tab-content" style="display: none;">
+        <div style="max-width: 800px;">
+            <button onclick="showAddressForm()" style="margin-bottom: 2rem; padding: 10px 20px; background: var(--phuclong-green); color: white; border: none; border-radius: 8px; cursor: pointer;">+ Thêm địa chỉ</button>
+
+            <div id="addressList" style="display: grid; gap: 1rem;">
+                <!-- Danh sách địa chỉ sẽ được render tại đây -->
+            </div>
+
+            <!-- Form thêm/sửa địa chỉ -->
+            <div id="addressForm" class="card" style="margin-top: 2rem; display: none;">
+                <div class="card-content">
+                    <h3>Thêm địa chỉ mới</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="addressText">Địa chỉ</label>
+                        <input type="text" id="addressText" placeholder="123 Đường ABC, Quận X, TP. Hồ Chí Minh">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="addressPhone">Số điện thoại giao hàng</label>
+                        <input type="tel" id="addressPhone" placeholder="0123456789">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="addressNote">Ghi chú (tùy chọn)</label>
+                        <textarea id="addressNote" placeholder="Ví dụ: Tầng 3, cửa bên trái..." style="width: 100%; height: 60px;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="cancelAddressForm()" class="btn-secondary" style="flex: 1;">Hủy</button>
+                        <button onclick="saveAddress()" class="btn-highlight" style="flex: 1;">Lưu địa chỉ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- 3. Lịch sử đơn hàng -->
+    <div id="tab-orders" class="tab-content" style="display: none;">
+        <div style="max-width: 1000px;">
+            <div id="ordersList" style="display: grid; gap: 1rem;">
+                <!-- Danh sách đơn hàng sẽ được render tại đây -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Quản lý hệ thống (Admin) -->
+    <div id="tab-admin" class="tab-content" style="display: none;">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <a href="/ui/admin/dashboard" class="card" style="text-decoration: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-content">
+                    <h3>📊 Dashboard</h3>
+                    <p class="muted">Xem báo cáo doanh thu, thống kê bán hàng</p>
+                </div>
+            </a>
+            <a href="/ui/admin/quan-ly-san-pham" class="card" style="text-decoration: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-content">
+                    <h3>🥤 Sản phẩm</h3>
+                    <p class="muted">Quản lý danh sách đồ uống, nguyên liệu</p>
+                </div>
+            </a>
+            <a href="/ui/admin/quan-ly-nhan-vien" class="card" style="text-decoration: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-content">
+                    <h3>👥 Nhân viên</h3>
+                    <p class="muted">Quản lý nhân viên bán hàng, phân quyền</p>
+                </div>
+            </a>
+            <a href="/ui/admin/quan-ly-khach-hang" class="card" style="text-decoration: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-content">
+                    <h3>👨‍💼 Khách hàng</h3>
+                    <p class="muted">Quản lý thông tin khách hàng, khóa tài khoản</p>
+                </div>
+            </a>
+            <a href="/ui/khuyen-mai" class="card" style="text-decoration: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-content">
+                    <h3>🎁 Khuyến mãi</h3>
+                    <p class="muted">Tạo mã giảm giá, quản lý chương trình khuyến mãi</p>
+                </div>
+            </a>
+            <a href="/ui/thanh-toan" class="card" style="text-decoration: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-content">
+                    <h3>💳 Giao dịch</h3>
+                    <p class="muted">Xem lịch sử thanh toán, xác nhận giao dịch</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="successMsg" style="display: none; position: fixed; top: 20px; right: 20px; background: #dcfce7; color: #166534; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000;"></div>
+    <div id="errorMsg" style="display: none; position: fixed; top: 20px; right: 20px; background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000;"></div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
-<script>
-    async function dangKyKhachHang() {
-        const data = await api("POST", "/api/nguoi-dung/dang-ky-khach-hang", {
-            tenDangNhap: document.getElementById("dk_tenDangNhap").value,
-            email: document.getElementById("dk_email").value,
-            matKhauHash: document.getElementById("dk_matKhauHash").value
-        }).catch(e => e.message);
-        showResult("result", data);
-        renderAvatar(data);
-    }
-    async function timTheoId() {
-        const id = document.getElementById("ud_id").value;
-        if (!isUUID(id)) {
-            alert("Vui lòng nhập ID đúng định dạng UUID");
-            return;
-        }
-        const data = await api("GET", "/api/nguoi-dung/" + id).catch(e => e.message);
-        showResult("result", data);
-        renderAvatar(data);
-    }
-    async function timTheoTenDangNhap() {
-        const ten = document.getElementById("ud_tenDangNhap").value;
-        const data = await api("GET", "/api/nguoi-dung/ten-dang-nhap/" + ten).catch(e => e.message);
-        showResult("result", data);
-        renderAvatar(data);
-    }
-    async function timTheoEmail() {
-        const data = await api("POST", "/api/nguoi-dung/tim-theo-email", {
-            email: document.getElementById("ud_email").value
-        }).catch(e => e.message);
-        showResult("result", data);
-        renderAvatar(data);
-    }
-    async function uploadAvatar() {
-        const id = document.getElementById("av_id").value;
-        const file = document.getElementById("av_file").files[0];
-        if (!id || !file) {
-            alert("Vui lòng nhập ID và chọn ảnh");
-            return;
-        }
-        if (!isUUID(id)) {
-            alert("Vui lòng nhập ID đúng định dạng UUID");
-            return;
-        }
-        const formData = new FormData();
-        formData.append("avatar", file);
-        const data = await apiUpload("/api/nguoi-dung/" + id + "/avatar", formData).catch(e => e.message);
-        showResult("result", data);
-        renderAvatar(data);
+<script th:inline="javascript">
+    let currentUserId = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadUserInfo();
+    });
+
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderBottomColor = 'transparent';
+        });
+
+        // Show selected tab
+        document.getElementById('tab-' + tabName).style.display = 'block';
+        document.getElementById('tab-' + tabName + '-btn').style.color = 'var(--phuclong-green)';
+        document.getElementById('tab-' + tabName + '-btn').style.borderBottomColor = 'var(--phuclong-green)';
+
+        if (tabName === 'address') loadAddresses();
+        if (tabName === 'orders') loadOrders();
     }
 
-    function renderAvatar(user) {
-        const container = document.getElementById("avatar-preview");
-        container.innerHTML = "";
-        if (user && user.avatar) {
-            const img = document.createElement("img");
-            img.src = user.avatar;
-            img.style.width = "100px";
-            img.style.height = "100px";
-            img.style.borderRadius = "50%";
-            img.style.objectFit = "cover";
-            container.appendChild(img);
+    async function loadUserInfo() {
+        try {
+            const user = await api('GET', '/api/nguoi-dung/me');
+            currentUserId = user.id;
+            
+            document.getElementById('pf-name').textContent = user.hoTen || 'Chưa cập nhật';
+            document.getElementById('pf-email').textContent = user.email;
+            document.getElementById('pf-phone').textContent = user.soDienThoai || 'Chưa cập nhật';
+            document.getElementById('pf-created').textContent = new Date(user.ngayTao).toLocaleDateString('vi-VN');
+            
+            if (user.avatar) {
+                document.getElementById('profileAvatar').src = user.avatar;
+                document.getElementById('profileAvatar').style.display = 'block';
+                document.getElementById('profileAvatarPlaceholder').style.display = 'none';
+            }
+
+            document.getElementById('editName').value = user.hoTen || '';
+            document.getElementById('editPhone').value = user.soDienThoai || '';
+        } catch (e) {
+            showError('Lỗi tải thông tin: ' + e.message);
         }
     }
+
+    async function updateProfile() {
+        const name = document.getElementById('editName').value.trim();
+        const phone = document.getElementById('editPhone').value.trim();
+        const avatarFile = document.getElementById('editAvatar').files[0];
+
+        if (!name || !phone) {
+            showError('Vui lòng điền đầy đủ thông tin');
+            return;
+        }
+
+        try {
+            await api('PATCH', '/api/nguoi-dung/' + currentUserId, {
+                hoTen: name,
+                soDienThoai: phone
+            });
+
+            if (avatarFile) {
+                const formData = new FormData();
+                formData.append('avatar', avatarFile);
+                await apiUpload('/api/nguoi-dung/' + currentUserId + '/avatar', formData);
+            }
+
+            showSuccess('Cập nhật thông tin thành công!');
+            await loadUserInfo();
+        } catch (e) {
+            showError('Lỗi: ' + e.message);
+        }
+    }
+
+    async function changePassword() {
+        const old = document.getElementById('oldPassword').value;
+        const newPwd = document.getElementById('newPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
+
+        if (!old || !newPwd || !confirm) {
+            showError('Vui lòng điền đầy đủ');
+            return;
+        }
+
+        if (newPwd !== confirm) {
+            showError('Mật khẩu xác nhận không khớp');
+            return;
+        }
+
+        if (newPwd.length < 8) {
+            showError('Mật khẩu phải có ít nhất 8 ký tự');
+            return;
+        }
+
+        try {
+            await api('PATCH', '/api/nguoi-dung/' + currentUserId + '/doi-mat-khau', {
+                matKhauCu: old,
+                matKhauMoi: newPwd
+            });
+
+            showSuccess('Đổi mật khẩu thành công!');
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } catch (e) {
+            showError('Lỗi: ' + e.message);
+        }
+    }
+
+    async function loadAddresses() {
+        try {
+            const addresses = await api('GET', '/api/dia-chi/' + currentUserId);
+            const list = document.getElementById('addressList');
+            list.innerHTML = '';
+
+            addresses.forEach(addr => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-content">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <h4>${addr.diaChi}</h4>
+                                <p class="muted">📞 ${addr.soDienThoai}</p>
+                                ${addr.ghiChu ? '<p class="muted">📝 ' + addr.ghiChu + '</p>' : ''}
+                            </div>
+                            <button onclick="deleteAddress('${addr.id}')" class="btn-secondary" style="padding: 6px 12px;">Xóa</button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        } catch (e) {
+            showError('Lỗi tải địa chỉ: ' + e.message);
+        }
+    }
+
+    function showAddressForm() {
+        document.getElementById('addressForm').style.display = 'block';
+        document.getElementById('addressText').value = '';
+        document.getElementById('addressPhone').value = '';
+        document.getElementById('addressNote').value = '';
+    }
+
+    function cancelAddressForm() {
+        document.getElementById('addressForm').style.display = 'none';
+    }
+
+    async function saveAddress() {
+        const address = document.getElementById('addressText').value.trim();
+        const phone = document.getElementById('addressPhone').value.trim();
+        const note = document.getElementById('addressNote').value.trim();
+
+        if (!address || !phone) {
+            showError('Vui lòng điền địa chỉ và số điện thoại');
+            return;
+        }
+
+        try {
+            await api('POST', '/api/dia-chi/' + currentUserId, {
+                diaChi: address,
+                soDienThoai: phone,
+                ghiChu: note
+            });
+
+            showSuccess('Thêm địa chỉ thành công!');
+            cancelAddressForm();
+            await loadAddresses();
+        } catch (e) {
+            showError('Lỗi: ' + e.message);
+        }
+    }
+
+    async function deleteAddress(addressId) {
+        if (!confirm('Bạn chắc chắn muốn xóa địa chỉ này?')) return;
+
+        try {
+            await api('DELETE', '/api/dia-chi/' + addressId);
+            showSuccess('Xóa địa chỉ thành công!');
+            await loadAddresses();
+        } catch (e) {
+            showError('Lỗi: ' + e.message);
+        }
+    }
+
+    async function loadOrders() {
+        try {
+            const orders = await api('GET', '/api/don-hang/me');
+            const list = document.getElementById('ordersList');
+            list.innerHTML = '';
+
+            orders.forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                const statusColor = order.trangThai === 'DA_GIAO' ? '#166534' : 
+                                   order.trangThai === 'DA_HUY' ? '#991b1b' : '#007bff';
+                
+                card.innerHTML = `
+                    <div class="card-content">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <h4>Đơn hàng #${order.id.substring(0, 8)}</h4>
+                                <p class="muted">Ngày: ${new Date(order.ngayTao).toLocaleDateString('vi-VN')}</p>
+                                <p><span style="color: ${statusColor}; font-weight: 600;">● ${order.trangThai}</span></p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-size: 1.2rem; font-weight: 700; color: var(--phuclong-green);">${formatCurrency(order.tongTien)}</p>
+                                <button onclick="viewOrderDetail('${order.id}')" class="btn-secondary" style="padding: 6px 12px; margin-top: 1rem;">Chi tiết</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        } catch (e) {
+            showError('Lỗi tải đơn hàng: ' + e.message);
+        }
+    }
+
+    function viewOrderDetail(orderId) {
+        window.location.href = '/ui/don-hang?id=' + orderId;
+    }
+
+    function showSuccess(msg) {
+        const el = document.getElementById('successMsg');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 3000);
+    }
 </script>
+
 </body>
 </html>
 

@@ -1,9 +1,10 @@
 package TKPMHDT.Controller;
 
-import TKPMHDT.Service.sanpham.SanPhamService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import TKPMHDT.Service.sanpham.SanPhamService;
 
 @Controller
 public class PageController {
@@ -54,6 +55,41 @@ public class PageController {
     @GetMapping("/login")
     public String loginPage() {
         return "login";
+    }
+
+    @GetMapping("/register")
+    public String registerPage() {
+        return "register";
+    }
+
+    @GetMapping("/quen-mat-khau")
+    public String forgotPasswordPage() {
+        return "forgot-password";
+    }
+
+    @GetMapping("/ui/admin/dashboard")
+    public String adminDashboard() {
+        return "admin/dashboard";
+    }
+
+    @GetMapping("/ui/admin/quan-ly-san-pham")
+    public String adminProductManagement() {
+        return "admin/manage-products";
+    }
+
+    @GetMapping("/ui/admin/quan-ly-nhan-vien")
+    public String adminStaffManagement() {
+        return "admin/manage-staff";
+    }
+
+    @GetMapping("/ui/admin/quan-ly-khach-hang")
+    public String adminCustomersManagement() {
+        return "admin/manage-customers";
+    }
+
+    @GetMapping("/ui/pos")
+    public String posPage() {
+        return "pos/pos-interface";
     }
 }
 

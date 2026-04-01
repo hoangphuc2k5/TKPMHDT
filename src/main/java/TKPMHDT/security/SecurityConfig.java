@@ -17,12 +17,14 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/error", "/login").permitAll()
-                        .requestMatchers("/", "/ui/san-pham", "/ui/khuyen-mai", "/ui/nguoi-dung").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
+                        .requestMatchers("/", "/ui/san-pham", "/ui/khuyen-mai").permitAll()
                         .requestMatchers("/api/nguoi-dung/dang-ky-khach-hang").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/san-pham/**").permitAll()
                         .requestMatchers("/api/khuyen-mai/ma/**", "/api/khuyen-mai/tinh-tien-giam").permitAll()
+                        .requestMatchers("/api/nguoi-dung/me").authenticated()
+                        .requestMatchers("/api/gio-hang/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

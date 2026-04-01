@@ -38,7 +38,7 @@ public class GioHangController {
                 request.soLuong(),
                 request.mucDuong(),
                 request.mucDa(),
-                request.ghiChuTuyChinh()
+                request.ghiChu()
         );
         return ResponseEntity.ok(gioHang);
     }
@@ -61,7 +61,7 @@ public class GioHangController {
             int soLuong,
             Integer mucDuong,
             Integer mucDa,
-            String ghiChuTuyChinh
+            String ghiChu
     ) {
     }
 }

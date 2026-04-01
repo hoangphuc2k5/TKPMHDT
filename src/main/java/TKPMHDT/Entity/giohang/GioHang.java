@@ -1,5 +1,6 @@
 package TKPMHDT.Entity.giohang;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import TKPMHDT.Entity.nguoidung.KhachHang;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -39,6 +40,7 @@ public class GioHang {
     @JoinColumn(name = "khach_hang_id", nullable = false, unique = true)
     private KhachHang khachHang;
 
+    @JsonManagedReference
     @Builder.Default
     @OneToMany(mappedBy = "gioHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietGioHang> cacMatHang = new ArrayList<>();

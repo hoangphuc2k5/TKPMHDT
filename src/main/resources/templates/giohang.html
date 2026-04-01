@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Quản lý Giỏ hàng - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Giỏ hàng drink')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('cart')}"></header>
 
@@ -10,77 +10,185 @@
         <p class="muted">Kiểm tra các món đồ uống yêu thích và chuẩn bị đặt hàng.</p>
     </div>
 
-    <div class="grid">
-        <!-- View Cart -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Xem giỏ hàng</h3>
-                <label>Mã khách hàng (UUID)<input id="gh_khachHangId" placeholder="Nhập mã của bạn..."></label>
-                <button onclick="layGioHang()" style="width: 100%;">Kiểm tra giỏ</button>
+    <div id="cart-content" style="display: none;">
+        <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem;">
+            <!-- Cart Items List -->
+            <div>
+                <div id="cart-items-list">
+                    <!-- Items rendered via JS -->
+                </div>
             </div>
-        </div>
 
-        <!-- Add Item (Staff/Admin/Testing) -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Thêm món nhanh</h3>
-                <label>Mã khách hàng<input id="gh_them_khachHangId" placeholder="Nhập mã..."></label>
-                <label>Mã sản phẩm<input id="gh_nuocUongId" placeholder="Nhập mã món..."></label>
-                <label>Số lượng<input id="gh_soLuong" type="number" value="1" min="1"></label>
-                <button class="btn-highlight" onclick="themMatHang()" style="width: 100%;">Thêm vào giỏ</button>
-            </div>
-        </div>
+            <!-- Order Summary -->
+            <div class="card" style="position: sticky; top: 100px; height: fit-content;">
+                <div class="card-content">
+                    <h3 class="brand-font" style="margin-top: 0;">Tổng đơn hàng</h3>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Tạm tính:</span>
+                        <span id="subtotal">0đ</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <span>Giảm giá:</span>
+                        <span id="discount" style="color: #e74c3c;">-0đ</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; color: var(--phuclong-green);">
+                        <span>Tổng cộng:</span>
+                        <span id="total">0đ</span>
+                    </div>
 
-        <!-- Actions -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Thao tác khác</h3>
-                <label>Xóa món cụ thể (Mã chi tiết)<input id="gh_chiTietId" placeholder="Nhập mã chi tiết..."></label>
-                <button class="btn-secondary" onclick="xoaMatHang()" style="width: 100%;">Xóa món này</button>
-                <button class="btn-secondary" onclick="xoaHet()" style="width: 100%; margin-top: 15px; border-color: #e74c3c; color: #e74c3c;">Làm trống giỏ hàng</button>
+                    <div style="margin-top: 2rem;">
+                        <label>Mã giảm giá (nếu có)</label>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                            <input id="coupon-code" type="text" placeholder="VÍ DỤ: DRINK50" style="flex: 1; padding: 8px;">
+                            <button onclick="applyCoupon()" class="btn-secondary" style="padding: 8px 15px;">Áp dụng</button>
+                        </div>
+                    </div>
+
+                    <button onclick="proceedToCheckout()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
+                        Tiến hành đặt hàng
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div style="margin-top: 4rem;">
-        <h2 class="brand-font">Chi tiết giỏ hàng</h2>
-        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Giỏ hàng trống hoặc chưa tải dữ liệu...</pre>
-        <div style="margin-top: 20px; text-align: right;">
-            <a th:href="@{/ui/don-hang}"><button class="btn-highlight" style="padding: 15px 40px;">Tiến hành đặt hàng &rarr;</button></a>
-        </div>
+    <!-- Empty Cart State -->
+    <div id="empty-cart" style="text-align: center; padding: 5rem 0;">
+        <div style="font-size: 4rem; margin-bottom: 1.5rem;">🛒</div>
+        <h2 class="brand-font">Giỏ hàng của bạn đang rỗng</h2>
+        <p class="muted">Hãy quay lại thực đơn để chọn những món đồ uống tuyệt vời nhé!</p>
+        <a th:href="@{/ui/san-pham}" class="btn-highlight" style="display: inline-block; margin-top: 2rem; padding: 12px 40px; text-decoration: none;">
+            Xem thực đơn ngay
+        </a>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" style="text-align: center; padding: 5rem 0;">
+        <div class="brand-font" style="font-size: 1.5rem;">Đang tải giỏ hàng...</div>
     </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
 <script>
-    async function layGioHang() {
-        const id = document.getElementById("gh_khachHangId").value;
-        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("GET", "/api/gio-hang/" + id).catch(e => e.message));
+    let currentCart = null;
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', initCart);
+
+    async function initCart() {
+        showLoading(true);
+        try {
+            currentUser = await api("GET", "/api/nguoi-dung/me");
+            await loadCart();
+        } catch (e) {
+            console.error(e);
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("empty-cart").style.display = "block";
+        } finally {
+            showLoading(false);
+        }
     }
-    async function themMatHang() {
-        const kh = document.getElementById("gh_them_khachHangId").value;
-        const sp = document.getElementById("gh_nuocUongId").value;
-        if (!isUUID(kh) || !isUUID(sp)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("POST", "/api/gio-hang/them-mat-hang", {
-            khachHangId: kh,
-            nuocUongId: sp,
-            soLuong: Number(document.getElementById("gh_soLuong").value)
-        }).catch(e => e.message));
+
+    async function loadCart() {
+        if (!currentUser) return;
+        try {
+            currentCart = await api("GET", "/api/gio-hang/" + currentUser.id);
+            renderCart();
+        } catch (e) {
+            console.error(e);
+        }
     }
-    async function xoaMatHang() {
-        const kh = document.getElementById("gh_xoa_khachHangId").value;
-        const ct = document.getElementById("gh_chiTietId").value;
-        if (!isUUID(kh) || !isUUID(ct)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("DELETE", "/api/gio-hang/" + kh + "/mat-hang/" + ct).catch(e => e.message));
+
+    function renderCart() {
+        const list = document.getElementById("cart-items-list");
+        const isEmpty = !currentCart || !currentCart.cacMatHang || currentCart.cacMatHang.length === 0;
+        
+        document.getElementById("cart-content").style.display = isEmpty ? "none" : "block";
+        document.getElementById("empty-cart").style.display = isEmpty ? "block" : "none";
+
+        if (isEmpty) return;
+
+        list.innerHTML = "";
+        currentCart.cacMatHang.forEach(item => {
+            const sp = item.nuocUong;
+            const img = (sp.hinhAnh && sp.hinhAnh.length > 0) ? sp.hinhAnh[0] : '/uploads/default-drink.jpg';
+            const tc = item.tuyChinh || {};
+            
+            const itemHtml = `
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="card-content" style="display: flex; gap: 1.5rem; align-items: center;">
+                        <img src="${img}" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);">
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <h3 style="margin: 0; color: var(--phuclong-green);">${sp.ten}</h3>
+                                <button onclick="removeItem('${item.id}')" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                            </div>
+                            <div style="font-size: 0.85rem; margin-top: 0.5rem;">
+                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px; margin-right: 5px;">Đường: ${tc.mucDuong}%</span>
+                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa}%</span>
+                                ${tc.ghiChu ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Ghi chú: ${tc.ghiChu}</i></p>` : ''}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <span class="muted">Số lượng: <b>${item.soLuong}</b></span>
+                                </div>
+                                <div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(item.thanhTien)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            list.innerHTML += itemHtml;
+        });
+
+        document.getElementById("subtotal").innerText = formatPrice(currentCart.tongTien);
+        document.getElementById("total").innerText = formatPrice(currentCart.tongTien);
     }
-    async function xoaHet() {
-        const kh = document.getElementById("gh_clear_khachHangId").value;
-        if (!isUUID(kh)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("DELETE", "/api/gio-hang/" + kh + "/xoa-het").catch(e => e.message));
+
+    async function removeItem(itemId) {
+        if (!confirm("Bạn có chắc muốn xóa món này khỏi giỏ hàng?")) return;
+        try {
+            await api("DELETE", `/api/gio-hang/${currentUser.id}/mat-hang/${itemId}`);
+            await loadCart();
+        } catch (e) {
+            alert("Lỗi khi xóa: " + e.message);
+        }
+    }
+
+    function proceedToCheckout() {
+        window.location.href = "/ui/don-hang";
+    }
+
+    function formatPrice(price) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    }
+
+    function showLoading(show) {
+        document.getElementById("loading").style.display = show ? "block" : "none";
+        document.getElementById("cart-content").style.opacity = show ? "0.3" : "1";
+    }
+
+    async function applyCoupon() {
+        const code = document.getElementById("coupon-code").value;
+        if (!code) return;
+        alert("Tính năng áp dụng mã giảm giá đang được cập nhật!");
     }
 </script>
+
+<style>
+    .badge {
+        display: inline-block;
+        border: 1px solid var(--border-color);
+    }
+    input {
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+    }
+</style>
 </body>
 </html>
-

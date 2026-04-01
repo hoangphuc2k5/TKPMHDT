@@ -28,9 +28,13 @@
             Bạn đã đăng xuất thành công.
         </div>
         
-        <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+        <div style="margin-top: 2rem; text-align: center;">
+            <a th:href="@{/quen-mat-khau}" style="color: var(--phuclong-green); text-decoration: none; font-size: 0.875rem;">Quên mật khẩu?</a>
+        </div>
+        
+        <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center;">
             <p class="muted" style="font-size: 0.875rem;">
-                Vui lòng sử dụng tài khoản đã đăng ký trong hệ thống để truy cập.
+                Chưa có tài khoản? <a th:href="@{/register}" style="color: var(--phuclong-green); text-decoration: none; font-weight: 600;">Đăng ký tại đây</a>
             </p>
         </div>
     </div>

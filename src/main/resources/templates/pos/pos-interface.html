@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('POS - Điểm bán hàng - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('pos')}"></header>
+
+<div class="container" style="padding: 1rem;">
+    <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem; height: calc(100vh - 200px);">
+        
+        <!-- Product Selector -->
+        <div>
+            <div style="margin-bottom: 1rem;">
+                <h2 class="brand-font" style="margin-top: 0;">CHỌN MÓN</h2>
+                <input id="searchProd" type="text" placeholder="Tìm tên món..." 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 1rem;">
+            </div>
+
+            <div id="posProducts" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; max-height: 600px; overflow-y: auto;">
+                <!-- Products loaded via JS -->
+            </div>
+        </div>
+
+        <!-- Order Summary / Checkout -->
+        <div class="card" style="position: sticky; top: 100px; height: fit-content;">
+            <div class="card-content">
+                <h3 class="brand-font" style="margin-top: 0;">ĐƠN HÀNG HIỆN TẠI</h3>
+                
+                <div id="posOrder" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+                    <!-- Items loaded here -->
+                </div>
+
+                <hr style="margin: 1rem 0;">
+
+                <div style="margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Tạm tính:</span>
+                        <span id="posSubtotal">0đ</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <span>Giảm giá:</span>
+                        <span id="posDiscount" style="color: #e74c3c;">-0đ</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; color: var(--phuclong-green);">
+                        <span>Tổng:</span>
+                        <span id="posTotal">0đ</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label for="posCoupon" style="font-size: 0.875rem;">Mã giảm giá</label>
+                    <input id="posCoupon" type="text" placeholder="Nhập mã..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                </div>
+
+                <button onclick="applyCouponPOS()" class="btn-secondary" style="width: 100%; padding: 10px; margin-bottom: 1rem;">Áp dụng mã</button>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.875rem;">Tên khách hàng</label>
+                    <input id="posCustomerName" type="text" placeholder="Nhập tên..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
+                    
+                    <label style="font-size: 0.875rem;">Số điện thoại</label>
+                    <input id="posCustomerPhone" type="text" placeholder="Nhập số điện thoại..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <button onclick="clearOrder()" class="btn-secondary" style="padding: 10px;">Xóa đơn</button>
+                    <button onclick="saveDraftOrder()" class="btn-secondary" style="padding: 10px;">Lưu nháp</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 1rem;">
+                    <button onclick="checkoutOrder()" class="btn-highlight" style="padding: 12px; background: #16a34a; border: none; cursor: pointer; color: white; border-radius: 6px; font-weight: bold;">✓ Hoàn tất đơn hàng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customize Modal -->
+    <div id="posModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+        <div class="card" style="width: 90%; max-width: 500px;">
+            <div class="card-content">
+                <h3 id="posModalTitle">Tùy chỉnh món</h3>
+                <input type="hidden" id="posModalProdId">
+
+                <div style="margin-bottom: 1rem;">
+                    <label>Mức đường</label>
+                    <select id="posSugar" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <option value="100">100% (Bình thường)</option>
+                        <option value="70">70% (Ít đường)</option>
+                        <option value="50">50% (Vừa phải)</option>
+                        <option value="0">0% (Không đường)</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label>Mức đá</label>
+                    <select id="posIce" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <option value="100">100% (Bình thường)</option>
+                        <option value="50">50% (Ít đá)</option>
+                        <option value="0">0% (Không đá)</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label>Số lượng</label>
+                    <input type="number" id="posQty" value="1" min="1" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="closeModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
+                    <button onclick="addItemPOS()" class="btn-highlight" style="flex: 1;">Thêm vào đơn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="message" style="display: none; position: fixed; top: 100px; right: 20px; background: var(--phuclong-green); color: white; padding: 1rem; border-radius: 8px; z-index: 999;"></div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script th:inline="javascript">
+    let posOrder = [];
+    let currentProduct = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        loadProducts();
+    });
+
+    async function loadProducts() {
+        try {
+            const products = await api('GET', '/api/san-pham/nuoc-uong');
+            const container = document.getElementById('posProducts');
+            container.innerHTML = '';
+
+            products.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.cursor = 'pointer';
+                card.style.padding = '1rem';
+                card.style.textAlign = 'center';
+                card.innerHTML = `
+                    <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">${prod.ten}</h4>
+                    <p style="color: var(--phuclong-green); font-weight: 700; margin: 0 0 0.5rem;">${formatCurrency(prod.gia)}</p>
+                    <button onclick="selectProduct('${prod.id}', '${prod.ten}', ${prod.gia})" 
+                            class="btn-highlight" style="width: 100%; padding: 8px; font-size: 0.85rem;">Chọn</button>
+                `;
+                container.appendChild(card);
+            });
+        } catch (e) {
+            showMessage('Lỗi tải sản phẩm: ' + e.message);
+        }
+    }
+
+    function selectProduct(id, name, price) {
+        currentProduct = { id, name, price };
+        document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + name;
+        document.getElementById('posModalProdId').value = id;
+        document.getElementById('posSugar').value = '100';
+        document.getElementById('posIce').value = '100';
+        document.getElementById('posQty').value = '1';
+        document.getElementById('posModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('posModal').style.display = 'none';
+    }
+
+    function addItemPOS() {
+        const qty = parseInt(document.getElementById('posQty').value);
+        const sugar = document.getElementById('posSugar').value;
+        const ice = document.getElementById('posIce').value;
+
+        posOrder.push({
+            productId: currentProduct.id,  // ✅ Store product ID separately
+            name: currentProduct.name,
+            price: currentProduct.price,
+            qty: qty,
+            sugar: sugar,
+            ice: ice,
+            total: currentProduct.price * qty
+        });
+
+        renderOrder();
+        closeModal();
+        showMessage('Thêm ' + qty + ' ' + currentProduct.name + ' vào đơn');
+    }
+
+    function renderOrder() {
+        const container = document.getElementById('posOrder');
+        if (posOrder.length === 0) {
+            container.innerHTML = '<p class="muted" style="text-align: center;">Chưa có item nào</p>';
+            updateTotal();
+            return;
+        }
+
+        container.innerHTML = '';
+        posOrder.forEach((item, idx) => {
+            const html = `
+                <div style="padding: 0.5rem; background: var(--bg-subtle); border-radius: 6px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong style="font-size: 0.9rem;">${item.name}</strong>
+                        <button onclick="removeItem(${idx})" style="background: none; border: none; color: #e74c3c; cursor: pointer;">✕</button>
+                    </div>
+                    <small class="muted">${item.qty} x ${formatCurrency(item.price)}</small>
+                    <small class="muted" style="display: block;">Đường: ${item.sugar}%, Đá: ${item.ice}%</small>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+
+        updateTotal();
+    }
+
+    function removeItem(idx) {
+        posOrder.splice(idx, 1);
+        renderOrder();
+    }
+
+    function updateTotal() {
+        const subtotal = posOrder.reduce((sum, item) => sum + item.total, 0);
+        document.getElementById('posSubtotal').textContent = formatCurrency(subtotal);
+        document.getElementById('posTotal').textContent = formatCurrency(subtotal);
+    }
+
+    function clearOrder() {
+        if (confirm('Xóa toàn bộ đơn hàng?')) {
+            posOrder = [];
+            renderOrder();
+        }
+    }
+
+    function saveDraftOrder() {
+        if (posOrder.length === 0) {
+            showMessage('Vui lòng thêm sản phẩm vào đơn');
+            return;
+        }
+        
+        localStorage.setItem('posDraft', JSON.stringify(posOrder));
+        showMessage('Lưu nháp thành công!');
+    }
+
+    function paymentMethod(method) {
+        if (posOrder.length === 0) {
+            showMessage('Vui lòng thêm sản phẩm vào đơn');
+            return;
+        }
+
+        const total = posOrder.reduce((sum, item) => sum + item.total, 0);
+        alert('Thanh toán ' + formatCurrency(total) + ' bằng ' + (method === 'CASH' ? 'tiền mặt' : 'thẻ/chuyển khoản'));
+        // Here you would create order via API
+        posOrder = [];
+        renderOrder();
+    }
+
+    async function checkoutOrder() {
+        if (posOrder.length === 0) {
+            showMessage('Vui lòng thêm sản phẩm vào đơn');
+            return;
+        }
+
+        const customerName = document.getElementById('posCustomerName').value.trim();
+        const customerPhone = document.getElementById('posCustomerPhone').value.trim();
+
+        if (!customerName || !customerPhone) {
+            showMessage('Vui lòng nhập tên và số điện thoại khách hàng');
+            return;
+        }
+
+        try {
+            const chiTietItems = posOrder.map(item => ({
+                nuocUongId: item.productId,  // ✅ Use the correct product ID
+                soLuong: item.qty,
+                duong: parseInt(item.sugar),
+                da: parseInt(item.ice),
+                thanhTien: item.total
+            }));
+
+            const order = await api('POST', '/api/don-hang/tao-tai-quay', {
+                tenKhachHang: customerName,
+                soDienThoai: customerPhone,
+                chiTietItems: chiTietItems
+            });
+
+            showMessage('Tạo đơn hàng thành công! Mã: ' + order.id.substring(0, 8));
+            posOrder = [];
+            document.getElementById('posCustomerName').value = '';
+            document.getElementById('posCustomerPhone').value = '';
+            renderOrder();
+        } catch (e) {
+            showMessage('Lỗi: ' + e.message);
+            console.error(e);
+        }
+    }
+
+    function applyCouponPOS() {
+        const code = document.getElementById('posCoupon').value;
+        if (!code) return;
+        showMessage('Kiểm tra mã: ' + code);
+    }
+
+    function showMessage(msg) {
+        const el = document.getElementById('message');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 2000);
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+    }
+</script>
+
+</body>
+</html>

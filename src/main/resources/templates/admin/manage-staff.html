@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Nhân viên - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('admin')}"></header>
+
+<div class="container">
+    <div style="margin-bottom: 2rem;">
+        <h1 class="brand-font">Quản Lý Nhân Viên</h1>
+        <p class="muted">Thêm, sửa, khóa tài khoản nhân viên bán hàng</p>
+    </div>
+
+    <!-- Add Staff Button -->
+    <div style="margin-bottom: 2rem;">
+        <button onclick="showAddStaffForm()" class="btn-highlight" style="padding: 12px 24px;">+ Thêm nhân viên</button>
+    </div>
+
+    <!-- Staff List -->
+    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
+        <!-- Staff items will be loaded here -->
+    </div>
+
+    <!-- Add/Edit Staff Form -->
+    <div id="staffForm" class="card" style="margin-top: 2rem; display: none;">
+        <div class="card-content">
+            <h3>Thêm Nhân Viên Mới</h3>
+            
+            <div style="margin-bottom: 1rem;">
+                <label for="staffName">Tên nhân viên</label>
+                <input type="text" id="staffName" placeholder="Nguyễn Văn A">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="staffEmail">Email</label>
+                <input type="email" id="staffEmail" placeholder="nva@example.com">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="staffPhone">Số điện thoại</label>
+                <input type="tel" id="staffPhone" placeholder="0912345678">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="staffUsername">Tên đăng nhập</label>
+                <input type="text" id="staffUsername" placeholder="nvabanhang">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="staffPassword">Mật khẩu</label>
+                <input type="password" id="staffPassword" placeholder="••••••••">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="staffRole">Vai trò</label>
+                <select id="staffRole" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    <option value="NHAN_VIEN_BAN_HANG">Nhân viên bán hàng</option>
+                    <option value="QUAN_LY_KHO">Quản lý kho</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="cancelStaffForm()" class="btn-secondary" style="flex: 1;">Hủy</button>
+                <button onclick="saveStaff()" class="btn-highlight" style="flex: 1;">Lưu nhân viên</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', loadStaff);
+
+    async function loadStaff() {
+        try {
+            // Get staff list
+            const staffList = await api('GET', '/api/admin/nhan-vien');
+            const container = document.querySelector('.grid');
+            container.innerHTML = '';
+
+            if (!staffList || staffList.length === 0) {
+                container.innerHTML = '<p class="muted">Chưa có nhân viên nào. Hãy thêm nhân viên mới!</p>';
+                return;
+            }
+
+            staffList.forEach(staff => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-content">
+                        <h4 style="margin-top: 0;">${staff.hoTen || staff.tenDangNhap}</h4>
+                        <p><strong>Email:</strong> ${staff.email}</p>
+                        <p><strong>Số điện thoại:</strong> ${staff.soDienThoai || 'Chưa cập nhật'}</p>
+                        <p><strong>Vai trò:</strong> <span style="color: var(--phuclong-green);">${staff.vaiTro}</span></p>
+                        <p><strong>Trạng thái:</strong> <span style="color: ${staff.active ? '#16a34a' : '#e74c3c'};"> ${staff.active ? '✓ Hoạt động' : '✕ Đã khóa'}</span></p>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <button onclick="editStaff('${staff.id}')" class="btn-secondary" style="flex: 1; padding: 6px;">Sửa</button>
+                            <button onclick="toggleStaffStatus('${staff.id}', ${staff.active})" class="btn-secondary" style="flex: 1; padding: 6px;">${staff.active ? 'Khóa' : 'Mở khóa'}</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        } catch (e) {
+            console.error('Error loading staff:', e);
+            alert('Lỗi tải danh sách nhân viên: ' + e.message);
+        }
+    }
+
+    function showAddStaffForm() {
+        document.getElementById('staffForm').style.display = 'block';
+        document.getElementById('staffName').value = '';
+        document.getElementById('staffEmail').value = '';
+        document.getElementById('staffPhone').value = '';
+        document.getElementById('staffUsername').value = '';
+        document.getElementById('staffPassword').value = '';
+        document.getElementById('staffRole').value = 'NHAN_VIEN_BAN_HANG';
+    }
+
+    function cancelStaffForm() {
+        document.getElementById('staffForm').style.display = 'none';
+    }
+
+    async function saveStaff() {
+        const name = document.getElementById('staffName').value.trim();
+        const email = document.getElementById('staffEmail').value.trim();
+        const phone = document.getElementById('staffPhone').value.trim();
+        const username = document.getElementById('staffUsername').value.trim();
+        const password = document.getElementById('staffPassword').value;
+        const role = document.getElementById('staffRole').value;
+
+        if (!name || !email || !username || !password) {
+            alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+            return;
+        }
+
+        try {
+            // Create staff account
+            await api('POST', '/api/admin/nhan-vien', {
+                hoTen: name,
+                email: email,
+                soDienThoai: phone,
+                tenDangNhap: username,
+                matKhau: password,
+                vaiTro: role
+            });
+
+            alert('Thêm nhân viên thành công!');
+            cancelStaffForm();
+            await loadStaff();
+        } catch (e) {
+            alert('Lỗi: ' + e.message);
+        }
+    }
+
+    async function toggleStaffStatus(staffId, isActive) {
+        const action = isActive ? 'Khóa' : 'Mở khóa';
+        if (!confirm(`Bạn có chắc muốn ${action.toLowerCase()} tài khoản này?`)) return;
+
+        try {
+            await api('PATCH', '/api/admin/tai-khoan/trang-thai', {
+                nguoiDungId: staffId,
+                active: !isActive
+            });
+
+            alert(`${action} tài khoản thành công!`);
+            await loadStaff();
+        } catch (e) {
+            alert('Lỗi: ' + e.message);
+        }
+    }
+
+    function editStaff(staffId) {
+        alert('Chức năng sửa nhân viên đang được cập nhật');
+    }
+</script>
+
+</body>
+</html>
