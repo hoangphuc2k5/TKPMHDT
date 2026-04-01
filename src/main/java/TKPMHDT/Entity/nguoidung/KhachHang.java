@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import groovy.transform.builder.Builder;
+import jakarta.persistence.Column;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -22,6 +22,12 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @DiscriminatorValue("KHACH_HANG")
 public class KhachHang extends NguoiDung {
+
+    @Column(name = "ho_ten", length = 255)
+    private String hoTen;
+
+    @Column(name = "so_dien_thoai", length = 20)
+    private String soDienThoai;
 
     @JsonManagedReference
   

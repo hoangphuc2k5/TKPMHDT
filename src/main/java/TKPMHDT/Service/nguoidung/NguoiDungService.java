@@ -106,5 +106,25 @@ public class NguoiDungService {
                 .build();
         return nhanVienBanHangRepository.save(nhanVien);
     }
+
+    @Transactional
+    public void doiMatKhau(String tenDangNhap, String matKhauCu, String matKhauMoi, String xacNhanMatKhau) {
+        if (matKhauMoi == null || matKhauMoi.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 6 ký tự");
+        }
+        if (!matKhauMoi.equals(xacNhanMatKhau)) {
+            throw new IllegalArgumentException("Xác nhận mật khẩu không khớp");
+        }
+
+        NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhap(tenDangNhap)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        if (matKhauCu == null || !passwordEncoder.matches(matKhauCu, nguoiDung.getMatKhauHash())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không đúng");
+        }
+
+        nguoiDung.setMatKhauHash(passwordEncoder.encode(matKhauMoi));
+        nguoiDungRepository.save(nguoiDung);
+    }
 }
 

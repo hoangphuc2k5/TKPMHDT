@@ -1,9 +1,9 @@
-package com.example.demo;
+package TKPMHDT;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(classes = Application.class)
 class ApplicationTests {
 
 	@Test

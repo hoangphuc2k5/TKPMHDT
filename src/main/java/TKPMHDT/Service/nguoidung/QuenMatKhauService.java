@@ -4,8 +4,10 @@ import TKPMHDT.Entity.nguoidung.NguoiDung;
 import TKPMHDT.Entity.nguoidung.PasswordResetOtp;
 import TKPMHDT.Repository.nguoidung.NguoiDungRepository;
 import TKPMHDT.Repository.nguoidung.PasswordResetOtpRepository;
+import TKPMHDT.Service.mail.EmailService;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,16 +18,19 @@ public class QuenMatKhauService {
     private final NguoiDungRepository nguoiDungRepository;
     private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public QuenMatKhauService(
             NguoiDungRepository nguoiDungRepository,
             PasswordResetOtpRepository passwordResetOtpRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            EmailService emailService
     ) {
         this.nguoiDungRepository = nguoiDungRepository;
         this.passwordResetOtpRepository = passwordResetOtpRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -34,16 +39,20 @@ public class QuenMatKhauService {
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay email"));
 
         String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
+        long ttlMinutes = 5;
         PasswordResetOtp record = PasswordResetOtp.builder()
                 .nguoiDung(nguoiDung)
                 .otpCode(otp)
-                .hetHanLuc(LocalDateTime.now().plusMinutes(5))
+                .hetHanLuc(LocalDateTime.now().plusMinutes(ttlMinutes))
                 .daSuDung(false)
                 .build();
         passwordResetOtpRepository.save(record);
 
-        // TODO: thay bang gui mail thuc te.
-        System.out.println("OTP reset mat khau cho " + email + ": " + otp);
+        try {
+            emailService.sendOtpEmail(email, otp, ttlMinutes);
+        } catch (MailException ex) {
+            throw new IllegalStateException("Gui OTP that bai. Vui long kiem tra cau hinh email (SMTP).");
+        }
     }
 
     @Transactional

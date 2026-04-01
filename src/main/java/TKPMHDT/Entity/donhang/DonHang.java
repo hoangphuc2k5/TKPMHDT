@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiChoXacNhan;
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiDaGiao;
@@ -26,6 +28,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -50,8 +53,8 @@ public class DonHang {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "khach_hang_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "khach_hang_id", nullable = true)
     private KhachHang khachHang;
 
     @Column(name = "ngay_dat", nullable = false)
@@ -62,6 +65,7 @@ public class DonHang {
 
     @Transient
     @Builder.Default
+    @JsonIgnore
     private TrangThaiDonHang trangThai = new TrangThaiChoXacNhan();
 
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
@@ -79,6 +83,14 @@ public class DonHang {
     @Builder.Default
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
+
+    @JsonManagedReference
+    @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private HoaDon hoaDon;
+
+    @JsonManagedReference
+    @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private PhieuGiao phieuGiao;
 
     @PrePersist
     @PreUpdate
@@ -127,6 +139,31 @@ public class DonHang {
 
     public void huyDon() {
         trangThai.daHuy(this);
+    }
+
+    /**
+     * Alias field cho UI đang dùng "ngayTao".
+     */
+    @JsonProperty("ngayTao")
+    public LocalDateTime getNgayTao() {
+        return ngayDat;
+    }
+
+    /**
+     * Alias field cho UI đang dùng "chiTiet".
+     */
+    @JsonProperty("chiTiet")
+    public List<ChiTietDonHang> getChiTiet() {
+        return chiTietDonHangs;
+    }
+
+    /**
+     * Trả về mã trạng thái đơn hàng (CHO_XAC_NHAN, DA_XAC_NHAN, ...).
+     * UI đang dùng field "trangThai" dạng string.
+     */
+    @JsonProperty("trangThai")
+    public String getTrangThaiCode() {
+        return trangThaiDb != null ? trangThaiDb : (trangThai != null ? trangThai.getTenTrangThai() : null);
     }
 }
 

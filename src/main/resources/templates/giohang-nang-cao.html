@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Giỏ hàng - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('giohang')}"></header>
+
+<div class="container" style="padding: 2rem 0;">
+    <h1 style="margin-bottom: 2rem;">🛒 Giỏ Hàng</h1>
+
+    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem;">
+        <!-- Danh sách sản phẩm -->
+        <div>
+            <div id="gioHangTrong" style="text-align: center; padding: 3rem; background: #f5f5f5; border-radius: 12px;">
+                <p style="font-size: 1.2rem; color: #999;">Giỏ hàng của bạn đang trống</p>
+                <a href="/ui/san-pham" class="btn-secondary" style="display: inline-block; margin-top: 1rem;">Mua sắm ngay</a>
+            </div>
+
+            <div id="gioHangCoHang" style="display: none;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f5f5f5; border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 1rem; text-align: left;">Sản phẩm</th>
+                            <th style="padding: 1rem; text-align: center;">Đơn giá</th>
+                            <th style="padding: 1rem; text-align: center;">Số lượng</th>
+                            <th style="padding: 1rem; text-align: right;">Thành tiền</th>
+                            <th style="padding: 1rem; text-align: center;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="danhSachMatHang"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tóm tắt đơn hàng -->
+        <div>
+            <div style="background: #f9f9f9; padding: 1.5rem; border-radius: 12px;">
+                <h3 style="margin-bottom: 1.5rem;">Tóm tắt đơn hàng</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    <div>
+                        <span class="muted">Tạm tính:</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span id="tamTinh">0 đ</span>
+                    </div>
+
+                    <div>
+                        <span class="muted">Giảm giá:</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span id="giamGia">0 đ</span>
+                    </div>
+
+                    <div>
+                        <span class="muted">Vận chuyển:</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span id="vanChuyen">Miễn phí</span>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-bottom: 1.5rem; font-weight: 600;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>Tổng cộng:</div>
+                        <div style="text-align: right; color: var(--phuclong-green); font-size: 1.3rem;">
+                            <span id="tongCong">0 đ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mã giảm giá -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="maGiamGia" style="font-size: 0.9rem;">Mã giảm giá</label>
+                    <div style="display: grid; grid-template-columns: 1fr 100px; gap: 0.5rem;">
+                        <input type="text" id="maGiamGia" placeholder="Nhập mã..." style="padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <button style="background: var(--phuclong-green); color: white; border: none; border-radius: 8px; cursor: pointer;">Áp dụng</button>
+                    </div>
+                </div>
+
+                <button id="thanhToanBtn" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1rem;">
+                    Thanh toán
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    loadGioHang();
+
+    async function loadGioHang() {
+        try {
+            // Lấy thông tin người dùng hiện tại
+            const userResponse = await fetch('/api/nguoi-dung/me');
+            if (!userResponse.ok) {
+                window.location.href = '/login';
+                return;
+            }
+            const user = await userResponse.json();
+
+            // Lấy giỏ hàng
+            const response = await fetch(`/api/gio-hang/${user.id}`);
+            const gioHang = await response.json();
+
+            displayGioHang(gioHang);
+        } catch (error) {
+            console.error('Lỗi tải giỏ hàng:', error);
+        }
+    }
+
+    function displayGioHang(gioHang) {
+            if (!gioHang.chiTietGioHang || gioHang.chiTietGioHang.length === 0) {
+            document.getElementById('gioHangTrong').style.display = 'block';
+            document.getElementById('gioHangCoHang').style.display = 'none';
+        } else {
+            document.getElementById('gioHangTrong').style.display = 'none';
+            document.getElementById('gioHangCoHang').style.display = 'block';
+
+            const tbody = document.getElementById('danhSachMatHang');
+            tbody.innerHTML = '';
+
+            let tamTinh = 0;
+            gioHang.chiTietGioHang.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid var(--border-color)';
+                
+                const moTa = item.tuyChinh ? 
+                    `<small class="muted">Đường: ${item.tuyChinh.mucDuong}% | Đá: ${item.tuyChinh.mucDa}%</small>` : 
+                    '';
+
+                row.innerHTML = `
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: 600;">${item.nuocUong.ten}</div>
+                        ${moTa}
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.nuocUong.gia)}
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <input type="number" value="${item.soLuong}" min="1" style="width: 60px; text-align: center; padding: 0.3rem;">
+                    </td>
+                    <td style="padding: 1rem; text-align: right;">
+                        ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.nuocUong.gia * item.soLuong)}
+                    </td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <button class="btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;" onclick="xoaMatHang('${item.id}')">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                tamTinh += item.nuocUong.gia * item.soLuong;
+            });
+
+            // Cập nhật tóm tắt
+            document.getElementById('tamTinh').textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tamTinh);
+            document.getElementById('tongCong').textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tamTinh);
+        }
+    }
+
+    function xoaMatHang(matHangId) {
+        if (confirm('Bạn chắc chắn muốn xóa sản phẩm này?')) {
+            (async () => {
+                try {
+                    const userResponse = await fetch('/api/nguoi-dung/me');
+                    if (!userResponse.ok) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    const user = await userResponse.json();
+                    const res = await fetch(`/api/gio-hang/${user.id}/mat-hang/${matHangId}`, { method: 'DELETE' });
+                    if (!res.ok) {
+                        throw new Error('Không thể xóa mặt hàng');
+                    }
+                    loadGioHang();
+                } catch (e) {
+                    console.error(e);
+                    alert('Lỗi xóa mặt hàng');
+                }
+            })();
+        }
+    }
+
+    document.getElementById('thanhToanBtn').addEventListener('click', () => {
+        window.location.href = '/ui/thanh-toan';
+    });
+</script>
+
+</body>
+</html>

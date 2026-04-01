@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tài khoản cá nhân - TKPMHDT')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header('account')}"></header>
+
+<div class="container" style="padding: 2rem 0;">
+    <h1 style="margin-bottom: 2rem;">👤 Tài Khoản Cá Nhân</h1>
+
+    <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem;">
+        <!-- Menu phụ -->
+        <nav style="background: #f5f5f5; padding: 1.5rem; border-radius: 12px; height: fit-content;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem;">Cài đặt</h3>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 0.5rem;">
+                    <button class="tab-btn" data-tab="thong-tin" style="width: 100%; text-align: left; padding: 0.7rem; background: var(--phuclong-green); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        Thông tin cá nhân
+                    </button>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <button class="tab-btn" data-tab="doi-mat-khau" style="width: 100%; text-align: left; padding: 0.7rem; background: transparent; border: none; cursor: pointer;">
+                        Đổi mật khẩu
+                    </button>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <button class="tab-btn" data-tab="dia-chi" style="width: 100%; text-align: left; padding: 0.7rem; background: transparent; border: none; cursor: pointer;">
+                        Địa chỉ giao hàng
+                    </button>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <button class="tab-btn" data-tab="don-hang" style="width: 100%; text-align: left; padding: 0.7rem; background: transparent; border: none; cursor: pointer;">
+                        Lịch sử đơn hàng
+                    </button>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <form action="/logout" method="post" style="margin: 0;">
+                        <button type="submit" style="width: 100%; text-align: left; padding: 0.7rem; color: #f44336; background: transparent; border: none; cursor: pointer;">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Nội dung chính -->
+        <div>
+            <!-- Tab: Thông tin cá nhân -->
+            <div class="tab-content" id="thong-tin">
+                <h2 style="margin-bottom: 1.5rem;">Thông Tin Cá Nhân</h2>
+                
+                <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;">
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; gap: 2rem;">
+                            <div style="flex: 1;">
+                                <h4>Avatar</h4>
+                                <img id="avatarPreview" src="" alt="Avatar" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; background: #f5f5f5; margin-bottom: 1rem;">
+                                <label for="avatarInput" class="btn-secondary" style="display: inline-block; padding: 0.5rem 1rem;">
+                                    Thay đổi avatar
+                                </label>
+                                <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                            </div>
+
+                            <div style="flex: 2;">
+                                <div style="margin-bottom: 1.5rem;">
+                                    <label for="tenDangNhap">Tên đăng nhập</label>
+                                    <input type="text" id="tenDangNhap" disabled style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px; background: #f5f5f5;">
+                                </div>
+
+                                <div style="margin-bottom: 1.5rem;">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                                </div>
+
+                                <div style="margin-bottom: 1.5rem;">
+                                    <label for="hoTen">Họ và Tên</label>
+                                    <input type="text" id="hoTen" placeholder="Nhập họ tên..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                                </div>
+
+                                <div style="margin-bottom: 1.5rem;">
+                                    <label for="soDienThoai">Số điện thoại</label>
+                                    <input type="tel" id="soDienThoai" placeholder="Nhập số điện thoại..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="saveInfoBtn" class="btn-primary" style="padding: 0.7rem 2rem;">
+                        💾 Lưu thay đổi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab: Đổi mật khẩu -->
+            <div class="tab-content" id="doi-mat-khau" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Đổi Mật Khẩu</h2>
+                
+                <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; max-width: 500px;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="matKhauCu">Mật khẩu hiện tại</label>
+                        <input type="password" id="matKhauCu" placeholder="Nhập mật khẩu hiện tại..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="matKhauMoi">Mật khẩu mới</label>
+                        <input type="password" id="matKhauMoi" placeholder="Nhập mật khẩu mới..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <small class="muted">Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số</small>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="xacNhanMatKhau">Xác nhận mật khẩu</label>
+                        <input type="password" id="xacNhanMatKhau" placeholder="Nhập lại mật khẩu mới..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                    </div>
+
+                    <button id="changePasswordBtn" class="btn-primary" style="padding: 0.7rem 2rem;">
+                        Đổi mật khẩu
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab: Địa chỉ giao hàng -->
+            <div class="tab-content" id="dia-chi" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Địa Chỉ Giao Hàng</h2>
+                
+                <div id="danhSachDiaChi" style="margin-bottom: 2rem;"></div>
+
+                <button id="themDiaChiBtn" class="btn-primary" style="padding: 0.7rem 2rem;">
+                    ➕ Thêm địa chỉ mới
+                </button>
+
+                <!-- Form thêm/sửa địa chỉ -->
+                <div id="formDiaChi" style="display: none; background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; margin-top: 2rem; max-width: 600px;">
+                    <h3 style="margin-top: 0;">Thêm Địa Chỉ Mới</h3>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="hoTenDiaChi">Tên người nhận</label>
+                        <input type="text" id="hoTenDiaChi" placeholder="Nhập tên..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="soDienThoaiDiaChi">Số điện thoại</label>
+                        <input type="tel" id="soDienThoaiDiaChi" placeholder="Nhập số điện thoại..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="diaChiDayDu">Địa chỉ chi tiết</label>
+                        <textarea id="diaChiDayDu" placeholder="Nhập địa chỉ đầy đủ..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px; min-height: 100px;"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <button onclick="saveDiaChi()" class="btn-primary" style="padding: 0.7rem;">
+                            💾 Lưu
+                        </button>
+                        <button onclick="cancelDiaChi()" class="btn-secondary" style="padding: 0.7rem;">
+                            Hủy
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Lịch sử đơn hàng -->
+            <div class="tab-content" id="don-hang" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Lịch Sử Đơn Hàng</h2>
+                <div id="danhSachDonHangTab" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;">
+                    <p class="muted">Đang tải...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    // Các tab
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.target.dataset.tab;
+            
+            // Ẩn tất cả tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+
+            // Hiển thị tab được chọn
+            document.getElementById(tabName).style.display = 'block';
+
+            // Cập nhật style button
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = 'inherit';
+            });
+            e.target.style.background = 'var(--phuclong-green)';
+            e.target.style.color = 'white';
+        });
+    });
+
+    // Load thông tin người dùng
+    loadUserInfo();
+
+    async function loadUserInfo() {
+        try {
+            const response = await fetch('/api/nguoi-dung/me');
+            const user = await response.json();
+
+            document.getElementById('tenDangNhap').value = user.tenDangNhap;
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('hoTen').value = user.hoTen || '';
+            document.getElementById('soDienThoai').value = user.soDienThoai || '';
+            
+            if (user.avatar) {
+                document.getElementById('avatarPreview').src = user.avatar;
+            }
+        } catch (error) {
+            console.error('Lỗi tải thông tin:', error);
+        }
+    }
+
+    // Lưu thông tin
+    document.getElementById('saveInfoBtn').addEventListener('click', async () => {
+        const data = {
+            email: document.getElementById('email').value,
+            hoTen: document.getElementById('hoTen').value,
+            soDienThoai: document.getElementById('soDienThoai').value
+        };
+
+        try {
+            const response = await fetch('/api/nguoi-dung/me', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Cập nhật thông tin thành công!');
+                loadUserInfo();
+            } else {
+                alert('Lỗi cập nhật thông tin');
+            }
+        } catch (error) {
+            console.error('Lỗi:', error);
+        }
+    });
+
+    // Upload avatar
+    document.getElementById('avatarInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        try {
+            const response = await fetch('/api/nguoi-dung/me/avatar', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('avatarPreview').src = data.avatarUrl;
+                alert('Upload avatar thành công!');
+            }
+        } catch (error) {
+            console.error('Lỗi upload avatar:', error);
+        }
+    });
+
+    // Địa chỉ
+    document.getElementById('themDiaChiBtn').addEventListener('click', () => {
+        document.getElementById('formDiaChi').style.display = 'block';
+    });
+
+    function cancelDiaChi() {
+        document.getElementById('formDiaChi').style.display = 'none';
+    }
+
+    let currentUser = null;
+    let selectedDiaChiId = null;
+
+    async function ensureUser() {
+        if (currentUser) return currentUser;
+        const res = await fetch('/api/nguoi-dung/me');
+        if (!res.ok) {
+            window.location.href = '/login';
+            return null;
+        }
+        currentUser = await res.json();
+        return currentUser;
+    }
+
+    async function loadDiaChi() {
+        const user = await ensureUser();
+        if (!user) return;
+        const res = await fetch(`/api/dia-chi/${user.id}`);
+        if (!res.ok) return;
+        const diaChis = await res.json();
+
+        const container = document.getElementById('danhSachDiaChi');
+        container.innerHTML = '';
+
+        if (!diaChis || diaChis.length === 0) {
+            container.innerHTML = `<div style="background:#f5f5f5;padding:1rem;border-radius:12px;" class="muted">Bạn chưa có địa chỉ nào.</div>`;
+            return;
+        }
+
+        diaChis.forEach(dc => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background:white;border:1px solid var(--border-color);border-radius:12px;padding:1rem;margin-bottom:0.75rem;';
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;">
+                    <div style="flex:1;">
+                        <div style="font-weight:600;">${dc.tenNguoiNhan || 'Người nhận'}</div>
+                        <div class="muted" style="font-size:0.9rem;">${dc.soDienThoai || ''}</div>
+                        <div style="margin-top:0.5rem;">${dc.diaChiDayDu || ''}</div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <button class="btn-secondary" style="padding:0.4rem 0.8rem;font-size:0.85rem;" onclick="editDiaChi('${dc.id}', ${JSON.stringify(dc).replace(/"/g,'&quot;')})">Sửa</button>
+                        <button class="btn-danger" style="padding:0.4rem 0.8rem;font-size:0.85rem;" onclick="deleteDiaChi('${dc.id}')">Xóa</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function editDiaChi(id, dc) {
+        selectedDiaChiId = id;
+        document.getElementById('formDiaChi').style.display = 'block';
+        document.getElementById('hoTenDiaChi').value = dc.tenNguoiNhan || '';
+        document.getElementById('soDienThoaiDiaChi').value = dc.soDienThoai || '';
+        document.getElementById('diaChiDayDu').value = dc.diaChiDayDu || '';
+    }
+
+    async function deleteDiaChi(id) {
+        if (!confirm('Xóa địa chỉ này?')) return;
+        const res = await fetch(`/api/dia-chi/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            await loadDiaChi();
+        } else {
+            alert('Không thể xóa địa chỉ');
+        }
+    }
+
+    async function saveDiaChi() {
+        const user = await ensureUser();
+        if (!user) return;
+
+        const payload = {
+            tenNguoiNhan: document.getElementById('hoTenDiaChi').value,
+            soDienThoai: document.getElementById('soDienThoaiDiaChi').value,
+            diaChiDayDu: document.getElementById('diaChiDayDu').value
+        };
+
+        // Backend hiện chỉ có endpoint tạo theo khachHangId (POST /api/dia-chi/{khachHangId})
+        // Nên "Sửa" sẽ tạo mới (đơn giản) và user có thể xóa cái cũ.
+        const res = await fetch(`/api/dia-chi/${user.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            selectedDiaChiId = null;
+            cancelDiaChi();
+            await loadDiaChi();
+            alert('Lưu địa chỉ thành công!');
+        } else {
+            alert('Lưu địa chỉ thất bại');
+        }
+    }
+
+    // Đổi mật khẩu
+    document.getElementById('changePasswordBtn').addEventListener('click', async () => {
+        const matKhauCu = document.getElementById('matKhauCu').value;
+        const matKhauMoi = document.getElementById('matKhauMoi').value;
+        const xacNhanMatKhau = document.getElementById('xacNhanMatKhau').value;
+        try {
+            const res = await fetch('/api/nguoi-dung/me/doi-mat-khau', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matKhauCu, matKhauMoi, xacNhanMatKhau })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success) {
+                alert('Đổi mật khẩu thành công!');
+                document.getElementById('matKhauCu').value = '';
+                document.getElementById('matKhauMoi').value = '';
+                document.getElementById('xacNhanMatKhau').value = '';
+            } else {
+                alert(data.message || 'Đổi mật khẩu thất bại');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Lỗi đổi mật khẩu');
+        }
+    });
+
+    // Auto load addresses when tab opened
+    document.querySelector('[data-tab="dia-chi"]').addEventListener('click', () => {
+        loadDiaChi();
+    });
+</script>
+
+</body>
+</html>

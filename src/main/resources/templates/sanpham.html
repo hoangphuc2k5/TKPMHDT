@@ -184,7 +184,7 @@
         } catch (e) {
             if (e.message.includes("401") || e.message.includes("403")) {
                 alert("Vui lòng đăng nhập để thực hiện chức năng này.");
-                window.location.href = "/ui/login";
+                window.location.href = "/login";
             } else {
                 alert("Lỗi: " + e.message);
             }

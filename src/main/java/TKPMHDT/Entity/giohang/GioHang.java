@@ -1,5 +1,6 @@
 package TKPMHDT.Entity.giohang;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import TKPMHDT.Entity.nguoidung.KhachHang;
 import jakarta.persistence.CascadeType;
@@ -47,5 +48,13 @@ public class GioHang {
 
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien = BigDecimal.ZERO;
+
+    /**
+     * Alias field cho UI cũ (giohang*.html) đang dùng "chiTietGioHang".
+     */
+    @JsonProperty("chiTietGioHang")
+    public List<ChiTietGioHang> getChiTietGioHang() {
+        return cacMatHang;
+    }
 }
 

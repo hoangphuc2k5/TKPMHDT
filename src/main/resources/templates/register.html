@@ -136,13 +136,14 @@
         }
 
         try {
-            const response = await fetch('/api/nguoi-dung/dang-ky-khach-hang', {
+            const response = await fetch('/api/auth/dang-ky', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tenDangNhap: username,
                     email: email,
-                    matKhauHash: password
+                    matKhau: password,
+                    hoTen: fullName
                 })
             });
 
