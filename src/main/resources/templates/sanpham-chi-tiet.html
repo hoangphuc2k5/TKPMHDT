@@ -94,51 +94,48 @@
 
     async function loadSanPham() {
         try {
-            const response = await fetch(`/api/san-pham/nuoc-uong/${sanPhamId}`);
-            const sanPham = await response.json();
+            // ✅ GỌI API MỚI (detail)
+            const res = await fetch(`/api/san-pham/nuoc-uong/${sanPhamId}/detail`);
+            const data = await res.json();
+            console.log("DATA =", data);
 
-            // Hiển thị thông tin sản phẩm
-            document.getElementById('sanPhamTen').textContent = sanPham.ten;
-            document.getElementById('sanPhamMoTa').textContent = sanPham.moTa || 'Sản phẩm tươi mới từ Phúc Long';
+            const sp = data.sanPham;
+
+            // ===== HIỂN THỊ THÔNG TIN =====
+            document.getElementById('sanPhamTen').textContent = sp.ten;
+            document.getElementById('sanPhamMoTa').textContent = sp.moTa || 'Sản phẩm tươi mới từ Phúc Long';
             document.getElementById('sanPhamGia').textContent = new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
-            }).format(sanPham.gia);
+            }).format(sp.gia);
 
-            // Hình ảnh chính
-            if (sanPham.hinhAnh && sanPham.hinhAnh.length > 0) {
-                document.getElementById('mainImage').src = sanPham.hinhAnh[0];
+            // ===== HÌNH ẢNH =====
+            if (sp.hinhAnh && sp.hinhAnh.length > 0) {
+                document.getElementById('mainImage').src = sp.hinhAnh[0];
             }
 
-            // Kiểm tra có thể tùy chỉnh không
-            const coTheTuyChinh = await fetch(`/api/san-pham/${sanPhamId}/co-the-tuy-chinh`).then(r => r.json());
-            if (coTheTuyChinh.coTheTuyChinh) {
+         // ===== TÙY CHỈNH =====
+            if (data.topping && data.topping.length > 0) {
                 document.getElementById('tuyChinhContainer').style.display = 'block';
-                loadNguyenLieuThem();
+
+                const select = document.getElementById('themNguyenLieu');
+                select.innerHTML = '<option value="">Chọn nguyên liệu...</option>';
+
+                data.topping.forEach(nl => {
+                    const option = document.createElement('option');
+                    option.value = nl.id;
+                    option.textContent = nl.ten;
+                    select.appendChild(option);
+                });
             }
 
-            // Thêm vào giỏ hàng
-            document.getElementById('themVaoGioHangBtn').addEventListener('click', themVaoGioHang);
+            // ===== BUTTON =====
+            document.getElementById('themVaoGioHangBtn')
+                .addEventListener('click', themVaoGioHang);
+
         } catch (error) {
             console.error('Lỗi tải sản phẩm:', error);
             showToast('Lỗi tải thông tin sản phẩm', true);
-        }
-    }
-
-    async function loadNguyenLieuThem() {
-        try {
-            const response = await fetch(`/api/san-pham/${sanPhamId}/nguyen-lieu-them`);
-            const nguyenLieus = await response.json();
-
-            const select = document.getElementById('themNguyenLieu');
-            nguyenLieus.forEach(nl => {
-                const option = document.createElement('option');
-                option.value = nl.id;
-                option.textContent = nl.ten;
-                select.appendChild(option);
-            });
-        } catch (error) {
-            console.error('Lỗi tải nguyên liệu:', error);
         }
     }
 
@@ -197,10 +194,11 @@
         }, 3000);
     }
 
-    // Cập nhật hiển thị % đường/đá
+    // ===== SLIDER =====
     document.getElementById('mucDuong').addEventListener('input', (e) => {
         document.getElementById('mucDuongValue').textContent = e.target.value + '%';
     });
+
     document.getElementById('mucDa').addEventListener('input', (e) => {
         document.getElementById('mucDaValue').textContent = e.target.value + '%';
     });

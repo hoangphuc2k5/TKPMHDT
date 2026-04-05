@@ -73,6 +73,22 @@ public class SanPhamController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+    
+    /**
+     * UC06 (Nâng cao): Xem chi tiết sản phẩm đầy đủ
+     * Trả về:
+     *   + Thông tin sản phẩm
+     *   + Các tùy chọn: size, đường, đá, topping
+     * Sử dụng Singleton Pattern trong Service
+     */
+    @GetMapping("/nuoc-uong/{id}/detail")
+    public ResponseEntity<?> layChiTietDayDu(@PathVariable UUID id) {
+
+        // dùng Singleton
+        SanPhamService service = SanPhamService.getInstance(sanPhamService);
+
+        return ResponseEntity.ok(service.layChiTietDayDu(id));
+    }
 
     // ==================== UC07: Tùy chỉnh sản phẩm ====================
 

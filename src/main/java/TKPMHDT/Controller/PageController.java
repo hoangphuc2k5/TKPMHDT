@@ -31,6 +31,10 @@ public class PageController {
     public String sanPhamPage() {
         return "sanpham";
     }
+    @GetMapping("/ui/san-pham/chi-tiet")
+    public String chiTietSanPhamPage() {
+        return "sanpham-chi-tiet";
+    }
 
     @GetMapping("/ui/gio-hang")
     public String gioHangPage() {
