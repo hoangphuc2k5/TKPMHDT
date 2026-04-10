@@ -10,231 +10,123 @@
         <p class="muted">Khám phá các loại đồ uống tuyệt vời được pha chế theo sở thích của bạn.</p>
     </div>
 
-    <!-- Search & Filter Bar -->
+    <!-- Search -->
     <div class="card" style="margin-bottom: 2rem;">
         <div class="card-content" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 250px;">
                 <label>Tìm kiếm món</label>
                 <input id="search-input" type="text" placeholder="Nhập tên đồ uống..." style="width: 100%;">
             </div>
-            <button onclick="timNuocUong()" class="btn-highlight" style="padding: 12px 30px;">Tìm kiếm</button>
+
+            <button onclick="timNuocUong()" class="btn-highlight">Tìm kiếm</button>
             <button onclick="dsNuocUong()" class="btn-secondary">Xem tất cả</button>
-            
-            <div sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')" style="margin-left: auto;">
-                <button onclick="openAdminModal()" class="btn-secondary" style="background: var(--phuclong-green); color: white;">+ Thêm món mới</button>
-            </div>
         </div>
     </div>
 
-    <!-- Products Grid -->
-    <div id="products-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem;">
-        <!-- Card sẽ được render bằng JS -->
+    <!-- Products -->
+    <div id="products-grid"
+         style="display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap:2rem;">
     </div>
 
-    <!-- Loading State -->
-    <div id="loading" style="text-align: center; padding: 3rem; display: none;">
-        <div class="brand-font" style="font-size: 1.5rem;">Đang tải menu...</div>
-    </div>
-</div>
-
-<!-- Customize Modal -->
-<div id="customize-modal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-    <div class="card" style="width: 90%; max-width: 500px; margin: auto;">
-        <div class="card-content">
-            <h2 id="modal-title" class="brand-font">Tùy chỉnh món</h2>
-            <input type="hidden" id="modal-sp-id">
-            
-            <div style="margin-top: 1.5rem;">
-                <label>Mức đường (%)</label>
-                <select id="modal-sugar" style="width: 100%; margin-bottom: 1rem;">
-                    <option value="100">100% (Bình thường)</option>
-                    <option value="70">70% (Ít đường)</option>
-                    <option value="50">50% (Vừa phải)</option>
-                    <option value="30">30% (Rất ít đường)</option>
-                    <option value="0">0% (Không đường)</option>
-                </select>
-
-                <label>Mức đá (%)</label>
-                <select id="modal-ice" style="width: 100%; margin-bottom: 1rem;">
-                    <option value="100">100% (Bình thường)</option>
-                    <option value="70">70% (Ít đá)</option>
-                    <option value="50">50% (Vừa phải)</option>
-                    <option value="30">30% (Rất ít đá)</option>
-                    <option value="0">0% (Không đá)</option>
-                </select>
-
-                <label>Ghi chú thêm</label>
-                <textarea id="modal-note" placeholder="Ví dụ: Không lấy ống hút, bỏ riêng trân châu..." style="width: 100%; height: 80px; margin-bottom: 1rem;"></textarea>
-
-                <label>Số lượng</label>
-                <input id="modal-quantity" type="number" value="1" min="1" style="width: 100%; margin-bottom: 1.5rem;">
-
-                <div style="display: flex; gap: 1rem;">
-                    <button onclick="closeModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
-                    <button onclick="confirmAddToCart()" class="btn-highlight" style="flex: 1;">Thêm vào giỏ</button>
-                </div>
-            </div>
-        </div>
+    <div id="loading" style="display:none; text-align:center; padding:2rem;">
+        Đang tải sản phẩm...
     </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
-<script th:inline="javascript">
-    const currentUserId = /*[[${#authentication.principal instanceof T(org.springframework.security.core.userdetails.UserDetails) ? #authentication.principal.username : ''}]]*/ '';
-    // Note: In a real app, we should get the UUID of the logged-in user. 
-    // For now, we'll assume the username might be the ID or handle it via a service call.
-    
-    document.addEventListener('DOMContentLoaded', dsNuocUong);
+<script>
+document.addEventListener("DOMContentLoaded", dsNuocUong);
 
-    async function dsNuocUong() {
-        showLoading(true);
-        try {
-            const data = await api("GET", "/api/san-pham/nuoc-uong");
-            renderProducts(data);
-        } catch (e) {
-            alert("Lỗi khi tải danh sách món: " + e.message);
-        } finally {
-            showLoading(false);
-        }
+async function dsNuocUong() {
+    showLoading(true);
+    try {
+        const res = await fetch("/api/san-pham/nuoc-uong");
+        const data = await res.json();
+        renderProducts(data);
+    } catch (e) {
+        alert("Lỗi tải sản phẩm");
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function timNuocUong() {
+    const ten = document.getElementById("search-input").value;
+    showLoading(true);
+
+    try {
+        const res = await fetch("/api/san-pham/nuoc-uong/tim?ten=" + encodeURIComponent(ten));
+        const data = await res.json();
+        renderProducts(data);
+    } catch (e) {
+        alert("Lỗi tìm kiếm");
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderProducts(products) {
+    const grid = document.getElementById("products-grid");
+    grid.innerHTML = "";
+
+    if (!products || products.length === 0) {
+        grid.innerHTML = "<p>Không có sản phẩm nào.</p>";
+        return;
     }
 
-    async function timNuocUong() {
-        const ten = document.getElementById("search-input").value;
-        showLoading(true);
-        try {
-            const data = await api("GET", "/api/san-pham/nuoc-uong/tim?ten=" + encodeURIComponent(ten));
-            renderProducts(data);
-        } catch (e) {
-            alert("Lỗi khi tìm kiếm: " + e.message);
-        } finally {
-            showLoading(false);
-        }
-    }
+    products.forEach(p => {
+        const img = (p.hinhAnh && p.hinhAnh.length > 0)
+            ? p.hinhAnh[0]
+            : "/uploads/default-drink.jpg";
 
-    function renderProducts(products) {
-        const grid = document.getElementById("products-grid");
-        grid.innerHTML = "";
-        
-        if (!products || products.length === 0) {
-            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem;">Không tìm thấy món nào phù hợp.</div>';
-            return;
-        }
+        grid.innerHTML += `
+            <div class="card product-card" style="cursor:pointer"
+                 onclick="goToDetail('${p.id}')">
 
-        products.forEach(p => {
-            const img = (p.hinhAnh && p.hinhAnh.length > 0) ? p.hinhAnh[0] : '/uploads/default-drink.jpg';
-
-            const card = `
-                <div class="card product-card" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
-                    
-                    <!-- CLICK ẢNH = XEM CHI TIẾT -->
-                    <div onclick="goToDetail('${p.id}')" style="cursor:pointer">
-                        <div style="height: 220px; overflow: hidden; position: relative;">
-                            <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;">
-                            <div style="position: absolute; top: 10px; right: 10px; background: var(--phuclong-gold); color: white; padding: 4px 12px; border-radius: 20px;">
-                                ${formatPrice(p.gia)}
-                            </div>
-                        </div>
-
-                        <div class="card-content">
-                            <h3 style="color: var(--phuclong-green);">${p.ten}</h3>
-                            <p class="muted">${p.moTa || ''}</p>
-                        </div>
-                    </div>
-
-                  
-                    <div class="card-content">
-                        <button onclick="openCustomizeModal('${p.id}', '${p.ten}')" class="btn-highlight" style="width: 100%;">
-                            Thêm vào giỏ
-                        </button>
-                    </div>
+                <div style="height:220px; overflow:hidden;">
+                    <img src="${img}" 
+                         style="width:100%; height:100%; object-fit:cover;">
                 </div>
-            `;
-            grid.innerHTML += card;
-        });
+
+                <div class="card-content">
+                    <h3>${p.ten}</h3>
+                    <p>${p.moTa || ""}</p>
+                    <h4 style="color:green">
+                        ${formatPrice(p.gia)}
+                    </h4>
+
+                    <button onclick="event.stopPropagation(); goToDetail('${p.id}')"
+                            class="btn-highlight"
+                            style="width:100%;">
+                        Xem chi tiết
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function goToDetail(id) {
+    if (!id) {
+        alert("Không tìm thấy ID sản phẩm");
+        return;
     }
 
-    function goToDetail(id) {
-        window.location.href = "/ui/san-pham/chi-tiet?id=" + id;
-    }
+    window.location.href = `/ui/san-pham/chi-tiet?id=${id}`;
+}
 
-    function openCustomizeModal(id, ten) {
-        document.getElementById("modal-sp-id").value = id;
-        document.getElementById("modal-title").innerText = ten;
-        document.getElementById("customize-modal").style.display = "flex";
-        document.getElementById("modal-quantity").value = 1;
-        document.getElementById("modal-note").value = "";
-    }
+function formatPrice(price) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(price);
+}
 
-    function closeModal() {
-        document.getElementById("customize-modal").style.display = "none";
-    }
-
-    async function confirmAddToCart() {
-        const spId = document.getElementById("modal-sp-id").value;
-        const sugar = parseInt(document.getElementById("modal-sugar").value);
-        const ice = parseInt(document.getElementById("modal-ice").value);
-        const note = document.getElementById("modal-note").value;
-        const qty = parseInt(document.getElementById("modal-quantity").value);
-
-        // In a real flow, we need the logged-in user's UUID
-        // For demonstration, we'll try to find it or ask (if not logged in, spring security will handle 401/403)
-        try {
-            // Get current user info from an API or hidden field
-            const user = await api("GET", "/api/nguoi-dung/me"); 
-            
-            await api("POST", "/api/gio-hang/them-mat-hang", {
-                khachHangId: user.id,
-                nuocUongId: spId,
-                soLuong: qty,
-                mucDuong: sugar,
-                mucDa: ice,
-                ghiChu: note
-            });
-            
-            alert("Đã thêm " + qty + " món vào giỏ hàng!");
-            closeModal();
-        } catch (e) {
-            if (e.message.includes("401") || e.message.includes("403")) {
-                alert("Vui lòng đăng nhập để thực hiện chức năng này.");
-                window.location.href = "/login";
-            } else {
-                alert("Lỗi: " + e.message);
-            }
-        }
-    }
-
-    function formatPrice(price) {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-    }
-
-    function showLoading(show) {
-        document.getElementById("loading").style.display = show ? "block" : "none";
-        document.getElementById("products-grid").style.opacity = show ? "0.3" : "1";
-    }
+function showLoading(show) {
+    document.getElementById("loading").style.display = show ? "block" : "none";
+}
 </script>
 
-<style>
-    .product-card {
-        transition: var(--transition);
-        border: 1px solid transparent;
-    }
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-hover);
-        border-color: var(--phuclong-green);
-    }
-    input, select, textarea {
-        padding: 10px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
-        font-family: inherit;
-    }
-    input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: var(--phuclong-green);
-        box-shadow: 0 0 0 3px rgba(12, 113, 61, 0.1);
-    }
-</style>
 </body>
 </html>

@@ -83,11 +83,7 @@ public class SanPhamController {
      */
     @GetMapping("/nuoc-uong/{id}/detail")
     public ResponseEntity<?> layChiTietDayDu(@PathVariable UUID id) {
-
-        // dùng Singleton
-        SanPhamService service = SanPhamService.getInstance(sanPhamService);
-
-        return ResponseEntity.ok(service.layChiTietDayDu(id));
+        return ResponseEntity.ok(sanPhamService.layChiTietDayDu(id));
     }
 
     // ==================== UC07: Tùy chỉnh sản phẩm ====================

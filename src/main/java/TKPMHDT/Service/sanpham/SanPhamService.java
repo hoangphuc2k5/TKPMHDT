@@ -16,16 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SanPhamService {
-	// ap dung Singleton 
-	private static SanPhamService instance;
-	
-	public static synchronized SanPhamService getInstance(SanPhamService service) {
-	    if (instance == null) {
-	        instance = service;
-	    }
-	    return instance;
-	}
-	
+
 	private final TuyChonTuyChinhRepository tuyChonRepository;
     private final NuocUongSanRepository nuocUongSanRepository;
     private final NguyenLieuRepository nguyenLieuRepository;	
