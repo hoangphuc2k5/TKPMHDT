@@ -69,9 +69,14 @@
                         <input type="number" id="soLuong" min="1" value="1" style="width: 80px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px;">
                     </div>
                 </div>
-                <button id="themVaoGioHangBtn" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1rem;">
-                    🛒 Thêm vào giỏ hàng
-                </button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <button id="themVaoGioHangBtn" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1rem;">
+                        🛒 Thêm vào giỏ hàng
+                    </button>
+                    <button id="muaNgayBtn" class="btn-highlight" style="width: 100%; padding: 1rem; font-size: 1rem;">
+                        ⚡ Mua ngay
+                    </button>
+                </div>
             </div>
 
             <div id="toast" style="display: none; position: fixed; bottom: 2rem; right: 2rem; background: #4caf50; color: white; padding: 1rem 2rem; border-radius: 8px; z-index: 1000;"></div>
@@ -119,6 +124,7 @@
 
             // Thêm vào giỏ hàng
             document.getElementById('themVaoGioHangBtn').addEventListener('click', themVaoGioHang);
+            document.getElementById('muaNgayBtn').addEventListener('click', muaNgay);
         } catch (error) {
             console.error('Lỗi tải sản phẩm:', error);
             showToast('Lỗi tải thông tin sản phẩm', true);
@@ -185,6 +191,24 @@
                 showToast('Lỗi thêm vào giỏ hàng', true);
             }
         })();
+    }
+
+    function muaNgay() {
+        const soLuong = parseInt(document.getElementById('soLuong').value);
+        const mucDuong = parseInt(document.getElementById('mucDuong').value);
+        const mucDa = parseInt(document.getElementById('mucDa').value);
+        const ghiChu = document.getElementById('ghiChu').value || '';
+
+        const params = new URLSearchParams({
+            buyNow: 'true',
+            productId: sanPhamId,
+            quantity: soLuong.toString(),
+            mucDuong: mucDuong.toString(),
+            mucDa: mucDa.toString(),
+            ghiChu: ghiChu
+        });
+
+        window.location.href = '/ui/don-hang?' + params.toString();
     }
 
     function showToast(message, isError = false) {
