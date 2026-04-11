@@ -39,6 +39,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import TKPMHDT.Entity.thanhtoan.ThanhToan;
 
 @Getter
 @Setter
@@ -83,6 +84,10 @@ public class DonHang {
     @Builder.Default
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
+
+    @JsonManagedReference
+    @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private ThanhToan thanhToan;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -104,16 +104,30 @@
                 <div class="card-content">
                     <h3>Thêm địa chỉ mới</h3>
                     <div style="margin-bottom: 1rem;">
-                        <label for="addressText">Địa chỉ</label>
-                        <input type="text" id="addressText" placeholder="123 Đường ABC, Quận X, TP. Hồ Chí Minh">
+                        <label for="addressName">Họ tên người nhận</label>
+                        <input type="text" id="addressName" placeholder="Nguyễn Văn A">
                     </div>
                     <div style="margin-bottom: 1rem;">
                         <label for="addressPhone">Số điện thoại giao hàng</label>
                         <input type="tel" id="addressPhone" placeholder="0123456789">
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <label for="addressNote">Ghi chú (tùy chọn)</label>
-                        <textarea id="addressNote" placeholder="Ví dụ: Tầng 3, cửa bên trái..." style="width: 100%; height: 60px;"></textarea>
+                        <label for="addressDetail">Số nhà, tên đường</label>
+                        <input type="text" id="addressDetail" placeholder="123 Đường ABC">
+                    </div>
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label for="addressWard">Phường/Xã</label>
+                            <input type="text" id="addressWard" placeholder="Phường 1">
+                        </div>
+                        <div>
+                            <label for="addressDistrict">Quận/Huyện</label>
+                            <input type="text" id="addressDistrict" placeholder="Quận 3">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="addressCity">Tỉnh/Thành phố</label>
+                        <input type="text" id="addressCity" placeholder="TP. Hồ Chí Minh">
                     </div>
                     <div style="display: flex; gap: 1rem;">
                         <button onclick="cancelAddressForm()" class="btn-secondary" style="flex: 1;">Hủy</button>
@@ -299,16 +313,21 @@
             const list = document.getElementById('addressList');
             list.innerHTML = '';
 
+            if (addresses.length === 0) {
+                list.innerHTML = '<p class="muted">Bạn chưa có địa chỉ giao hàng nào. Vui lòng thêm địa chỉ để dùng khi thanh toán.</p>';
+                return;
+            }
+
             addresses.forEach(addr => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
                     <div class="card-content">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
                             <div>
-                                <h4>${addr.diaChi}</h4>
+                                <h4>${addr.tenNguoiNhan}</h4>
+                                <p>${addr.diaChiCuThe}, ${addr.phuongXa}, ${addr.quanHuyen}, ${addr.tinhThanhPho}</p>
                                 <p class="muted">📞 ${addr.soDienThoai}</p>
-                                ${addr.ghiChu ? '<p class="muted">📝 ' + addr.ghiChu + '</p>' : ''}
                             </div>
                             <button onclick="deleteAddress('${addr.id}')" class="btn-secondary" style="padding: 6px 12px;">Xóa</button>
                         </div>
@@ -323,9 +342,12 @@
 
     function showAddressForm() {
         document.getElementById('addressForm').style.display = 'block';
-        document.getElementById('addressText').value = '';
+        document.getElementById('addressName').value = '';
         document.getElementById('addressPhone').value = '';
-        document.getElementById('addressNote').value = '';
+        document.getElementById('addressDetail').value = '';
+        document.getElementById('addressWard').value = '';
+        document.getElementById('addressDistrict').value = '';
+        document.getElementById('addressCity').value = '';
     }
 
     function cancelAddressForm() {
@@ -333,20 +355,26 @@
     }
 
     async function saveAddress() {
-        const address = document.getElementById('addressText').value.trim();
+        const name = document.getElementById('addressName').value.trim();
         const phone = document.getElementById('addressPhone').value.trim();
-        const note = document.getElementById('addressNote').value.trim();
+        const detail = document.getElementById('addressDetail').value.trim();
+        const ward = document.getElementById('addressWard').value.trim();
+        const district = document.getElementById('addressDistrict').value.trim();
+        const city = document.getElementById('addressCity').value.trim();
 
-        if (!address || !phone) {
-            showError('Vui lòng điền địa chỉ và số điện thoại');
+        if (!name || !phone || !detail || !ward || !district || !city) {
+            showError('Vui lòng điền đầy đủ thông tin địa chỉ.');
             return;
         }
 
         try {
             await api('POST', '/api/dia-chi/' + currentUserId, {
-                diaChi: address,
+                tenNguoiNhan: name,
                 soDienThoai: phone,
-                ghiChu: note
+                diaChiCuThe: detail,
+                phuongXa: ward,
+                quanHuyen: district,
+                tinhThanhPho: city
             });
 
             showSuccess('Thêm địa chỉ thành công!');

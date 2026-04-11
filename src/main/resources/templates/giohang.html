@@ -47,7 +47,7 @@
                         </div>
                     </div>
 
-                    <button onclick="proceedToCheckout()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
+                    <button onclick="startCheckout()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
                         Tiến hành đặt hàng
                     </button>
                 </div>
@@ -100,6 +100,27 @@
             renderCart();
         } catch (e) {
             console.error(e);
+        }
+    }
+
+    async function startCheckout() {
+        if (!currentCart || !currentCart.cacMatHang || currentCart.cacMatHang.length === 0) {
+            alert("Giỏ hàng đang trống, không thể tiến hành đặt hàng.");
+            return;
+        }
+
+        showLoading(true);
+        try {
+            const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
+            if (!addresses || addresses.length === 0) {
+                alert("Bạn chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ trước khi đặt hàng.");
+            }
+            window.location.href = "/ui/don-hang";
+        } catch (e) {
+            alert("Lỗi khi tiến hành đặt hàng: " + e.message);
+            console.error(e);
+        } finally {
+            showLoading(false);
         }
     }
 
@@ -157,10 +178,6 @@
         } catch (e) {
             alert("Lỗi khi xóa: " + e.message);
         }
-    }
-
-    function proceedToCheckout() {
-        window.location.href = "/ui/don-hang";
     }
 
     function formatPrice(price) {

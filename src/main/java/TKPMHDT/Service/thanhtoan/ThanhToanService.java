@@ -41,6 +41,7 @@ public class ThanhToanService {
                 .phuongThuc(phuongThuc)
                 .trangThai(TrangThaiThanhToanEnum.CHO_XU_LY)
                 .build();
+        donHang.setThanhToan(thanhToan);
 
         return thanhToanRepository.save(thanhToan);
     }
