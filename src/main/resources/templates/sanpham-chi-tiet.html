@@ -1,65 +1,38 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Chi tiết sản phẩm - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Chi tiết sản phẩm')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('sanpham')}"></header>
 
-<div class="container" style="padding: 2rem 0;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-        <!-- Hình ảnh sản phẩm -->
+<div class="container" style="padding:2rem 0;">
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+
+        <!-- LEFT -->
         <div>
-            <div style="background: #f5f5f5; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                <img id="mainImage" src="" alt="Hình ảnh sản phẩm" style="width: 100%; height: auto; border-radius: 8px;">
-            </div>
-            <div style="display: flex; gap: 0.5rem; overflow-x: auto;">
-                <!-- Hình ảnh phụ sẽ được load từ API -->
-            </div>
+            <img id="mainImage"
+                 src=""
+                 style="width:100%; border-radius:10px;">
+
+            <div id="subImages"
+                 style="display:flex; gap:10px; margin-top:1rem;"></div>
         </div>
 
-        <!-- Thông tin sản phẩm -->
+        <!-- RIGHT -->
         <div>
-            <h1 id="sanPhamTen" style="font-size: 2rem; margin-bottom: 0.5rem;"></h1>
-            <p id="sanPhamMoTa" class="muted" style="font-size: 1rem; margin-bottom: 1rem;"></p>
-            
-            <div style="background: var(--phuclong-light); padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
-                <p style="font-size: 0.875rem; color: #666; margin-bottom: 0.5rem;">Giá:</p>
-                <h2 id="sanPhamGia" style="font-size: 2rem; color: var(--phuclong-green); margin: 0;">0 đ</h2>
-            </div>
+            <h1 id="sanPhamTen"></h1>
+            <p id="sanPhamMoTa"></p>
+            <h2 id="sanPhamGia" style="color:green;"></h2>
 
-            <!-- UC07: Tùy chỉnh sản phẩm -->
-            <div id="tuyChinhContainer" style="display: none; background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">🎨 Tùy chỉnh sản phẩm</h3>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label for="mucDuong">Mức đường (%)</label>
-                    <input type="range" id="mucDuong" min="0" max="100" step="10" value="100" style="width: 100%;">
-                    <small id="mucDuongValue" class="muted">100%</small>
-                </div>
+            <!-- Tùy chỉnh -->
+            <div id="tuyChinhContainer"
+                 style="display:none; margin-top:2rem; background:#f5f5f5; padding:1rem; border-radius:8px;">
 
-                <div style="margin-bottom: 1rem;">
-                    <label for="mucDa">Mức đá (%)</label>
-                    <input type="range" id="mucDa" min="0" max="100" step="10" value="100" style="width: 100%;">
-                    <small id="mucDaValue" class="muted">100%</small>
-                </div>
+                <h3>Tùy chỉnh sản phẩm</h3>
 
-                <div style="margin-bottom: 1rem;">
-                    <label for="ghiChu">Ghi chú thêm</label>
-                    <textarea id="ghiChu" placeholder="Ví dụ: Ít đường, nhiều đá..." style="width: 100%; border-radius: 8px; padding: 0.5rem; border: 1px solid var(--border-color);"></textarea>
-                </div>
-
-                <!-- Thêm nguyên liệu -->
-                <div>
-                    <label for="themNguyenLieu">Thêm nguyên liệu</label>
-                    <select id="themNguyenLieu" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px;">
-                        <option value="">Chọn nguyên liệu...</option>
-                    </select>
-                </div>
-
-                <div id="nguyenLieuDaChon" style="margin-top: 1rem; display: none;">
-                    <h4>Nguyên liệu đã chọn:</h4>
-                    <ul id="danhSachNguyenLieu" style="list-style: none; padding: 0;"></ul>
-                </div>
-            </div>
+                <label>Mức đường</label>
+                <input type="range" id="mucDuong" min="0" max="100" value="100">
+                <small id="mucDuongValue">100%</small>
 
             <!-- Số lượng và thêm vào giỏ -->
             <div style="margin-bottom: 2rem;">
@@ -79,48 +52,36 @@
                 </div>
             </div>
 
-            <div id="toast" style="display: none; position: fixed; bottom: 2rem; right: 2rem; background: #4caf50; color: white; padding: 1rem 2rem; border-radius: 8px; z-index: 1000;"></div>
+            <br>
+
+            <label>Số lượng:</label>
+            <input type="number" id="soLuong" value="1" min="1">
+
+            <br><br>
+
+            <button id="themVaoGioHangBtn" class="btn-primary">
+                Thêm vào giỏ hàng
+            </button>
         </div>
+
     </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
 <script>
-    // Lấy ID sản phẩm từ URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const sanPhamId = urlParams.get('id');
+const urlParams = new URLSearchParams(window.location.search);
+const sanPhamId = urlParams.get("id");
 
-    if (!sanPhamId) {
-        document.body.innerHTML = '<div class="container"><p style="padding: 2rem; text-align: center;">Không tìm thấy sản phẩm</p></div>';
-    } else {
-        loadSanPham();
-    }
+if (!sanPhamId) {
+    alert("Không tìm thấy sản phẩm");
+} else {
+    loadSanPham();
+}
 
-    async function loadSanPham() {
-        try {
-            const response = await fetch(`/api/san-pham/nuoc-uong/${sanPhamId}`);
-            const sanPham = await response.json();
-
-            // Hiển thị thông tin sản phẩm
-            document.getElementById('sanPhamTen').textContent = sanPham.ten;
-            document.getElementById('sanPhamMoTa').textContent = sanPham.moTa || 'Sản phẩm tươi mới từ Phúc Long';
-            document.getElementById('sanPhamGia').textContent = new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-            }).format(sanPham.gia);
-
-            // Hình ảnh chính
-            if (sanPham.hinhAnh && sanPham.hinhAnh.length > 0) {
-                document.getElementById('mainImage').src = sanPham.hinhAnh[0];
-            }
-
-            // Kiểm tra có thể tùy chỉnh không
-            const coTheTuyChinh = await fetch(`/api/san-pham/${sanPhamId}/co-the-tuy-chinh`).then(r => r.json());
-            if (coTheTuyChinh.coTheTuyChinh) {
-                document.getElementById('tuyChinhContainer').style.display = 'block';
-                loadNguyenLieuThem();
-            }
+async function loadSanPham() {
+    try {
+        const res = await fetch(`/api/san-pham/nuoc-uong/${sanPhamId}/detail`);
 
             // Thêm vào giỏ hàng
             document.getElementById('themVaoGioHangBtn').addEventListener('click', themVaoGioHang);
@@ -129,69 +90,48 @@
             console.error('Lỗi tải sản phẩm:', error);
             showToast('Lỗi tải thông tin sản phẩm', true);
         }
-    }
 
-    async function loadNguyenLieuThem() {
-        try {
-            const response = await fetch(`/api/san-pham/${sanPhamId}/nguyen-lieu-them`);
-            const nguyenLieus = await response.json();
+        // ảnh phụ
+        const subImages = document.getElementById("subImages");
+        subImages.innerHTML = "";
 
-            const select = document.getElementById('themNguyenLieu');
-            nguyenLieus.forEach(nl => {
-                const option = document.createElement('option');
-                option.value = nl.id;
-                option.textContent = nl.ten;
-                select.appendChild(option);
+        if (sp.hinhAnh && sp.hinhAnh.length > 1) {
+            sp.hinhAnh.forEach(img => {
+                const thumb = document.createElement("img");
+                thumb.src = img;
+                thumb.style.width = "80px";
+                thumb.style.height = "80px";
+                thumb.style.objectFit = "cover";
+                thumb.style.cursor = "pointer";
+                thumb.style.borderRadius = "8px";
+
+                thumb.onclick = () => {
+                    mainImage.src = img;
+                };
+
+                subImages.appendChild(thumb);
             });
-        } catch (error) {
-            console.error('Lỗi tải nguyên liệu:', error);
         }
-    }
 
-    function themVaoGioHang() {
-        const soLuong = parseInt(document.getElementById('soLuong').value);
-        const mucDuong = parseInt(document.getElementById('mucDuong').value);
-        const mucDa = parseInt(document.getElementById('mucDa').value);
-        const ghiChu = document.getElementById('ghiChu').value;
+        // tùy chỉnh
+        if (data.coTheTuyChinh === true) {
+            document.getElementById("tuyChinhContainer").style.display = "block";
 
-        (async () => {
-            try {
-                const userResponse = await fetch('/api/nguoi-dung/me');
-                if (!userResponse.ok) {
-                    window.location.href = '/login';
-                    return;
-                }
-                const user = await userResponse.json();
+            const select = document.getElementById("themNguyenLieu");
+            select.innerHTML = `<option value="">Chọn topping...</option>`;
 
-                const res = await fetch('/api/gio-hang/them-mat-hang', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        khachHangId: user.id,
-                        nuocUongId: sanPhamId,
-                        soLuong: soLuong,
-                        mucDuong: mucDuong,
-                        mucDa: mucDa,
-                        ghiChu: ghiChu
-                    })
+            if (data.topping && data.topping.length > 0) {
+                data.topping.forEach(t => {
+                    const option = document.createElement("option");
+                    option.value = t.id;
+                    option.textContent = t.ten;
+                    select.appendChild(option);
                 });
-
-                if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                        window.location.href = '/login';
-                        return;
-                    }
-                    const errText = await res.text();
-                    throw new Error(errText || 'Không thể thêm vào giỏ hàng');
-                }
-
-                showToast(`Đã thêm ${soLuong} sản phẩm vào giỏ hàng`, false);
-            } catch (e) {
-                console.error(e);
-                showToast('Lỗi thêm vào giỏ hàng', true);
             }
-        })();
-    }
+        }
+
+        // button
+        document.getElementById("themVaoGioHangBtn").onclick = themVaoGioHang;
 
     function muaNgay() {
         const soLuong = parseInt(document.getElementById('soLuong').value);
@@ -220,14 +160,19 @@
             toast.style.display = 'none';
         }, 3000);
     }
+}
 
-    // Cập nhật hiển thị % đường/đá
-    document.getElementById('mucDuong').addEventListener('input', (e) => {
-        document.getElementById('mucDuongValue').textContent = e.target.value + '%';
-    });
-    document.getElementById('mucDa').addEventListener('input', (e) => {
-        document.getElementById('mucDaValue').textContent = e.target.value + '%';
-    });
+function themVaoGioHang() {
+    alert("Đã thêm vào giỏ hàng");
+}
+
+document.getElementById("mucDuong").addEventListener("input", function(e) {
+    document.getElementById("mucDuongValue").textContent = e.target.value + "%";
+});
+
+document.getElementById("mucDa").addEventListener("input", function(e) {
+    document.getElementById("mucDaValue").textContent = e.target.value + "%";
+});
 </script>
 
 </body>
