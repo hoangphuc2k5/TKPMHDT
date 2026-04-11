@@ -48,7 +48,10 @@ public class NguyenLieu {
     @Column(name = "nguong_canh_bao", precision = 18, scale = 3)
     @Builder.Default
     private BigDecimal nguongCanhBao = BigDecimal.ZERO;
-
+    
+    @Column(name = "gia", precision = 18, scale = 2)
+    private BigDecimal gia;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "loai", nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'INGREDIENT'")
     @Builder.Default
