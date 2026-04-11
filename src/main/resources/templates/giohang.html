@@ -24,9 +24,14 @@
                 <div class="card-content">
                     <h3 class="brand-font" style="margin-top: 0;">Tổng đơn hàng</h3>
                     <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+
+                    <label style="display:flex; align-items:center; gap:0.4rem; margin-bottom: 0.8rem;">
+                        <input id="select-all-items" type="checkbox" onchange="toggleSelectAll(this.checked)" style="transform: scale(0.7); margin-top: 0.1rem; width: 18px; height: 18px;">
+                        <span>Chọn tất cả sản phẩm</span>
+                    </label>
                     
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>Tạm tính:</span>
+                        <span>Tạm tính (đã chọn):</span>
                         <span id="subtotal">0đ</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
@@ -47,8 +52,14 @@
                         </div>
                     </div>
 
+                    <div style="margin-top:1rem; padding:10px; border:1px solid var(--border-color); border-radius:8px;">
+                        <div class="muted">Địa chỉ giao hàng mặc định</div>
+                        <div id="defaultAddress" style="font-size:0.9rem;">Đang tải địa chỉ...</div>
+                        <button type="button" class="btn-secondary" onclick="changeAddress()" style="margin-top:8px; padding:8px 12px;">Thay đổi</button>
+                    </div>
+
                     <button onclick="startCheckout()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
-                        Tiến hành đặt hàng
+                        Tiếp tục thanh toán
                     </button>
                 </div>
             </div>
@@ -83,6 +94,7 @@
         showLoading(true);
         try {
             currentUser = await api("GET", "/api/nguoi-dung/me");
+            await loadDefaultAddress();
             await loadCart();
         } catch (e) {
             console.error(e);
@@ -106,6 +118,11 @@
     async function startCheckout() {
         if (!currentCart || !currentCart.cacMatHang || currentCart.cacMatHang.length === 0) {
             alert("Giỏ hàng đang trống, không thể tiến hành đặt hàng.");
+            return;
+        }
+        const selectedItems = currentCart.cacMatHang.filter(item => item.duocChonThanhToan);
+        if (selectedItems.length === 0) {
+            alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.");
             return;
         }
 
@@ -141,7 +158,10 @@
             
             const itemHtml = `
                 <div class="card" style="margin-bottom: 1rem;">
-                    <div class="card-content" style="display: flex; gap: 1.5rem; align-items: center;">
+                    <div class="card-content" style="display: flex; gap: 0.9rem; align-items: flex-start;">
+                        <div style="flex: 0 0 24px; display: flex; justify-content: center; align-items: flex-start; margin-top: 0.2rem;">
+                            <input type="checkbox" ${item.duocChonThanhToan ? 'checked' : ''} onchange="toggleSelectItem('${item.id}', this.checked)" style="transform: scale(0.65);">
+                        </div>
                         <img src="${img}" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);">
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -166,8 +186,13 @@
             list.innerHTML += itemHtml;
         });
 
-        document.getElementById("subtotal").innerText = formatPrice(currentCart.tongTien);
-        document.getElementById("total").innerText = formatPrice(currentCart.tongTien);
+        const selectedTotal = currentCart.cacMatHang
+            .filter(item => item.duocChonThanhToan)
+            .reduce((sum, item) => sum + (item.thanhTien || 0), 0);
+        document.getElementById("subtotal").innerText = formatPrice(selectedTotal);
+        document.getElementById("total").innerText = formatPrice(selectedTotal);
+        document.getElementById("select-all-items").checked = currentCart.cacMatHang.length > 0
+            && currentCart.cacMatHang.every(item => item.duocChonThanhToan);
     }
 
     async function removeItem(itemId) {
@@ -177,6 +202,38 @@
             await loadCart();
         } catch (e) {
             alert("Lỗi khi xóa: " + e.message);
+        }
+    }
+
+    async function toggleSelectItem(itemId, checked) {
+        try {
+            currentCart = await api("PATCH", `/api/gio-hang/${currentUser.id}/mat-hang/${itemId}/chon`, { duocChon: checked });
+            renderCart();
+        } catch (e) {
+            alert("Lỗi cập nhật lựa chọn: " + e.message);
+            await loadCart();
+        }
+    }
+
+    async function loadDefaultAddress() {
+        try {
+            const list = await api("GET", "/api/dia-chi/" + currentUser.id);
+            const chosen = (list || []).find(x => x.macDinh) || (list || [])[0];
+            document.getElementById("defaultAddress").textContent = chosen
+                ? `${chosen.diaChiChiTiet || ""} (${chosen.soDienThoaiNhan || ""})`
+                : "Chưa có địa chỉ. Vui lòng cập nhật trong tài khoản.";
+        } catch (e) {
+            document.getElementById("defaultAddress").textContent = "Không tải được địa chỉ.";
+        }
+    }
+
+    async function toggleSelectAll(checked) {
+        try {
+            currentCart = await api("PATCH", `/api/gio-hang/${currentUser.id}/chon-tat-ca`, { duocChon: checked });
+            renderCart();
+        } catch (e) {
+            alert("Lỗi cập nhật lựa chọn: " + e.message);
+            await loadCart();
         }
     }
 
@@ -193,6 +250,10 @@
         const code = document.getElementById("coupon-code").value;
         if (!code) return;
         alert("Tính năng áp dụng mã giảm giá đang được cập nhật!");
+    }
+
+    function changeAddress() {
+        window.location.href = "/ui/tai-khoan";
     }
 </script>
 

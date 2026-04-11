@@ -72,7 +72,8 @@
                                 <label>Trạng thái</label>
                                 <select id="productActive"><option value="true">Bật</option><option value="false">Tắt</option></select>
                                 <label>Hình ảnh</label>
-                                <input id="productImage" type="file" accept="image/*">
+                                <input id="productImage" type="file" accept="image/*" multiple>
+                                <div id="productImagesPreview" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; margin-top: 0.75rem;"></div>
                                 <div class="admin-actions">
                                     <button class="btn-highlight" onclick="saveProduct()">Lưu sản phẩm</button>
                                     <button class="btn-secondary" onclick="resetProductForm()">Mới</button>
@@ -90,47 +91,10 @@
                                 <table class="admin-table">
                                     <thead><tr><th>Nguyên liệu</th><th>Số lượng</th><th>Đơn vị</th><th>Tác vụ</th></tr></thead>
                                     <tbody id="recipeIngredientBody"></tbody>
-                                </table>
-                                <h4>Thành phần tùy chỉnh theo sản phẩm</h4>
-                                <label>Mức đường (ngăn cách dấu phẩy)</label>
-                                <input id="customSugarList" value="Không đường,Ít đường,Bình thường,Nhiều đường">
-                                <label>Mặc định mức đường</label>
-                                <input id="customSugarDefault" value="Bình thường">
-                                <label>Mức đá (ngăn cách dấu phẩy)</label>
-                                <input id="customIceList" value="Không đá,Ít đá,Bình thường,Nhiều đá">
-                                <label>Mặc định mức đá</label>
-                                <input id="customIceDefault" value="Bình thường">
-                                <label>Topping cho phép</label>
-                                <div id="customToppingList" class="admin-check-grid"></div>
-                                <label>Size áp dụng (ngăn cách dấu phẩy)</label>
-                                <input id="customSizeList" value="Nhỏ,Vừa,Lớn">
-                                <label>Size mặc định</label>
-                                <input id="customSizeDefault" value="Vừa">
-                                <label><input id="customEnableSize" type="checkbox" checked> Áp dụng size cho sản phẩm</label>
+                                </table>                                
                                 <button class="btn-highlight" onclick="saveRecipeCustomization()">Lưu tùy chỉnh công thức</button>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-content">
-                        <h3>Thành phần tùy chỉnh dùng chung</h3>
-                        <div class="admin-inline-form">
-                            <input type="hidden" id="optionId">
-                            <input id="optionName" placeholder="Tên thành phần">
-                            <select id="optionGroup">
-                                <option value="DUONG">Mức đường</option>
-                                <option value="DA">Mức đá</option>
-                                <option value="TOPPING">Topping</option>
-                                <option value="SIZE">Size</option>
-                            </select>
-                            <input id="optionPrice" type="number" min="0" placeholder="Giá thêm">
-                            <button class="btn-highlight" onclick="saveOption()">Lưu thành phần</button>
-                        </div>
-                        <table class="admin-table">
-                            <thead><tr><th>Tên</th><th>Nhóm</th><th>Giá thêm</th><th>Tác vụ</th></tr></thead>
-                            <tbody id="optionBody"></tbody>
-                        </table>
                     </div>
                 </div>
             </section>
@@ -331,18 +295,40 @@
         const past = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         document.getElementById('reportFrom').value = past;
         document.getElementById('reportTo').value = today;
+        applyInitialSectionFromUrl();
         await Promise.all([loadKpi(), loadProducts(), loadOptions(), loadInventory(), loadOrders(), loadCustomers(), loadStaff(), loadPromotions(), loadReports(), loadSystemData()]);
     });
 
     function bindSidebar() {
         document.querySelectorAll('.admin-menu-item').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.admin-menu-item').forEach(x => x.classList.remove('active'));
-                document.querySelectorAll('.admin-section').forEach(x => x.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('section-' + btn.dataset.section).classList.add('active');
+                switchSection(btn.dataset.section, true);
             });
         });
+    }
+
+    function switchSection(section, syncUrl) {
+        const targetMenu = document.querySelector(`.admin-menu-item[data-section="${section}"]`);
+        const targetSection = document.getElementById('section-' + section);
+        if (!targetMenu || !targetSection) return;
+
+        document.querySelectorAll('.admin-menu-item').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.admin-section').forEach(x => x.classList.remove('active'));
+        targetMenu.classList.add('active');
+        targetSection.classList.add('active');
+
+        if (syncUrl) {
+            const u = new URL(window.location.href);
+            u.searchParams.set('section', section);
+            window.history.replaceState({}, '', u);
+        }
+    }
+
+    function applyInitialSectionFromUrl() {
+        const section = new URLSearchParams(window.location.search).get('section');
+        if (section) {
+            switchSection(section, false);
+        }
     }
 
     function bindProductMiniTabs() {
@@ -401,6 +387,7 @@
         document.getElementById('productActive').value = String(!!p.dangKinhDoanh);
         currentRecipeProductId = p.id;
         document.getElementById('recipeProductLabel').textContent = 'Đang chỉnh công thức cho: ' + (p.ten || '');
+        renderProductImages(p.hinhAnh || []);
         loadProductRecipe();
     }
 
@@ -414,6 +401,29 @@
         document.getElementById('productImage').value = '';
         currentRecipeProductId = '';
         currentRecipeData = null;
+        renderProductImages([]);
+    }
+
+    function renderProductImages(images) {
+        const container = document.getElementById('productImagesPreview');
+        container.innerHTML = '';
+        if (!images || images.length === 0) {
+            container.innerHTML = '<div class="muted">Chưa có ảnh sản phẩm</div>';
+            return;
+        }
+        images.forEach((url, index) => {
+            const item = document.createElement('div');
+            item.style.position = 'relative';
+            item.style.border = '1px solid var(--border-color)';
+            item.style.borderRadius = '12px';
+            item.style.overflow = 'hidden';
+            item.style.background = '#fff';
+            item.innerHTML = `
+                <img src="${url}" alt="Hình ${index + 1}" style="width:100%; aspect-ratio: 1 / 1; object-fit: cover; display:block;">
+                <button type="button" onclick="deleteProductImage('${document.getElementById('productId').value}', ${index})" style="position:absolute; top:6px; right:6px; width:26px; height:26px; border:none; border-radius:50%; background:rgba(0,0,0,0.6); color:#fff; cursor:pointer;">&times;</button>
+            `;
+            container.appendChild(item);
+        });
     }
 
     async function saveProduct() {
@@ -429,17 +439,22 @@
             const method = id ? 'PUT' : 'POST';
             const url = id ? '/api/admin/san-pham/' + id : '/api/admin/san-pham';
             const saved = await api(method, url, payload);
-            const file = document.getElementById('productImage').files[0];
-            if (file && saved.id) {
+            const files = document.getElementById('productImage').files;
+            if (files.length && saved.id) {
                 const form = new FormData();
-                form.append('hinhAnh', file);
+                for (const file of files) {
+                    form.append('hinhAnh', file);
+                }
                 await apiUpload('/api/admin/san-pham/' + saved.id + '/hinh-anh', form);
             }
             currentRecipeProductId = saved.id || id;
             showMessage('Đã lưu sản phẩm');
             await loadProducts();
             await loadKpi();
-            if (currentRecipeProductId) await loadProductRecipe();
+            if (currentRecipeProductId) {
+                editProduct(currentRecipeProductId);
+                await loadProductRecipe();
+            }
         } catch (e) {
             showMessage('Lỗi lưu sản phẩm: ' + e.message, 'error');
         }
@@ -448,6 +463,14 @@
     async function toggleSelling(id, state) {
         await api('PATCH', '/api/admin/san-pham/' + id + '/trang-thai-ban', { dangBan: state });
         await loadProducts();
+    }
+
+    async function deleteProductImage(productId, imageIndex) {
+        if (!productId) return;
+        if (!confirm('Xóa hình ảnh này khỏi sản phẩm?')) return;
+        await api('DELETE', `/api/admin/san-pham/${productId}/hinh-anh?index=${imageIndex}`);
+        await loadProducts();
+        editProduct(productId);
     }
 
     async function deleteProduct(id) {

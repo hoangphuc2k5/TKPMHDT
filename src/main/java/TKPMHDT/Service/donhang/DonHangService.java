@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import TKPMHDT.DTO.request.SanPhamOrderRequest;
+import TKPMHDT.DTO.request.TaoThanhToanRequest;
 import TKPMHDT.DTO.request.ToppingRequest;
 import TKPMHDT.DTO.response.ChiTietDonHangResponse;
 import TKPMHDT.DTO.response.DonHangResponse;
@@ -32,7 +33,9 @@ import TKPMHDT.Entity.sanpham.ChiTietTopping;
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
+import TKPMHDT.Repository.donhang.ChiTietDonHangRepository;
 import TKPMHDT.Repository.donhang.DonHangRepository;
+import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.giohang.GioHangRepository;
 import TKPMHDT.Repository.nguoidung.DiaChiRepository;
 import TKPMHDT.Repository.nguoidung.KhachHangRepository;
@@ -53,6 +56,9 @@ public class DonHangService {
     private final DiaChiRepository diaChiRepository;
     private final NuocUongSanRepository nuocUongSanRepository;
     private final ThanhToanService thanhToanService;
+    private final ChiTietDonHangRepository chiTietDonHangRepository;
+    private final NguyenLieuRepository nguyenLieuRepository;
+    private final DonHangRealtimeService donHangRealtimeService;
 
     public DonHangService(
             DonHangRepository donHangRepository,
@@ -62,7 +68,10 @@ public class DonHangService {
             NguoiDungRepository nguoiDungRepository,
             DiaChiRepository diaChiRepository,
             NuocUongSanRepository nuocUongSanRepository,
-            ThanhToanService thanhToanService
+            ThanhToanService thanhToanService,
+            ChiTietDonHangRepository chiTietDonHangRepository,
+            NguyenLieuRepository nguyenLieuRepository,
+            DonHangRealtimeService donHangRealtimeService
     ) {
         this.donHangRepository = donHangRepository;
         this.gioHangRepository = gioHangRepository;
@@ -72,6 +81,9 @@ public class DonHangService {
         this.diaChiRepository = diaChiRepository;
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.thanhToanService = thanhToanService;
+        this.chiTietDonHangRepository = chiTietDonHangRepository;
+        this.nguyenLieuRepository = nguyenLieuRepository;
+        this.donHangRealtimeService = donHangRealtimeService;
     }
 
     @Transactional
@@ -79,22 +91,23 @@ public class DonHangService {
         GioHang gioHang = gioHangRepository.findByKhachHangId(khachHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng"));
 
-        if (gioHang.getCacMatHang().isEmpty()) {
-            throw new IllegalStateException("Giỏ hàng đang rỗng");
+        List<ChiTietGioHang> matHangDuocChon = gioHang.getCacMatHang().stream()
+                .filter(ChiTietGioHang::isDuocChonThanhToan)
+                .toList();
+
+        if (matHangDuocChon.isEmpty()) {
+            throw new IllegalStateException("Không có mặt hàng nào được chọn để thanh toán");
         }
 
-        DiaChi diaChi = diaChiRepository.findById(diaChiId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ"));
-
-        if (!diaChi.getKhachHang().getId().equals(khachHangId)) {
-            throw new SecurityException("Địa chỉ không thuộc về khách hàng này");
-        }
+        DiaChi diaChi = resolveDiaChiGiaoHang(khachHangId, diaChiId);
 
         Optional<MaGiamGia> maGiamGiaOpt = maGiamGiaCode == null || maGiamGiaCode.isBlank()
                 ? Optional.empty()
                 : khuyenMaiService.timTheoMa(maGiamGiaCode);
 
-        BigDecimal tongTienGoc = gioHang.getTongTien();
+        BigDecimal tongTienGoc = matHangDuocChon.stream()
+                .map(ChiTietGioHang::getThanhTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal tienGiam = khuyenMaiService.tinhTienGiam(maGiamGiaOpt.orElse(null), tongTienGoc);
         BigDecimal tongThanhToan = tongTienGoc.subtract(tienGiam).max(BigDecimal.ZERO);
 
@@ -109,7 +122,7 @@ public class DonHangService {
                 .build();
 
         List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
-        for (ChiTietGioHang item : gioHang.getCacMatHang()) {
+        for (ChiTietGioHang item : matHangDuocChon) {
             ChiTietDonHang chiTiet = ChiTietDonHang.builder()
                     .donHang(donHang)
                     .soLuong(item.getSoLuong())
@@ -122,10 +135,16 @@ public class DonHangService {
         donHang.setChiTietDonHangs(chiTietDonHangs);
 
         DonHang saved = donHangRepository.save(donHang);
-        saved.setThanhToan(thanhToanService.taoThanhToan(saved.getId(), phuongThuc));
+        TaoThanhToanRequest thanhToanRequest = new TaoThanhToanRequest();
+        thanhToanRequest.setDonHangId(saved.getId());
+        thanhToanRequest.setPhuongThuc(phuongThuc);
+        thanhToanService.taoThanhToan(thanhToanRequest);
+        donHangRealtimeService.publishOrderUpdated(saved);
 
-        gioHang.getCacMatHang().clear();
-        gioHang.setTongTien(BigDecimal.ZERO);
+        gioHang.getCacMatHang().removeIf(ChiTietGioHang::isDuocChonThanhToan);
+        gioHang.setTongTien(gioHang.getCacMatHang().stream()
+                .map(ChiTietGioHang::getThanhTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
         gioHangRepository.save(gioHang);
 
         return saved;
@@ -148,12 +167,7 @@ public class DonHangService {
         KhachHang khachHang = khachHangRepository.findById(khachHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng"));
 
-        DiaChi diaChi = diaChiRepository.findById(diaChiId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ"));
-
-        if (!diaChi.getKhachHang().getId().equals(khachHangId)) {
-            throw new SecurityException("Địa chỉ không thuộc về khách hàng này");
-        }
+        DiaChi diaChi = resolveDiaChiGiaoHang(khachHangId, diaChiId);
 
         NuocUongSan nuocUong = nuocUongSanRepository.findById(nuocUongId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
@@ -191,7 +205,11 @@ public class DonHangService {
         donHang.getChiTietDonHangs().add(chiTiet);
 
         DonHang saved = donHangRepository.save(donHang);
-        saved.setThanhToan(thanhToanService.taoThanhToan(saved.getId(), phuongThuc));
+        TaoThanhToanRequest thanhToanRequest = new TaoThanhToanRequest();
+        thanhToanRequest.setDonHangId(saved.getId());
+        thanhToanRequest.setPhuongThuc(phuongThuc);
+        thanhToanService.taoThanhToan(thanhToanRequest);
+        donHangRealtimeService.publishOrderUpdated(saved);
         return saved;
     }
 
@@ -200,7 +218,9 @@ public class DonHangService {
         DonHang donHang = donHangRepository.findById(donHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
         donHang.xacNhan();
-        return donHangRepository.save(donHang);
+        DonHang saved = donHangRepository.save(donHang);
+        donHangRealtimeService.publishOrderUpdated(saved);
+        return saved;
     }
 
     @Transactional
@@ -208,7 +228,9 @@ public class DonHangService {
         DonHang donHang = donHangRepository.findById(donHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
         donHang.giaoHang();
-        return donHangRepository.save(donHang);
+        DonHang saved = donHangRepository.save(donHang);
+        donHangRealtimeService.publishOrderUpdated(saved);
+        return saved;
     }
 
     @Transactional
@@ -216,7 +238,9 @@ public class DonHangService {
         DonHang donHang = donHangRepository.findById(donHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
         donHang.hoanThanh();
-        return donHangRepository.save(donHang);
+        DonHang saved = donHangRepository.save(donHang);
+        donHangRealtimeService.publishOrderUpdated(saved);
+        return saved;
     }
 
     @Transactional
@@ -224,7 +248,9 @@ public class DonHangService {
         DonHang donHang = donHangRepository.findById(donHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
         donHang.huyDon();
-        return donHangRepository.save(donHang);
+        DonHang saved = donHangRepository.save(donHang);
+        donHangRealtimeService.publishOrderUpdated(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -529,5 +555,18 @@ public class DonHangService {
                ((tc1.getGhiChu() == null && tc2.getGhiChu() == null) ||
                 (tc1.getGhiChu() != null && tc1.getGhiChu().equals(tc2.getGhiChu())));
     }
-}
 
+    private DiaChi resolveDiaChiGiaoHang(UUID khachHangId, UUID diaChiId) {
+        if (diaChiId != null) {
+            DiaChi diaChi = diaChiRepository.findById(diaChiId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ"));
+            if (!diaChi.getKhachHang().getId().equals(khachHangId)) {
+                throw new SecurityException("Địa chỉ không thuộc về khách hàng này");
+            }
+            return diaChi;
+        }
+
+        return diaChiRepository.findFirstByKhachHangIdAndLaMacDinhTrue(khachHangId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ mặc định"));
+    }
+}

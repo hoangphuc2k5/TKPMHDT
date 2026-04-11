@@ -6,6 +6,7 @@ import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
 import TKPMHDT.Repository.sanpham.TuyChonTuyChinhRepository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,6 +102,22 @@ public class SanPhamService {
         data.put("duong", tuyChonRepository.findByNhomIgnoreCase("DUONG"));
         data.put("da", tuyChonRepository.findByNhomIgnoreCase("DA"));
         data.put("topping", tuyChonRepository.findByNhomIgnoreCase("TOPPING"));
+        data.put("coTheTuyChinh", sp.isCoTheTuyChinh());
+        data.put("congThuc", sp.getCongThucCoBan());
+
+        List<Map<String, Object>> ingredientList = new ArrayList<>();
+        if (sp.getCongThucCoBan() != null && sp.getCongThucCoBan().getLuongNguyenLieus() != null) {
+            sp.getCongThucCoBan().getLuongNguyenLieus().forEach(l -> {
+                Map<String, Object> row = new HashMap<>();
+                row.put("id", l.getId());
+                row.put("ten", l.getNguyenLieu() != null ? l.getNguyenLieu().getTen() : "");
+                row.put("soLuong", l.getSoLuong());
+                row.put("donVi", l.getDonVi());
+                row.put("donGia", l.getNguyenLieu() != null ? l.getNguyenLieu().getGiaDonVi() : null);
+                ingredientList.add(row);
+            });
+        }
+        data.put("nguyenLieu", ingredientList);
 
         return data;
     }

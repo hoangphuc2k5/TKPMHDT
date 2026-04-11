@@ -53,5 +53,9 @@ public class ChiTietGioHang {
 
     @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
+
+    @Builder.Default
+    @Column(name = "duoc_chon_thanh_toan", nullable = false)
+    private boolean duocChonThanhToan = true;
 }
 

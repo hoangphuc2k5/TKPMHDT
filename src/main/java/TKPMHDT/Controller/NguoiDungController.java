@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -149,6 +150,35 @@ public class NguoiDungController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Đổi mật khẩu thành công");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Xóa tài khoản của người dùng hiện tại
+     */
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/me")
+    public ResponseEntity<Map<String, Object>> xoaTaiKhoanHienTai() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).build();
+            }
+
+            NguoiDung nguoiDung = nguoiDungService.timTheoTenDangNhap(auth.getName())
+                    .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+            nguoiDungService.xoaNguoiDung(nguoiDung.getId());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Tài khoản đã được xóa thành công");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(

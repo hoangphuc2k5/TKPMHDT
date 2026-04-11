@@ -117,7 +117,7 @@ public class SanPhamController {
     /**
      * UC07: Tạo cấu hình tùy chỉnh sản phẩm
      */
-    @PreAuthorize("hasRole('KHACH_HANG')")
+    @PreAuthorize("hasAuthority('product:customize')")
     @PostMapping("/{sanPhamId}/tuy-chinh")
     public ResponseEntity<Map<String, Object>> taoCauHinhTuyChinh(
             @PathVariable UUID sanPhamId,
@@ -154,13 +154,13 @@ public class SanPhamController {
 
     // ==================== Admin: Quản lý sản phẩm ====================
 
-    @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('product:manage')")
     @PostMapping("/nuoc-uong")
     public ResponseEntity<NuocUongSan> luuNuocUong(@RequestBody NuocUongSan nuocUongSan) {
         return ResponseEntity.ok(sanPhamService.luuNuocUong(nuocUongSan));
     }
 
-    @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('product:manage')")
     @PostMapping("/nuoc-uong/{id}/hinh-anh")
     public ResponseEntity<NuocUongSan> uploadHinhAnh(
             @PathVariable UUID id,
@@ -186,7 +186,7 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.timNguyenLieuTheoTen(ten));
     }
 
-    @PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('product:manage')")
     @PostMapping("/nguyen-lieu")
     public ResponseEntity<NguyenLieu> luuNguyenLieu(@RequestBody NguyenLieu nguyenLieu) {
         return ResponseEntity.ok(sanPhamService.luuNguyenLieu(nguyenLieu));

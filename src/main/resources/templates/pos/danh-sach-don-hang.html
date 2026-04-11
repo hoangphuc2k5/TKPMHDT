@@ -1,180 +1,189 @@
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>POS - Danh sách đơn</title>
-</head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('POS - Danh sách đơn hàng')}"></head>
 <body>
+<header th:replace="~{fragments/layout :: header('pos')}"></header>
 
-<h2>📋 Danh sách đơn OFFLINE</h2>
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1 class="brand-font">Danh Sách Đơn Tại Quầy</h1>
+            <p class="muted">Theo dõi và xử lý các đơn hàng POS theo thời gian thực.</p>
+        </div>
+        <div>
+            <button class="btn-highlight" onclick="createOrder()" style="margin-top:0;">Tạo đơn mới</button>
+        </div>
+    </div>
 
-<!-- FILTER -->
-<div style="margin-bottom: 10px;">
-    <select id="statusFilter">
-        <option value="">-- Tất cả trạng thái --</option>
-        <option value="CHO_XAC_NHAN">Chờ xác nhận</option>
-        <option value="DA_XAC_NHAN">Đã xác nhận</option>
-        <option value="DANG_GIAO">Đang giao</option>
-        <option value="DA_GIAO">Đã giao</option>
-        <option value="DA_HUY">Đã hủy</option>
+    <div class="section-card">
+        <div class="admin-toolbar">
+            <select id="statusFilter" style="max-width: 280px;">
+                <option value="">Tất cả trạng thái</option>
+                <option value="CHO_XAC_NHAN">Chờ xác nhận</option>
+                <option value="DA_XAC_NHAN">Đã xác nhận</option>
+                <option value="DANG_GIAO">Đang giao</option>
+                <option value="DA_GIAO">Đã giao</option>
+                <option value="DA_HUY">Đã hủy</option>
+            </select>
+            <button class="btn-secondary" style="margin-top:0;" onclick="resetFilter()">Xóa lọc</button>
+            <button class="btn-secondary" style="margin-top:0;" onclick="loadOrders()">Lọc</button>
+        </div>
 
-    </select>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Thời gian</th>
+                    <th>Trạng thái</th>
+                    <th>Tổng tiền</th>
+                    <th>Tác vụ</th>
+                </tr>
+                </thead>
+                <tbody id="orderTableBody"></tbody>
+            </table>
+        </div>
 
-    <button onclick="loadOrders()">🔍 Lọc</button>
-</div>
-
-<button onclick="createOrder()">➕ Tạo đơn mới</button>
-
-<div id="orderList" style="margin-top:20px;"></div>
-
-<!-- PAGINATION -->
-<div style="margin-top: 10px;">
-    <button onclick="prevPage()">⬅️</button>
-    <span id="pageInfo"></span>
-    <button onclick="nextPage()">➡️</button>
-</div>
-
-<!-- MODAL -->
-<div id="orderModal" style="display:none; position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
-    <div style="background:white; padding:20px; width:400px; margin:100px auto;">
-        <h3>Chi tiết đơn</h3>
-
-        <div id="orderDetail"></div>
-
-        <button onclick="nextStatus()">➡️ Chuyển trạng thái</button>
-        <button onclick="closeModal()">Đóng</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:8px; flex-wrap:wrap;">
+            <div id="pageInfo" class="muted">Trang 1 / 1</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-secondary" style="margin-top:0;" onclick="prevPage()">Trang trước</button>
+                <button class="btn-secondary" style="margin-top:0;" onclick="nextPage()">Trang sau</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<script src="/js/app.js"></script>
+<div id="orderModal" class="admin-modal">
+    <div class="admin-modal-content" style="max-width: 560px;">
+        <div class="admin-modal-header">
+            <h3 style="margin:0;">Chi tiết đơn POS</h3>
+            <button class="btn-secondary" style="margin-top:0;" onclick="closeModal()">Đóng</button>
+        </div>
+        <div id="orderDetail" class="admin-list"></div>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px; gap:8px; flex-wrap:wrap;">
+            <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in phiếu pha chế')">In phiếu pha chế</button>
+            <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in hóa đơn khách')">In hóa đơn khách</button>
+            <button class="btn-highlight" style="margin-top:0;" onclick="nextStatus()">Xác nhận đã pha</button>
+        </div>
+    </div>
+</div>
 
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script src="/js/app.js"></script>
 <script>
 let currentPage = 0;
 let pageSize = 10;
+let totalPages = 1;
 let currentOrder = null;
 
-// ================= LOAD ORDERS =================
+function statusChip(status) {
+    if (status === 'CHO_XAC_NHAN') return '<span class="chip pending">Chờ xác nhận</span>';
+    if (status === 'DA_XAC_NHAN') return '<span class="chip progress">Đã xác nhận</span>';
+    if (status === 'DANG_GIAO') return '<span class="chip progress">Đang giao</span>';
+    if (status === 'DA_GIAO') return '<span class="chip success">Đã giao</span>';
+    if (status === 'DA_HUY') return '<span class="chip danger">Đã hủy</span>';
+    return `<span class="chip">${status || 'Không xác định'}</span>`;
+}
+
 async function loadOrders() {
     try {
         const status = document.getElementById('statusFilter').value;
-
         let url = `/api/don-hang/pos/orders-offline?page=${currentPage}&size=${pageSize}`;
         if (status) {
             url += `&status=${status}`;
         }
 
         const res = await api('GET', url);
+        const orders = res.content || [];
+        totalPages = res.totalPages || 1;
 
-        const orders = res.content || res; // hỗ trợ cả pagination và list thường
-        
-        const el = document.getElementById('orderList');
-        el.innerHTML = '';
-
-        if (!orders || orders.length === 0) {
-            el.innerHTML = "<p>Không có đơn hàng nào</p>";
-            return;
+        const body = document.getElementById('orderTableBody');
+        body.innerHTML = '';
+        if (!orders.length) {
+            body.innerHTML = '<tr><td colspan="5" class="muted">Không có đơn hàng phù hợp.</td></tr>';
+        } else {
+            orders.forEach(o => {
+                body.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>${(o.id || '').slice(0, 8)}...</td>
+                        <td>${o.ngayDat ? formatDateTime(o.ngayDat) : '-'}</td>
+                        <td>${statusChip(o.trangThai)}</td>
+                        <td>${formatCurrency(o.tongTien)}</td>
+                        <td><button class="btn-secondary" style="margin-top:0;" onclick="viewOrder('${o.id}')">Xem chi tiết</button></td>
+                    </tr>
+                `);
+            });
         }
 
-        orders.forEach(o => {
-            const div = document.createElement('div');
-            div.style = "padding:10px;border:1px solid #ccc;margin-bottom:5px;";
-
-            div.innerHTML = `
-                Đơn #${(o.id || '').substring(0,6)} - ${o.trangThai}
-                <button onclick="viewOrder('${o.id}')">Chi tiết</button>
-            `;
-
-            el.appendChild(div);
-        });
-
-        // PAGE INFO
-        if (res.totalPages !== undefined) {
-            document.getElementById('pageInfo').innerText =
-                `Trang ${currentPage + 1} / ${res.totalPages}`;
-        }
-
+        document.getElementById('pageInfo').innerText = `Trang ${currentPage + 1} / ${totalPages}`;
     } catch (err) {
-        console.error(err);
-        showMessage("Lỗi tải danh sách đơn", "error");
+        showMessage('Lỗi tải danh sách đơn', 'error');
     }
 }
 
-// ================= PAGINATION =================
 function nextPage() {
+    if (currentPage + 1 >= totalPages) return;
     currentPage++;
     loadOrders();
 }
 
 function prevPage() {
-    if (currentPage > 0) {
-        currentPage--;
-        loadOrders();
-    }
+    if (currentPage <= 0) return;
+    currentPage--;
+    loadOrders();
 }
 
-// ================= CREATE =================
+function resetFilter() {
+    document.getElementById('statusFilter').value = '';
+    currentPage = 0;
+    loadOrders();
+}
+
 async function createOrder() {
     try {
         const id = await api('POST', '/api/don-hang/pos/tao-don-tai-quay');
-
-        localStorage.setItem("currentOrderId", id);
-        window.location.href = "/ui/pos";
-
+        localStorage.setItem('currentOrderId', id);
+        window.location.href = '/ui/pos';
     } catch (err) {
-        console.error(err);
-        showMessage("Lỗi tạo đơn", "error");
+        showMessage('Lỗi tạo đơn mới', 'error');
     }
 }
 
-// ================= VIEW DETAIL =================
 async function viewOrder(id) {
     try {
         const order = await api('GET', `/api/don-hang/${id}`);
         currentOrder = order;
-
-        const detailEl = document.getElementById('orderDetail');
-        detailEl.innerHTML = '';
-
-        detailEl.innerHTML = `
-            <p><b>Mã:</b> ${order.id}</p>
-            <p><b>Trạng thái:</b> ${order.trangThai}</p>
-            <p><b>Tổng tiền:</b> ${formatCurrency(order.tongTien)}</p>
+        document.getElementById('orderDetail').innerHTML = `
+            <div><strong>Mã đơn:</strong> ${order.id}</div>
+            <div><strong>Trạng thái:</strong> ${order.trangThai || '-'}</div>
+            <div><strong>Tổng tiền:</strong> ${formatCurrency(order.tongTien)}</div>
+            <div><strong>Ngày đặt:</strong> ${order.ngayDat ? formatDateTime(order.ngayDat) : '-'}</div>
         `;
-
-        document.getElementById('orderModal').style.display = 'block';
-
+        document.getElementById('orderModal').classList.add('show');
     } catch (e) {
-        console.error(e);
-        showMessage("Lỗi load chi tiết đơn" + e.message, "error");
+        showMessage('Lỗi tải chi tiết đơn', 'error');
     }
 }
 
-// ================= NEXT STATUS =================
 async function nextStatus() {
     if (!currentOrder) return;
-
     try {
         await api('PATCH', `/api/don-hang/pos/${currentOrder.id}/hoan-thanh`);
-
-        showMessage("Cập nhật trạng thái thành công");
-
+        showMessage('Đã hoàn thành đơn hàng');
         closeModal();
         loadOrders();
-
     } catch (e) {
-        console.error(e);
-        showMessage("Lỗi cập nhật trạng thái");
+        showMessage('Lỗi cập nhật trạng thái', 'error');
     }
 }
 
-// ================= CLOSE MODAL =================
 function closeModal() {
-    document.getElementById('orderModal').style.display = 'none';
+    document.getElementById('orderModal').classList.remove('show');
 }
 
-// ================= INIT =================
-document.addEventListener("DOMContentLoaded", loadOrders);
+document.addEventListener('DOMContentLoaded', loadOrders);
 </script>
-
 </body>
 </html>

@@ -48,6 +48,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -71,7 +72,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('QUAN_TRI_VIEN')")
+@PreAuthorize("hasAnyAuthority('product:manage','order:manage-all','inventory:manage','customer:manage','promotion:manage','report:view','staff:manage')")
 public class AdminController {
 
     private final NguoiDungService nguoiDungService;
@@ -361,16 +362,50 @@ public class AdminController {
     @PostMapping(value = "/san-pham/{sanPhamId}/hinh-anh", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<NuocUongSan> capNhatHinhAnhSanPham(
             @PathVariable UUID sanPhamId,
-            @RequestParam("hinhAnh") MultipartFile file) {
+            @RequestParam("hinhAnh") MultipartFile[] files) {
         return sanPhamService.layNuocUongTheoId(sanPhamId).map(sp -> {
-            String imageUrl = fileStorageService.storeFile(file);
             List<String> current = sp.getHinhAnh() != null ? new ArrayList<>(sp.getHinhAnh()) : new ArrayList<>();
-            current.add(0, imageUrl);
+            for (MultipartFile file : files) {
+                if (file != null && !file.isEmpty()) {
+                    String imageUrl = fileStorageService.storeFile(file);
+                    current.add(0, imageUrl);
+                }
+            }
             sp.setHinhAnh(current);
             NuocUongSan updated = sanPhamService.luuNuocUong(sp);
             ghiLog("SAN_PHAM", "CAP_NHAT_ANH", sp.getTen());
             return ResponseEntity.ok(updated);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+        }).orElseGet(() -> ResponseEntity.status(404).build());
+    }
+
+    @DeleteMapping("/san-pham/{sanPhamId}/hinh-anh")
+    public ResponseEntity<NuocUongSan> xoaHinhAnhSanPham(
+            @PathVariable UUID sanPhamId,
+            @RequestParam int index) {
+
+        Optional<NuocUongSan> optional = sanPhamService.layNuocUongTheoId(sanPhamId);
+
+        if (optional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        NuocUongSan sp = optional.get();
+
+        List<String> current = sp.getHinhAnh() != null
+                ? new ArrayList<>(sp.getHinhAnh())
+                : new ArrayList<>();
+
+        if (index < 0 || index >= current.size()) {
+            return ResponseEntity.badRequest().build(); // tự infer đúng kiểu
+        }
+
+        current.remove(index);
+        sp.setHinhAnh(current);
+
+        NuocUongSan updated = sanPhamService.luuNuocUong(sp);
+        ghiLog("SAN_PHAM", "XOA_ANH", sp.getTen());
+
+        return ResponseEntity.ok(updated);
     }
 
     @GetMapping("/tuy-chon")
@@ -590,6 +625,7 @@ public class AdminController {
     }
 
     @GetMapping("/nhan-vien")
+    @PreAuthorize("hasAuthority('staff:manage')")
     public ResponseEntity<List<Map<String, Object>>> layDanhSachNhanVien() {
         return ResponseEntity.ok(nguoiDungService.danhSachNhanVien().stream()
                 .map(this::toUserPayload)
@@ -597,6 +633,7 @@ public class AdminController {
     }
 
     @PostMapping("/nhan-vien")
+    @PreAuthorize("hasAnyAuthority('staff:manage','role:assign')")
     public ResponseEntity<Map<String, Object>> taoNhanVien(@RequestBody TaoNhanVienRequest request) {
         VaiTro role = request.vaiTro() == null ? VaiTro.NHAN_VIEN_BAN_HANG : request.vaiTro();
         NguoiDung nv = nguoiDungService.taoNhanVien(request.tenDangNhap(), request.email(), request.matKhau(), role);
@@ -605,6 +642,7 @@ public class AdminController {
     }
 
     @PutMapping("/nhan-vien/{nhanVienId}")
+    @PreAuthorize("hasAnyAuthority('staff:manage','role:assign')")
     public ResponseEntity<Map<String, Object>> capNhatNhanVien(
             @PathVariable UUID nhanVienId,
             @RequestBody CapNhatNhanVienRequest request) {
@@ -619,13 +657,20 @@ public class AdminController {
     }
 
     @DeleteMapping("/nhan-vien/{nhanVienId}")
+    @PreAuthorize("hasAuthority('staff:manage')")
     public ResponseEntity<Map<String, Object>> xoaNhanVien(@PathVariable UUID nhanVienId) {
+        nguoiDungService.timTheoId(nhanVienId).ifPresent(user -> {
+            if (tenNguoiDangNhap().equalsIgnoreCase(user.getTenDangNhap()) && user.getVaiTro() == VaiTro.QUAN_TRI_VIEN) {
+                throw new IllegalArgumentException("Không thể tự xóa tài khoản ADMIN của chính mình");
+            }
+        });
         nguoiDungService.xoaNguoiDung(nhanVienId);
         ghiLog("NHAN_VIEN", "XOA", nhanVienId.toString());
         return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/nhan-vien/hoat-dong")
+    @PreAuthorize("hasAuthority('staff:manage')")
     public ResponseEntity<List<NhatKyHeThong>> theoDoiHoatDongNhanVien() {
         List<NhatKyHeThong> logs = nhatKyHeThongRepository.findTop200ByOrderByThoiGianDesc().stream()
                 .filter(l -> "NHAN_VIEN".equalsIgnoreCase(l.getMoDun()) || "DON_HANG".equalsIgnoreCase(l.getMoDun()))
@@ -803,12 +848,14 @@ public class AdminController {
     }
 
     @GetMapping("/he-thong/rbac")
+    @PreAuthorize("hasAuthority('role:assign')")
     public ResponseEntity<List<VaiTroQuyen>> layRbac() {
         damBaoRbacMacDinh();
         return ResponseEntity.ok(vaiTroQuyenRepository.findAll());
     }
 
     @PutMapping("/he-thong/rbac/{vaiTro}")
+    @PreAuthorize("hasAuthority('role:assign')")
     public ResponseEntity<VaiTroQuyen> capNhatRbac(
             @PathVariable String vaiTro,
             @RequestBody RbacRequest request) {

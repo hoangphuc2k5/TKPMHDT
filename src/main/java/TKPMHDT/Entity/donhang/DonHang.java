@@ -65,9 +65,8 @@ public class DonHang {
     private String trangThaiDb;
 
     @Transient
-    @Builder.Default
     @JsonIgnore
-    private TrangThaiDonHang trangThai = new TrangThaiChoXacNhan();
+    private TrangThaiDonHang trangThai;
 
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
@@ -101,9 +100,10 @@ public class DonHang {
     @PrePersist
     @PreUpdate
     private void preSave() {
-        if (trangThai != null) {
-            this.trangThaiDb = trangThai.getTenTrangThai();
+        if (trangThai == null) {
+            trangThai = new TrangThaiChoXacNhan();
         }
+        this.trangThaiDb = trangThai.getTenTrangThai();
     }
 
     @PostLoad

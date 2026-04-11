@@ -33,6 +33,11 @@
                     </button>
                 </li>
                 <li style="margin-bottom: 0.5rem;">
+                    <button class="tab-btn" data-tab="xoa-tai-khoan" style="width: 100%; text-align: left; padding: 0.7rem; background: transparent; border: none; cursor: pointer; color: #f44336;">
+                        Xóa tài khoản
+                    </button>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
                     <form action="/logout" method="post" style="margin: 0;">
                         <button type="submit" style="width: 100%; text-align: left; padding: 0.7rem; color: #f44336; background: transparent; border: none; cursor: pointer;">
                             Đăng xuất
@@ -162,6 +167,30 @@
                 <h2 style="margin-bottom: 1.5rem;">Lịch Sử Đơn Hàng</h2>
                 <div id="danhSachDonHangTab" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;">
                     <p class="muted">Đang tải...</p>
+                </div>
+            </div>
+
+            <!-- Tab: Xóa tài khoản -->
+            <div class="tab-content" id="xoa-tai-khoan" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Xóa Tài Khoản</h2>
+                
+                <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; max-width: 600px;">
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1rem; margin-bottom: 2rem;">
+                        <h4 style="color: #856404; margin: 0 0 0.5rem 0;">⚠️ Cảnh báo quan trọng</h4>
+                        <p style="color: #856404; margin: 0; font-size: 0.9rem;">
+                            Khi xóa tài khoản, tất cả thông tin cá nhân, lịch sử đơn hàng và địa chỉ giao hàng sẽ bị xóa vĩnh viễn. 
+                            Hành động này không thể hoàn tác.
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="xacNhanXoa">Để xác nhận xóa tài khoản, hãy nhập "XÓA TÀI KHOẢN" vào ô bên dưới:</label>
+                        <input type="text" id="xacNhanXoa" placeholder="XÓA TÀI KHOẢN" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 0.5rem;">
+                    </div>
+
+                    <button id="deleteAccountBtn" class="btn-danger" style="padding: 0.7rem 2rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        🗑️ Xóa tài khoản vĩnh viễn
+                    </button>
                 </div>
             </div>
         </div>
@@ -398,6 +427,37 @@
     // Auto load addresses when tab opened
     document.querySelector('[data-tab="dia-chi"]').addEventListener('click', () => {
         loadDiaChi();
+    });
+
+    // Xóa tài khoản
+    document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+        const confirmation = document.getElementById('xacNhanXoa').value.trim();
+        
+        if (confirmation !== 'XÓA TÀI KHOẢN') {
+            alert('Vui lòng nhập đúng cụm từ xác nhận để xóa tài khoản.');
+            return;
+        }
+
+        if (!confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn? Hành động này không thể hoàn tác.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/nguoi-dung/me', {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('Tài khoản đã được xóa thành công. Bạn sẽ được chuyển hướng về trang chủ.');
+                window.location.href = '/';
+            } else {
+                const error = await response.json().catch(() => ({}));
+                alert(error.message || 'Không thể xóa tài khoản. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Lỗi xóa tài khoản:', error);
+            alert('Có lỗi xảy ra khi xóa tài khoản. Vui lòng thử lại.');
+        }
     });
 </script>
 

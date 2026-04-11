@@ -6,6 +6,33 @@
     <title th:text="${title}">TKPMHDT</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <script th:src="@{/js/app.js}"></script>
+    <script>
+        // Load user avatar in header
+        async function loadHeaderAvatar() {
+            const avatarImg = document.getElementById('headerAvatar');
+            if (!avatarImg) return;
+
+            try {
+                const response = await fetch('/api/nguoi-dung/me');
+                if (response.ok) {
+                    const user = await response.json();
+                    if (user.avatar) {
+                        avatarImg.src = user.avatar;
+                    } else {
+                        // Default avatar if no avatar is set
+                        avatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNGNUY1RjUiLz4KPHBhdGggZD0iTTE2IDE2QzE4LjIxIDE2IDIwIDE0LjIxIDIwIDEyQzIwIDEwLjc5IDE4LjIxIDkgMTYgOUMxMy43OSA5IDEyIDEwLjc5IDEyIDEyQzEyIDE0LjIxIDEzLjc5IDE2IDE2Wk0xNiAyMEMyMi45IDIwIDI4IDI1LjEgMjggMzJIMTJDMTIgMzJDNS4xIDMyIDAgMjUuMSAwIDIwQzAgMTYuOSA1LjEgMTIgMTIgMTJDMTYuOSAxMiAyMiAxNi45IDIyIDIwWiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4=';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading avatar:', error);
+                // Set default avatar on error
+                avatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNGNUY1RjUiLz4KPHBhdGggZD0iTTE2IDE2QzE4LjIxIDE2IDIwIDE0LjIxIDIwIDEyQzIwIDEwLjc5IDE4LjIxIDkgMTYgOUMxMy43OSA5IDEyIDEwLjc5IDEyIDEyQzEyIDE0LjIxIDEzLjc5IDE2IDE2Wk0xNiAyMEMyMi45IDIwIDI4IDI1LjEgMjggMzJIMTJDMTIgMzJDNS4xIDMyIDAgMjUuMSAwIDIwQzAgMTYuOSA1LjEgMTIgMTIgMTJDMTYuOSAxMiAyMiAxNi45IDIyIDIwWiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4=';
+            }
+        }
+
+        // Load avatar when page loads
+        document.addEventListener('DOMContentLoaded', loadHeaderAvatar);
+    </script>
 </head>
 <body>
 
@@ -13,7 +40,7 @@
     <header th:fragment="header(activePage)">
         <div class="nav">
             <!-- Logo Section -->
-            <div style="display: flex; align-items: center; gap: 12px;">
+            <a th:href="@{/}" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;">
                 <div style="background: var(--phuclong-green); padding: 6px; border-radius: 8px;">
                     <span style="font-size: 24px;">🥤</span>
                 </div>
@@ -21,13 +48,15 @@
                     <span class="brand-font" style="font-size: 1.6rem; letter-spacing: 1px; color: var(--phuclong-green);">DRINK</span>
                     <span style="font-size: 0.6rem; font-weight: 700; color: var(--phuclong-gold); letter-spacing: 2px;">COFFEE & TEA</span>
                 </div>
-            </div>
+            </a>
 
             <!-- Role-based Navigation -->
             <div class="nav-links">
                 <!-- Public Links -->
-                <a th:href="@{/}" th:classappend="${activePage == 'home' ? 'active' : ''}">Trang chủ</a>
-                <a th:href="@{/ui/san-pham}" th:classappend="${activePage == 'products' ? 'active' : ''}">Sản phẩm</a>
+                <span sec:authorize="!hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')" style="display: contents;">
+                    <a th:href="@{/}" th:classappend="${activePage == 'home' ? 'active' : ''}">Trang chủ</a>
+                    <a th:href="@{/ui/san-pham}" th:classappend="${activePage == 'products' ? 'active' : ''}">Sản phẩm</a>
+                </span>
                 
                 <!-- Customer Links -->
                 <span sec:authorize="hasRole('KHACH_HANG')" style="display: contents;">
@@ -42,17 +71,16 @@
                 </span>
 
                 <!-- Admin Links -->
-                <span sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')" style="display: contents;">
-                    <a th:href="@{/ui/nguoi-dung}" th:classappend="${activePage == 'users' ? 'active' : ''}">Người dùng</a>
-                    <a th:href="@{/ui/khuyen-mai}" th:classappend="${activePage == 'promotions' ? 'active' : ''}">Hệ thống KM</a>
-                    <a th:href="@{/ui/thanh-toan}" th:classappend="${activePage == 'payments' ? 'active' : ''}">Giao dịch</a>
-                </span>
+                <!-- Admin users are redirected straight to dashboard and do not see the main navigation buttons. -->
             </div>
 
             <!-- Auth Section -->
             <div style="display: flex; gap: 15px; align-items: center;">
                 <div sec:authorize="isAuthenticated()" style="display: flex; align-items: center; gap: 10px;">
-                    <span class="muted" style="font-size: 0.8rem; font-weight: 600;">Chào, <span sec:authentication="name" style="color: var(--phuclong-green);">User</span></span>
+                    <a th:href="@{/ui/tai-khoan}" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+                        <img id="headerAvatar" src="" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--phuclong-green);">
+                        <span class="muted" style="font-size: 0.8rem; font-weight: 600;">Chào, <span sec:authentication="name" style="color: var(--phuclong-green);">User</span></span>
+                    </a>
                     <form th:action="@{/logout}" method="post" style="display: inline;">
                         <button type="submit" class="btn-secondary" style="padding: 6px 12px; font-size: 0.7rem; margin: 0;">Đăng xuất</button>
                     </form>

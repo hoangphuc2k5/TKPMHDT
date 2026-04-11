@@ -93,6 +93,11 @@ public class PageController {
         return "admin/manage-customers";
     }
 
+    @GetMapping("/ui/tai-khoan")
+    public String taiKhoanPage() {
+        return "tai-khoan";
+    }
+
     @GetMapping("/ui/pos")
     public String posPage() {
         return "pos/pos-interface";

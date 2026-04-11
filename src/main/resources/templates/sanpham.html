@@ -4,46 +4,44 @@
 <body>
 <header th:replace="~{fragments/layout :: header('products')}"></header>
 
-<div class="container">
-    <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 class="brand-font">Danh Mục Sản Phẩm</h1>
-        <p class="muted">Khám phá các loại đồ uống tuyệt vời được pha chế theo sở thích của bạn.</p>
-    </div>
-
-    <!-- Search -->
-    <div class="card" style="margin-bottom: 2rem;">
-        <div class="card-content" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 250px;">
-                <label>Tìm kiếm món</label>
-                <input id="search-input" type="text" placeholder="Nhập tên đồ uống..." style="width: 100%;">
-            </div>
-
-            <button onclick="timNuocUong()" class="btn-highlight">Tìm kiếm</button>
-            <button onclick="dsNuocUong()" class="btn-secondary">Xem tất cả</button>
+<div class="container" style="padding-top:18px; padding-bottom:84px; max-width:760px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.3rem;">🥤</span>
+            <span class="brand-font" style="font-size:1.4rem;">DrinkHub</span>
         </div>
+        <button class="btn-secondary" style="margin-top:0; padding:8px 12px;" onclick="timNuocUong()">Lọc</button>
     </div>
 
-    <!-- Products -->
-    <div id="products-grid"
-         style="display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap:2rem;">
+    <div class="input-with-action" style="margin-bottom:10px;">
+        <input id="search-input" type="text" placeholder="Tìm kiếm đồ uống..." style="padding-right:70px;">
+        <button type="button" onclick="timNuocUong()">Tìm</button>
     </div>
 
-    <div id="loading" style="display:none; text-align:center; padding:2rem;">
-        Đang tải sản phẩm...
-    </div>
+    <div id="category-tabs" class="category-tabs" style="margin-bottom:14px;"></div>
+
+    <div id="products-grid" class="mobile-product-grid"></div>
+    <div id="loading" style="display:none; text-align:center; padding:2rem;">Đang tải sản phẩm...</div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
-
 <script>
-document.addEventListener("DOMContentLoaded", dsNuocUong);
+let allProducts = [];
+let activeCategory = 'Tất cả';
+const DEFAULT_CATEGORIES = ['Tất cả', 'Trà sữa', 'Cà phê', 'Sinh tố', 'Topping'];
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await dsNuocUong();
+});
 
 async function dsNuocUong() {
     showLoading(true);
     try {
         const res = await fetch("/api/san-pham/nuoc-uong");
         const data = await res.json();
-        renderProducts(data);
+        allProducts = data || [];
+        renderCategories();
+        renderProducts(filterProducts(allProducts));
     } catch (e) {
         alert("Lỗi tải sản phẩm");
     } finally {
@@ -52,18 +50,7 @@ async function dsNuocUong() {
 }
 
 async function timNuocUong() {
-    const ten = document.getElementById("search-input").value;
-    showLoading(true);
-
-    try {
-        const res = await fetch("/api/san-pham/nuoc-uong/tim?ten=" + encodeURIComponent(ten));
-        const data = await res.json();
-        renderProducts(data);
-    } catch (e) {
-        alert("Lỗi tìm kiếm");
-    } finally {
-        showLoading(false);
-    }
+    renderProducts(filterProducts(allProducts));
 }
 
 function renderProducts(products) {
@@ -71,7 +58,7 @@ function renderProducts(products) {
     grid.innerHTML = "";
 
     if (!products || products.length === 0) {
-        grid.innerHTML = "<p>Không có sản phẩm nào.</p>";
+        grid.innerHTML = "<p class='muted'>Không có sản phẩm phù hợp.</p>";
         return;
     }
 
@@ -81,29 +68,44 @@ function renderProducts(products) {
             : "/uploads/default-drink.jpg";
 
         grid.innerHTML += `
-            <div class="card product-card" style="cursor:pointer"
-                 onclick="goToDetail('${p.id}')">
-
-                <div style="height:220px; overflow:hidden;">
-                    <img src="${img}" 
-                         style="width:100%; height:100%; object-fit:cover;">
+            <div class="mobile-product-card" onclick="goToDetail('${p.id}')" style="cursor:pointer;">
+                <img src="${img}">
+                <div style="padding:10px;">
+                    <div style="display:flex; justify-content:space-between; gap:8px;">
+                        <strong style="font-size:0.95rem;">${p.ten}</strong>
+                        <span style="color:#cc3154;">♡</span>
+                    </div>
+                    <div class="muted" style="font-size:0.8rem; min-height:34px;">${p.moTa || ''}</div>
+                    <div style="margin-top:6px; color:var(--phuclong-green); font-weight:700;">${formatPrice(p.gia)}</div>
                 </div>
+            </div>`;
+    });
+}
 
-                <div class="card-content">
-                    <h3>${p.ten}</h3>
-                    <p>${p.moTa || ""}</p>
-                    <h4 style="color:green">
-                        ${formatPrice(p.gia)}
-                    </h4>
+function renderCategories() {
+    const derived = new Set(DEFAULT_CATEGORIES);
+    allProducts.forEach(p => {
+        if (p.danhMuc) derived.add(p.danhMuc);
+    });
+    const tabs = Array.from(derived);
+    const container = document.getElementById('category-tabs');
+    container.innerHTML = tabs.map(cat => `
+        <button class="category-tab ${activeCategory === cat ? 'active' : ''}" onclick="setCategory('${cat.replace(/'/g, "\\'")}')">${cat}</button>
+    `).join('');
+}
 
-                    <button onclick="event.stopPropagation(); goToDetail('${p.id}')"
-                            class="btn-highlight"
-                            style="width:100%;">
-                        Xem chi tiết
-                    </button>
-                </div>
-            </div>
-        `;
+function setCategory(cat) {
+    activeCategory = cat;
+    renderCategories();
+    renderProducts(filterProducts(allProducts));
+}
+
+function filterProducts(products) {
+    const q = (document.getElementById("search-input").value || '').trim().toLowerCase();
+    return (products || []).filter(p => {
+        const matchText = !q || (p.ten || '').toLowerCase().includes(q) || (p.moTa || '').toLowerCase().includes(q);
+        const matchCat = activeCategory === 'Tất cả' || !activeCategory || (p.danhMuc || '').toLowerCase() === activeCategory.toLowerCase();
+        return matchText && matchCat;
     });
 }
 

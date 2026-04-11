@@ -31,7 +31,7 @@ public class ThanhToanController {
     private final PosFacade posFacade;
 
     // Tạo thanh toán cho đơn hàng
-    //@PreAuthorize("hasAnyRole('KHACH_HANG','NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAnyAuthority('order:customer-create','pos:create')")
     @PostMapping("/tao-thanh-toan")
     public ResponseEntity<ApiResponse<ThanhToanResponse>> taoThanhToan(@RequestBody TaoThanhToanRequest request) {
         ThanhToanResponse thanhToan = posFacade.taoThanhToan(request);
@@ -41,7 +41,7 @@ public class ThanhToanController {
 
 
 
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('order:update')")
     @PatchMapping("/{thanhToanId}/trang-thai")
     public ResponseEntity<ThanhToan> capNhatTrangThai(
             @PathVariable UUID thanhToanId,
@@ -51,7 +51,7 @@ public class ThanhToanController {
         return ResponseEntity.ok(thanhToan);
     }
 
-    @PreAuthorize("hasAnyRole('KHACH_HANG','NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAnyAuthority('order:track','order:view')")
     @GetMapping("/don-hang/{donHangId}")
     public ResponseEntity<ThanhToan> layTheoDonHang(@PathVariable UUID donHangId) {
         return thanhToanService.layTheoDonHangId(donHangId)
@@ -65,7 +65,7 @@ public class ThanhToanController {
     }
 
     // Xác nhận thanh toán thành công, in hóa đơn
-    //@PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('print:invoice')")
     @PatchMapping("/{thanhToanId}/xac-nhan-thanh-toan")
     public ResponseEntity<ApiResponse<String>> xacNhanThanhToan(@PathVariable UUID thanhToanId) {
         posFacade.xacNhanThanhToan(thanhToanId);

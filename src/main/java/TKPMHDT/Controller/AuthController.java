@@ -73,8 +73,8 @@ public class AuthController {
     @PostMapping("/dang-nhap")
     public ResponseEntity<?> dangNhap(@RequestBody DangNhapRequest request) {
         try {
-            NguoiDung nguoiDung = dangNhapService.xacThucDangNhap(
-                    request.tenDangNhap(),
+            NguoiDung nguoiDung = dangNhapService.xacThucDangNhapBangDinhDanh(
+                    request.tenDangNhapHoacEmail(),
                     request.matKhau()
             );
             
@@ -165,7 +165,7 @@ public class AuthController {
     ) {}
 
     public record DangNhapRequest(
-            String tenDangNhap,
+            String tenDangNhapHoacEmail,
             String matKhau
     ) {}
 

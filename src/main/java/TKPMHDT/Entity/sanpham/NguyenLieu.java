@@ -50,8 +50,9 @@ public class NguyenLieu {
     private BigDecimal nguongCanhBao = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "loai", nullable = false)
-    private LoaiNguyenLieu loaiNguyenLieu;
+    @Column(name = "loai", nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'INGREDIENT'")
+    @Builder.Default
+    private LoaiNguyenLieu loaiNguyenLieu = LoaiNguyenLieu.INGREDIENT;
     
 }
 

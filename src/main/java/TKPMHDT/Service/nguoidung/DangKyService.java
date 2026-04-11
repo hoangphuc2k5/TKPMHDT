@@ -2,8 +2,11 @@ package TKPMHDT.Service.nguoidung;
 
 import TKPMHDT.Entity.nguoidung.KhachHang;
 import TKPMHDT.Entity.nguoidung.NguoiDung;
+import TKPMHDT.Entity.nguoidung.PasswordHistory;
 import TKPMHDT.Entity.nguoidung.enums.VaiTro;
+import TKPMHDT.Repository.nguoidung.PasswordHistoryRepository;
 import TKPMHDT.Repository.nguoidung.NguoiDungRepository;
+import TKPMHDT.security.PasswordPolicyValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +19,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class DangKyService {
 
     private final NguoiDungRepository nguoiDungRepository;
+    private final PasswordHistoryRepository passwordHistoryRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyValidator passwordPolicyValidator;
 
-    public DangKyService(NguoiDungRepository nguoiDungRepository, PasswordEncoder passwordEncoder) {
+    public DangKyService(
+            NguoiDungRepository nguoiDungRepository,
+            PasswordHistoryRepository passwordHistoryRepository,
+            PasswordEncoder passwordEncoder,
+            PasswordPolicyValidator passwordPolicyValidator) {
         this.nguoiDungRepository = nguoiDungRepository;
+        this.passwordHistoryRepository = passwordHistoryRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicyValidator = passwordPolicyValidator;
     }
 
     /**
@@ -44,10 +55,7 @@ public class DangKyService {
             throw new IllegalArgumentException("Email đã được đăng ký");
         }
 
-        // Validate mật khẩu
-        if (matKhau == null || matKhau.length() < 8) {
-            throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự");
-        }
+        passwordPolicyValidator.validateOrThrow(matKhau);
 
         // Hash mật khẩu
         String matKhauHash = passwordEncoder.encode(matKhau);
@@ -59,9 +67,15 @@ public class DangKyService {
                 .matKhauHash(matKhauHash)
                 .vaiTro(VaiTro.KHACH_HANG)
                 .hoTen(hoTen)
+                .trangThaiHoatDong(true)
                 .build();
 
-        return nguoiDungRepository.save(khachHang);
+        NguoiDung saved = nguoiDungRepository.save(khachHang);
+        passwordHistoryRepository.save(PasswordHistory.builder()
+                .nguoiDung(saved)
+                .matKhauHash(saved.getMatKhauHash())
+                .build());
+        return saved;
     }
 
     /**

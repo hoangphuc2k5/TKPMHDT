@@ -9,6 +9,7 @@ import TKPMHDT.Repository.giohang.GioHangRepository;
 import TKPMHDT.Repository.nguoidung.KhachHangRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,7 @@ public class GioHangService {
                     .mucDa(mucDa)
                     .ghiChu(ghiChu)
                     .build());
+            item.setDuocChonThanhToan(true);
         } else {
             ChiTietGioHang itemMoi = ChiTietGioHang.builder()
                     .gioHang(gioHang)
@@ -80,6 +82,7 @@ public class GioHangService {
                             .ghiChu(ghiChu)
                             .build())
                     .thanhTien(nuocUong.getGia().multiply(BigDecimal.valueOf(soLuong)))
+                    .duocChonThanhToan(true)
                     .build();
             gioHang.getCacMatHang().add(itemMoi);
         }
@@ -102,6 +105,32 @@ public class GioHangService {
         gioHang.getCacMatHang().clear();
         gioHang.setTongTien(BigDecimal.ZERO);
         return gioHangRepository.save(gioHang);
+    }
+
+    @Transactional
+    public GioHang capNhatChonMatHang(UUID khachHangId, UUID chiTietGioHangId, boolean duocChon) {
+        GioHang gioHang = layHoacTaoGioHang(khachHangId);
+        ChiTietGioHang matHang = gioHang.getCacMatHang().stream()
+                .filter(i -> i.getId().equals(chiTietGioHangId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay mat hang trong gio"));
+        matHang.setDuocChonThanhToan(duocChon);
+        return gioHangRepository.save(gioHang);
+    }
+
+    @Transactional
+    public GioHang capNhatChonTatCa(UUID khachHangId, boolean duocChon) {
+        GioHang gioHang = layHoacTaoGioHang(khachHangId);
+        gioHang.getCacMatHang().forEach(i -> i.setDuocChonThanhToan(duocChon));
+        return gioHangRepository.save(gioHang);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChiTietGioHang> layMatHangDuocChon(UUID khachHangId) {
+        GioHang gioHang = layHoacTaoGioHang(khachHangId);
+        return gioHang.getCacMatHang().stream()
+                .filter(ChiTietGioHang::isDuocChonThanhToan)
+                .toList();
     }
 
     private void capNhatTongTien(GioHang gioHang) {

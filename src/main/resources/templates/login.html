@@ -1,47 +1,69 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Đăng nhập - TKPMHDT')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: header('login')}"></header>
+<body class="auth-page">
+<div class="auth-shell">
+    <a th:href="@{/}" class="auth-brand" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 12px;">
+        <div style="font-size:34px;">🥤</div>
+        <div class="brand-font" style="font-size:2rem;">DrinkHub</div>
+    </a>
 
-<div class="container" style="max-width: 480px; padding-top: 100px;">
-    <div class="card" style="text-align: center;">
-        <div style="margin-bottom: 2rem;">
-            <h1 style="margin-bottom: 0.5rem;">Chào mừng trở lại!</h1>
-            <p class="muted">Đăng nhập để tiếp tục mua sắm và quản lý đơn hàng.</p>
-        </div>
-        
+    <div class="auth-tabs">
+        <a class="auth-tab active" th:href="@{/login}">Đăng nhập</a>
+        <a class="auth-tab" th:href="@{/register}">Đăng ký</a>
+    </div>
+
+    <div class="section-card">
         <form method="post" th:action="@{/login}" style="text-align: left;">
-            <label>Tên đăng nhập
-                <input type="text" name="username" placeholder="Nhập tên đăng nhập của bạn..." required autofocus>
-            </label>
-            <label>Mật khẩu
-                <input type="password" name="password" placeholder="••••••••" required>
-            </label>
-            <button type="submit" class="btn-secondary" style="margin-top: 2rem;">Đăng nhập ngay</button>
+            <label>Số điện thoại hoặc email</label>
+            <input type="text" name="username" placeholder="Nhập số điện thoại hoặc email..." required autofocus>
+
+            <label>Mật khẩu</label>
+            <div class="input-with-action">
+                <input id="loginPassword" type="password" name="password" placeholder="••••••••" required>
+                <button type="button" onclick="togglePassword('loginPassword', this)">Hiện</button>
+            </div>
+
+            <button type="submit" style="width:100%; font-weight:700;">Đăng nhập</button>
+            <input type="hidden" name="redirect" id="redirectField" value="">
         </form>
-        
-        <div th:if="${param.error}" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: #fee2e2; color: #991b1b; font-size: 0.875rem; font-weight: 500;">
-            Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại!
+
+        <div style="margin-top: 10px;">
+            <a th:href="@{/quen-mat-khau}" style="color: var(--phuclong-green); text-decoration: none; font-size: 0.9rem;">Quên mật khẩu?</a>
         </div>
-        <div th:if="${param.logout}" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: #dcfce7; color: #166534; font-size: 0.875rem; font-weight: 500;">
-            Bạn đã đăng xuất thành công.
+
+        <div class="muted" style="text-align:center; margin:14px 0 10px;">Hoặc đăng nhập bằng</div>
+       
+        <div th:if="${param.error}" style="margin-top: 1rem; padding: 0.8rem; border-radius: 8px; background: #fee2e2; color: #991b1b; font-size: 0.875rem;">
+            Sai tài khoản hoặc mật khẩu.
         </div>
-        
-        <div style="margin-top: 2rem; text-align: center;">
-            <a th:href="@{/quen-mat-khau}" style="color: var(--phuclong-green); text-decoration: none; font-size: 0.875rem;">Quên mật khẩu?</a>
+        <div th:if="${param.logout}" style="margin-top: 1rem; padding: 0.8rem; border-radius: 8px; background: #dcfce7; color: #166534; font-size: 0.875rem;">
+            Đăng xuất thành công.
         </div>
-        
-        <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center;">
-            <p class="muted" style="font-size: 0.875rem;">
-                Chưa có tài khoản? <a th:href="@{/register}" style="color: var(--phuclong-green); text-decoration: none; font-weight: 600;">Đăng ký tại đây</a>
-            </p>
-        </div>
+    </div>
+
+    <div style="text-align:center; margin-top: 14px;">
+        <span class="muted">Chưa có tài khoản? </span>
+        <a th:href="@{/register}" style="color: var(--phuclong-green); text-decoration: none; font-weight: 600;">Đăng ký ngay</a>
     </div>
 </div>
 
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-
+<script>
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.textContent = isPassword ? 'Ẩn' : 'Hiện';
+    }
+    const params = new URLSearchParams(window.location.search);
+    const redirectTarget = params.get('redirect');
+    if (redirectTarget) {
+        const redirectField = document.getElementById('redirectField');
+        if (redirectField) {
+            redirectField.value = redirectTarget;
+        }
+    }
+</script>
 </body>
 </html>
 

@@ -217,13 +217,19 @@
             return;
         }
 
-        addresses.forEach((addr, index) => {
-            if (index === 0 && !selectedAddressId) selectedAddressId = addr.id;
+        const macDinh = addresses.find(a => a.laMacDinh);
+        if (macDinh) {
+            selectedAddressId = macDinh.id;
+        } else {
+            selectedAddressId = addresses[0].id;
+        }
+
+        addresses.forEach((addr) => {
             const isSelected = selectedAddressId === addr.id;
             list.innerHTML += `
                 <label class="address-item ${isSelected ? 'selected' : ''}" onclick="selectAddress('${addr.id}')">
                     <input type="radio" name="addr" value="${addr.id}" ${isSelected ? 'checked' : ''} style="display:none">
-                    <div style="font-weight: bold;">${addr.tenNguoiNhan} | ${addr.soDienThoai}</div>
+                    <div style="font-weight: bold;">${addr.tenNguoiNhan} | ${addr.soDienThoai} ${addr.laMacDinh ? '<span style="font-size:0.75rem; color: var(--phuclong-green);">(Mặc định)</span>' : ''}</div>
                     <div style="font-size: 0.85rem; color: var(--text-muted);">
                         ${addr.diaChiCuThe}, ${addr.phuongXa}, ${addr.quanHuyen}, ${addr.tinhThanhPho}
                     </div>
@@ -344,7 +350,14 @@
         
         section.style.display = "block";
         itemsList.innerHTML = "";
-        cart.cacMatHang.forEach(item => {
+        const selectedItems = (cart.cacMatHang || []).filter(item => item.duocChonThanhToan);
+        if (selectedItems.length === 0) {
+            itemsList.innerHTML = "<p class='muted'>Bạn chưa chọn sản phẩm nào trong giỏ để thanh toán.</p>";
+            document.getElementById("checkout-total").innerText = formatPrice(0);
+            return;
+        }
+
+        selectedItems.forEach(item => {
             itemsList.innerHTML += `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
                     <span>${item.soLuong} x ${item.nuocUong.ten}</span>
@@ -352,7 +365,8 @@
                 </div>
             `;
         });
-        document.getElementById("checkout-total").innerText = formatPrice(cart.tongTien);
+        const tongDaChon = selectedItems.reduce((sum, item) => sum + (item.thanhTien || 0), 0);
+        document.getElementById("checkout-total").innerText = formatPrice(tongDaChon);
     }
 
     async function createOrder() {
@@ -376,12 +390,6 @@
                 }
                 const savedAddress = await api("POST", "/api/dia-chi/" + currentUser.id, newAddress);
                 addressId = savedAddress.id;
-            }
-
-            if (!addressId) {
-                alert("Vui lòng chọn hoặc nhập địa chỉ giao hàng.");
-                showLoading(false);
-                return;
             }
 
             let order;

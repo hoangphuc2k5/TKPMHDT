@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,12 +25,14 @@ import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.enums.TrangThaiDonHangEnum;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Service.donhang.DonHangService;
+import TKPMHDT.Service.donhang.DonHangRealtimeService;
 import TKPMHDT.Util.ResponseFactory;
 import TKPMHDT.facade.PosFacade;
 import lombok.RequiredArgsConstructor;
 import TKPMHDT.DTO.ApiResponse;
 import TKPMHDT.DTO.request.SanPhamOrderRequest;
 import TKPMHDT.DTO.response.DonHangResponse;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RequiredArgsConstructor
 @RestController
@@ -37,10 +40,11 @@ import TKPMHDT.DTO.response.DonHangResponse;
 public class DonHangController {
 
     private final DonHangService donHangService;
+    private final DonHangRealtimeService donHangRealtimeService;
     private final PosFacade posFacade;
     
 
-    @PreAuthorize("hasRole('KHACH_HANG')")
+    @PreAuthorize("hasAuthority('order:customer-create')")
     @PostMapping("/tao-tu-gio-hang")
     public ResponseEntity<DonHang> taoTuGioHang(@RequestBody TaoDonHangRequest request) {
         DonHang donHang = donHangService.taoDonHangTuGioHang(
@@ -52,7 +56,7 @@ public class DonHangController {
         return ResponseEntity.ok(donHang);
     }
 
-    @PreAuthorize("hasRole('KHACH_HANG')")
+    @PreAuthorize("hasAuthority('order:customer-create')")
     @PostMapping("/tao-tu-san-pham")
     public ResponseEntity<DonHang> taoTuSanPham(@RequestBody TaoDonHangSanPhamRequest request) {
         DonHang donHang = donHangService.taoDonHangTuSanPham(
@@ -69,19 +73,19 @@ public class DonHangController {
         return ResponseEntity.ok(donHang);
     }
 
-    @PreAuthorize("hasRole('KHACH_HANG')")
+    @PreAuthorize("hasAuthority('order:track')")
     @GetMapping("/me")
     public ResponseEntity<List<DonHang>> layDonHangCuaToi(Principal principal) {
         return ResponseEntity.ok(donHangService.layDonHangCuaToi(principal.getName()));
     }
 
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('order:view')")
     @GetMapping("/all")
     public ResponseEntity<List<DonHang>> layTatCaDonHang() {
         return ResponseEntity.ok(donHangService.layTatCaDonHang());
     }
 
-    @PreAuthorize("hasAnyRole('KHACH_HANG','NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAnyAuthority('order:track','order:view')")
     @GetMapping("/{donHangId}")
     public ResponseEntity<DonHang> layChiTietDonHang(@PathVariable UUID donHangId) {
         return donHangService.layTheoId(donHangId)
@@ -89,25 +93,31 @@ public class DonHangController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAnyAuthority('order:track','order:view')")
+    @GetMapping(value = "/{donHangId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter theoDoiDonHangRealtime(@PathVariable UUID donHangId) {
+        return donHangRealtimeService.subscribe(donHangId);
+    }
+
+    @PreAuthorize("hasAuthority('order:update')")
     @PostMapping("/{donHangId}/xac-nhan")
     public ResponseEntity<DonHang> xacNhan(@PathVariable UUID donHangId) {
         return ResponseEntity.ok(donHangService.xacNhanDonHang(donHangId));
     }
 
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('order:update')")
     @PostMapping("/{donHangId}/giao-hang")
     public ResponseEntity<DonHang> giaoHang(@PathVariable UUID donHangId) {
         return ResponseEntity.ok(donHangService.giaoDonHang(donHangId));
     }
 
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAuthority('order:update')")
     @PostMapping("/{donHangId}/hoan-thanh")
     public ResponseEntity<DonHang> hoanThanh(@PathVariable UUID donHangId) {
         return ResponseEntity.ok(donHangService.hoanThanhDonHang(donHangId));
     }
 
-    @PreAuthorize("hasAnyRole('KHACH_HANG','NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PreAuthorize("hasAnyAuthority('order:track','order:update')")
     @PostMapping("/{donHangId}/huy")
     public ResponseEntity<DonHang> huy(@PathVariable UUID donHangId) {
         return ResponseEntity.ok(donHangService.huyDonHang(donHangId));
@@ -138,6 +148,7 @@ public class DonHangController {
 
     // POS API
     // Xem tất cả đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @GetMapping("/pos/orders-offline")
     public ResponseEntity<ApiResponse<Page<DonHangResponse>>> layTatCaDonHangOffline(
             @RequestParam(defaultValue = "0") int page,
@@ -151,6 +162,7 @@ public class DonHangController {
     }
 
     // Xem đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @GetMapping("/pos/{donHangId}")
     public ResponseEntity<ApiResponse<DonHangResponse>> layDonHangTaiQuay(@PathVariable UUID donHangId) {
         DonHangResponse donHang = donHangService.layDonHangTaiQuay(donHangId);
@@ -158,6 +170,7 @@ public class DonHangController {
     }
 
     // Tạo đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @PostMapping("/pos/tao-don-tai-quay")
     public ResponseEntity<ApiResponse<UUID>> taoDonTaiQuay() {
 
@@ -167,6 +180,7 @@ public class DonHangController {
     }
 
     // Thêm sản phẩm vào đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @PostMapping("/pos/{donHangId}/them-san-pham")
     public ResponseEntity<ApiResponse<DonHangResponse>> themSanPham(
             @PathVariable UUID donHangId,
@@ -179,6 +193,7 @@ public class DonHangController {
     }
 
     // Xác nhận đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('order:update')")
     @PatchMapping("/pos/{donHangId}/xac-nhan")
     public ResponseEntity<ApiResponse<UUID>> xacNhanDonHang(@PathVariable UUID donHangId) {
         posFacade.xacNhanDonHang(donHangId);
@@ -186,6 +201,7 @@ public class DonHangController {
     }
 
     //Hoàn thành đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('order:update')")
     @PatchMapping("/pos/{donHangId}/hoan-thanh")
     public ResponseEntity<ApiResponse<UUID>> hoanThanhDonHang(@PathVariable UUID donHangId) {
         posFacade.hoanThanhDonHang(donHangId);
@@ -193,6 +209,7 @@ public class DonHangController {
     }
 
     // Bỏ sản phẩm khỏi đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @PatchMapping("/pos/chi-tiet/{chiTietDonHangId}/xoa")
     public ResponseEntity<ApiResponse<UUID>> xoaChiTietDonHang(@PathVariable UUID chiTietDonHangId) {
         posFacade.xoaChiTietDonHang(chiTietDonHangId);
@@ -200,6 +217,7 @@ public class DonHangController {
     }
 
     // Tăng số lượng sản phẩm trong đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @PatchMapping("/pos/chi-tiet/{chiTietDonHangId}/tang")
     public ResponseEntity<ApiResponse<String>> tangSoLuong(@PathVariable UUID chiTietDonHangId) {
         posFacade.tangSoLuong(chiTietDonHangId);
@@ -207,6 +225,7 @@ public class DonHangController {
     }
 
     // Giảm số lượng sản phẩm trong đơn hàng tại quầy
+    @PreAuthorize("hasAuthority('pos:create')")
     @PatchMapping("/pos/chi-tiet/{chiTietDonHangId}/giam")
     public ResponseEntity<ApiResponse<String>> giamSoLuong(@PathVariable UUID chiTietDonHangId) {
         posFacade.giamSoLuong(chiTietDonHangId);

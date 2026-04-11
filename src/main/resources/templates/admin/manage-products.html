@@ -5,11 +5,28 @@
 <header th:replace="~{fragments/layout :: header('admin')}"></header>
 
 <div class="container">
-    <div class="card">
-        <div class="card-content" style="text-align:center;">
-            <h1 class="brand-font">Quản lý sản phẩm đã chuyển sang Dashboard Admin mới</h1>
-            <p class="muted">Tại dashboard bạn có đầy đủ quản lý sản phẩm, kho, đơn hàng, khách hàng, nhân viên, khuyến mãi, báo cáo và hệ thống.</p>
-            <a href="/ui/admin/dashboard" class="btn-highlight" style="text-decoration:none; display:inline-block;">Mở Dashboard Admin</a>
+    <div class="page-header">
+        <div>
+            <h1 class="brand-font">Quản Lý Sản Phẩm</h1>
+            <p class="muted">Giao diện quản lý chi tiết đã được gom về Dashboard Admin để tránh phân mảnh.</p>
+        </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+        <div class="section-card">
+            <h3 style="margin-top:0;">Sản phẩm & công thức</h3>
+            <p class="muted">Thêm, sửa, xóa sản phẩm và cấu hình công thức định lượng.</p>
+            <a href="/ui/admin/dashboard?section=products" class="btn-highlight" style="text-decoration:none;">Mở khu vực sản phẩm</a>
+        </div>
+        <div class="section-card">
+            <h3 style="margin-top:0;">Kho nguyên liệu</h3>
+            <p class="muted">Nhập xuất kho, theo dõi tồn và cảnh báo nguyên liệu.</p>
+            <a href="/ui/admin/dashboard?section=inventory" class="btn-secondary" style="text-decoration:none;">Mở khu vực kho</a>
+        </div>
+        <div class="section-card">
+            <h3 style="margin-top:0;">Khuyến mãi theo sản phẩm</h3>
+            <p class="muted">Áp dụng voucher theo món hoặc toàn hệ thống.</p>
+            <a href="/ui/admin/dashboard?section=promotions" class="btn-secondary" style="text-decoration:none;">Mở khuyến mãi</a>
         </div>
     </div>
 </div>
