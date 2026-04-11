@@ -26,19 +26,21 @@ import TKPMHDT.Entity.giohang.ChiTietGioHang;
 import TKPMHDT.Entity.giohang.GioHang;
 import TKPMHDT.Entity.khuyenmai.MaGiamGia;
 import TKPMHDT.Entity.nguoidung.DiaChi;
+import TKPMHDT.Entity.nguoidung.KhachHang;
 import TKPMHDT.Entity.nguoidung.NguoiDung;
 import TKPMHDT.Entity.sanpham.ChiTietTopping;
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
-import TKPMHDT.Repository.donhang.ChiTietDonHangRepository;
 import TKPMHDT.Repository.donhang.DonHangRepository;
 import TKPMHDT.Repository.giohang.GioHangRepository;
 import TKPMHDT.Repository.nguoidung.DiaChiRepository;
+import TKPMHDT.Repository.nguoidung.KhachHangRepository;
 import TKPMHDT.Repository.nguoidung.NguoiDungRepository;
-import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
+import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
 import TKPMHDT.Service.khuyenmai.KhuyenMaiService;
+import TKPMHDT.Service.thanhtoan.ThanhToanService;
 
 @Service
 public class DonHangService {
@@ -46,34 +48,34 @@ public class DonHangService {
     private final DonHangRepository donHangRepository;
     private final GioHangRepository gioHangRepository;
     private final KhuyenMaiService khuyenMaiService;
+    private final KhachHangRepository khachHangRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final DiaChiRepository diaChiRepository;
     private final NuocUongSanRepository nuocUongSanRepository;
-    private final NguyenLieuRepository nguyenLieuRepository;
-    private final ChiTietDonHangRepository chiTietDonHangRepository;
+    private final ThanhToanService thanhToanService;
 
     public DonHangService(
             DonHangRepository donHangRepository,
             GioHangRepository gioHangRepository,
             KhuyenMaiService khuyenMaiService,
+            KhachHangRepository khachHangRepository,
             NguoiDungRepository nguoiDungRepository,
             DiaChiRepository diaChiRepository,
             NuocUongSanRepository nuocUongSanRepository,
-            NguyenLieuRepository nguyenLieuRepository,
-            ChiTietDonHangRepository chiTietDonHangRepository
+            ThanhToanService thanhToanService
     ) {
         this.donHangRepository = donHangRepository;
         this.gioHangRepository = gioHangRepository;
         this.khuyenMaiService = khuyenMaiService;
+        this.khachHangRepository = khachHangRepository;
         this.nguoiDungRepository = nguoiDungRepository;
         this.diaChiRepository = diaChiRepository;
         this.nuocUongSanRepository = nuocUongSanRepository;
-        this.nguyenLieuRepository = nguyenLieuRepository;
-        this.chiTietDonHangRepository = chiTietDonHangRepository;
+        this.thanhToanService = thanhToanService;
     }
 
     @Transactional
-    public DonHang taoDonHangTuGioHang(UUID khachHangId, UUID diaChiId, String maGiamGiaCode) {
+    public DonHang taoDonHangTuGioHang(UUID khachHangId, UUID diaChiId, String maGiamGiaCode, PhuongThucThanhToanEnum phuongThuc) {
         GioHang gioHang = gioHangRepository.findByKhachHangId(khachHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng"));
 
@@ -120,11 +122,76 @@ public class DonHangService {
         donHang.setChiTietDonHangs(chiTietDonHangs);
 
         DonHang saved = donHangRepository.save(donHang);
+        saved.setThanhToan(thanhToanService.taoThanhToan(saved.getId(), phuongThuc));
 
         gioHang.getCacMatHang().clear();
         gioHang.setTongTien(BigDecimal.ZERO);
         gioHangRepository.save(gioHang);
 
+        return saved;
+    }
+
+    @Transactional
+    public DonHang taoDonHangTuSanPham(UUID khachHangId,
+                                       UUID nuocUongId,
+                                       int soLuong,
+                                       Integer mucDuong,
+                                       Integer mucDa,
+                                       String ghiChu,
+                                       UUID diaChiId,
+                                       String maGiamGiaCode,
+                                       PhuongThucThanhToanEnum phuongThuc) {
+        if (soLuong <= 0) {
+            throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+        }
+
+        KhachHang khachHang = khachHangRepository.findById(khachHangId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng"));
+
+        DiaChi diaChi = diaChiRepository.findById(diaChiId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ"));
+
+        if (!diaChi.getKhachHang().getId().equals(khachHangId)) {
+            throw new SecurityException("Địa chỉ không thuộc về khách hàng này");
+        }
+
+        NuocUongSan nuocUong = nuocUongSanRepository.findById(nuocUongId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
+
+        Optional<MaGiamGia> maGiamGiaOpt = maGiamGiaCode == null || maGiamGiaCode.isBlank()
+                ? Optional.empty()
+                : khuyenMaiService.timTheoMa(maGiamGiaCode);
+
+        BigDecimal tongTienGoc = nuocUong.getGia().multiply(BigDecimal.valueOf(soLuong));
+        BigDecimal tienGiam = khuyenMaiService.tinhTienGiam(maGiamGiaOpt.orElse(null), tongTienGoc);
+        BigDecimal tongThanhToan = tongTienGoc.subtract(tienGiam).max(BigDecimal.ZERO);
+
+        DonHang donHang = DonHang.builder()
+                .khachHang(khachHang)
+                .ngayDat(LocalDateTime.now())
+                .trangThai(new TrangThaiChoXacNhan())
+                .tongTien(tongThanhToan)
+                .maGiamGia(maGiamGiaOpt.orElse(null))
+                .diaChiGiaoHang(diaChi)
+                .chiTietDonHangs(new ArrayList<>())
+                .build();
+
+        ChiTietDonHang chiTiet = ChiTietDonHang.builder()
+                .donHang(donHang)
+                .soLuong(soLuong)
+                .nuocUong(nuocUong)
+                .tuyChinh(TuyChinhKhachHang.builder()
+                        .mucDuong(mucDuong)
+                        .mucDa(mucDa)
+                        .ghiChu(ghiChu)
+                        .build())
+                .thanhTien(tongTienGoc)
+                .build();
+
+        donHang.getChiTietDonHangs().add(chiTiet);
+
+        DonHang saved = donHangRepository.save(donHang);
+        saved.setThanhToan(thanhToanService.taoThanhToan(saved.getId(), phuongThuc));
         return saved;
     }
 

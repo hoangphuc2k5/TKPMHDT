@@ -20,6 +20,39 @@
                         <div id="address-list" style="margin-top: 1rem;">
                             <!-- Address items via JS -->
                         </div>
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f7fcf9; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                <div style="font-weight: bold;">Nhập địa chỉ mới</div>
+                                <label style="font-weight: normal; font-size: 0.95rem; color: var(--text-muted);">
+                                    <input id="new-address-checkbox" type="checkbox" style="margin-right: 0.4rem;" onchange="toggleNewAddress(this.checked)"> Sử dụng địa chỉ mới
+                                </label>
+                            </div>
+
+                            <div id="new-address-form" style="display: none; margin-top: 1rem;">
+                                <label>Họ tên người nhận</label>
+                                <input id="new-addr-name" type="text" style="width: 100%; margin-bottom: 0.8rem;">
+
+                                <label>Số điện thoại</label>
+                                <input id="new-addr-phone" type="text" style="width: 100%; margin-bottom: 0.8rem;">
+
+                                <label>Số nhà, tên đường</label>
+                                <input id="new-addr-detail" type="text" style="width: 100%; margin-bottom: 0.8rem;">
+
+                                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.8rem;">
+                                    <div>
+                                        <label>Phường/Xã</label>
+                                        <input id="new-addr-ward" type="text" style="width: 100%;">
+                                    </div>
+                                    <div>
+                                        <label>Quận/Huyện</label>
+                                        <input id="new-addr-district" type="text" style="width: 100%;">
+                                    </div>
+                                </div>
+
+                                <label>Tỉnh/Thành phố</label>
+                                <input id="new-addr-city" type="text" style="width: 100%;">
+                            </div>
+                        </div>
                         <button onclick="openAddAddressModal()" class="btn-secondary" style="width: 100%; margin-top: 1rem;">
                             + Thêm địa chỉ mới
                         </button>
@@ -142,12 +175,14 @@
 <script>
     let currentUser = null;
     let selectedAddressId = null;
+    let directBuyInfo = null;
 
     document.addEventListener('DOMContentLoaded', initOrderPage);
 
     async function initOrderPage() {
         showLoading(true);
         try {
+            directBuyInfo = parseDirectBuyParams();
             currentUser = await api("GET", "/api/nguoi-dung/me");
             const isStaff = currentUser.vaiTro === 'NHAN_VIEN_BAN_HANG' || currentUser.vaiTro === 'QUAN_TRI_VIEN';
             
@@ -171,9 +206,14 @@
         const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
         const list = document.getElementById("address-list");
         list.innerHTML = "";
+        selectedAddressId = null;
+        document.getElementById("new-address-checkbox").checked = false;
+        document.getElementById("new-address-form").style.display = 'none';
         
         if (addresses.length === 0) {
             list.innerHTML = "<p class='muted'>Bạn chưa có địa chỉ nào. Vui lòng thêm địa chỉ.</p>";
+            document.getElementById("new-address-checkbox").checked = true;
+            document.getElementById("new-address-form").style.display = 'block';
             return;
         }
 
@@ -194,10 +234,105 @@
 
     function selectAddress(id) {
         selectedAddressId = id;
+        document.getElementById("new-address-checkbox").checked = false;
+        document.getElementById("new-address-form").style.display = 'none';
         loadAddresses();
     }
 
+    function toggleNewAddress(enabled) {
+        document.getElementById("new-address-form").style.display = enabled ? 'block' : 'none';
+        if (enabled) {
+            selectedAddressId = null;
+            loadAddresses();
+        }
+    }
+
+    function parseDirectBuyParams() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('buyNow') !== 'true') {
+            return null;
+        }
+
+        return {
+            productId: params.get('productId'),
+            quantity: parseInt(params.get('quantity') || '1', 10),
+            mucDuong: parseInt(params.get('mucDuong') || '100', 10),
+            mucDa: parseInt(params.get('mucDa') || '100', 10),
+            ghiChu: params.get('ghiChu') ? decodeURIComponent(params.get('ghiChu')) : ''
+        };
+    }
+
+    async function loadDirectBuySummary() {
+        const section = document.getElementById("checkout-section");
+        const itemsList = document.getElementById("checkout-items");
+        section.style.display = "block";
+        itemsList.innerHTML = "";
+
+        if (!directBuyInfo || !directBuyInfo.productId) {
+            itemsList.innerHTML = "<p class='muted'>Không có sản phẩm mua ngay hợp lệ.</p>";
+            return;
+        }
+
+        try {
+            const product = await api("GET", "/api/san-pham/nuoc-uong/" + directBuyInfo.productId);
+            directBuyInfo.product = product;
+            const total = product.gia * directBuyInfo.quantity;
+
+            itemsList.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    <span>${directBuyInfo.quantity} x ${product.ten}</span>
+                    <span>${formatPrice(total)}</span>
+                </div>
+            `;
+
+            if (directBuyInfo.ghiChu) {
+                itemsList.innerHTML += `
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">Ghi chú: ${directBuyInfo.ghiChu}</p>
+                `;
+            }
+
+            itemsList.innerHTML += `
+                <div style="margin-top: 1rem; font-size: 0.95rem; color: var(--text-muted);">
+                    <p>Đường: ${directBuyInfo.mucDuong}%</p>
+                    <p>Đá: ${directBuyInfo.mucDa}%</p>
+                </div>
+            `;
+
+            document.getElementById("checkout-total").innerText = formatPrice(total);
+        } catch (e) {
+            itemsList.innerHTML = "<p class='muted'>Không thể tải thông tin sản phẩm mua ngay.</p>";
+            console.error(e);
+        }
+    }
+
+    function collectNewAddress() {
+        const name = document.getElementById("new-addr-name").value.trim();
+        const phone = document.getElementById("new-addr-phone").value.trim();
+        const detail = document.getElementById("new-addr-detail").value.trim();
+        const ward = document.getElementById("new-addr-ward").value.trim();
+        const district = document.getElementById("new-addr-district").value.trim();
+        const city = document.getElementById("new-addr-city").value.trim();
+
+        if (!name || !phone || !detail || !ward || !district || !city) {
+            return null;
+        }
+
+        return {
+            tenNguoiNhan: name,
+            soDienThoai: phone,
+            diaChiCuThe: detail,
+            phuongXa: ward,
+            quanHuyen: district,
+            tinhThanhPho: city
+        };
+    }
+
     async function loadCartSummary() {
+        if (directBuyInfo) {
+            await loadDirectBuySummary();
+            return;
+        }
+
         const cart = await api("GET", "/api/gio-hang/" + currentUser.id);
         const section = document.getElementById("checkout-section");
         const itemsList = document.getElementById("checkout-items");
@@ -221,19 +356,57 @@
     }
 
     async function createOrder() {
-        if (!selectedAddressId) {
-            alert("Vui lòng chọn địa chỉ giao hàng!");
+        const selectedPayment = document.querySelector('input[name="payment"]:checked');
+        if (!selectedPayment) {
+            alert("Vui lòng chọn phương thức thanh toán!");
             return;
         }
-        
+
         showLoading(true);
         try {
-            const order = await api("POST", "/api/don-hang/tao-tu-gio-hang", {
-                khachHangId: currentUser.id,
-                diaChiId: selectedAddressId
-            });
-            alert("Đặt hàng thành công! Mã đơn hàng: " + order.id);
-            window.location.reload();
+            let addressId = selectedAddressId;
+            const useNewAddress = document.getElementById("new-address-checkbox").checked;
+
+            if (useNewAddress) {
+                const newAddress = collectNewAddress();
+                if (!newAddress) {
+                    alert("Vui lòng điền đầy đủ thông tin địa chỉ mới.");
+                    showLoading(false);
+                    return;
+                }
+                const savedAddress = await api("POST", "/api/dia-chi/" + currentUser.id, newAddress);
+                addressId = savedAddress.id;
+            }
+
+            if (!addressId) {
+                alert("Vui lòng chọn hoặc nhập địa chỉ giao hàng.");
+                showLoading(false);
+                return;
+            }
+
+            let order;
+            if (directBuyInfo) {
+                order = await api("POST", "/api/don-hang/tao-tu-san-pham", {
+                    khachHangId: currentUser.id,
+                    nuocUongId: directBuyInfo.productId,
+                    soLuong: directBuyInfo.quantity,
+                    mucDuong: directBuyInfo.mucDuong,
+                    mucDa: directBuyInfo.mucDa,
+                    ghiChu: directBuyInfo.ghiChu,
+                    diaChiId: addressId,
+                    maGiamGiaCode: null,
+                    phuongThuc: selectedPayment.value
+                });
+            } else {
+                order = await api("POST", "/api/don-hang/tao-tu-gio-hang", {
+                    khachHangId: currentUser.id,
+                    diaChiId: addressId,
+                    maGiamGiaCode: null,
+                    phuongThuc: selectedPayment.value
+                });
+            }
+            alert("Đặt hàng thành công! Mã đơn hàng: " + order.id + "\nPhương thức thanh toán: " + selectedPayment.value);
+            window.location.href = "/ui/don-hang";
         } catch (e) {
             alert("Lỗi đặt hàng: " + e.message);
         } finally {
@@ -265,6 +438,7 @@
                                     ${o.trangThaiDb}
                                 </span>
                             </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Phương thức: ${o.thanhToan?.phuongThuc || 'Chưa có'}</div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-weight: bold; font-size: 1.1rem;">${formatPrice(o.tongTien)}</div>
@@ -352,7 +526,11 @@
                 </div>
                 
                 <div style="padding-top: 1rem; border-top: 2px solid var(--border-color);">
-                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--phuclong-green);">
+                    <div style="display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                        <div><strong>Phương thức thanh toán:</strong> ${order.thanhToan?.phuongThuc || 'Chưa xác định'}</div>
+                        <div><strong>Trạng thái thanh toán:</strong> ${order.thanhToan?.trangThai || 'Chưa xử lý'}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--phuclong-green); margin-top: 1rem;">
                         <span>Tổng cộng:</span>
                         <span>${formatPrice(order.tongTien)}</span>
                     </div>
@@ -478,25 +656,35 @@
             console.error(e);
         }
     }
-    
 
     function openAddAddressModal() { document.getElementById("address-modal").style.display = "flex"; }
     function closeAddressModal() { document.getElementById("address-modal").style.display = "none"; }
 
     async function saveAddress() {
         const data = {
-            tenNguoiNhan: document.getElementById("addr-name").value,
-            soDienThoai: document.getElementById("addr-phone").value,
-            diaChiCuThe: document.getElementById("addr-detail").value,
-            phuongXa: document.getElementById("addr-ward").value,
-            quanHuyen: document.getElementById("addr-district").value,
-            tinhThanhPho: document.getElementById("addr-city").value
+            tenNguoiNhan: document.getElementById("addr-name").value.trim(),
+            soDienThoai: document.getElementById("addr-phone").value.trim(),
+            diaChiCuThe: document.getElementById("addr-detail").value.trim(),
+            phuongXa: document.getElementById("addr-ward").value.trim(),
+            quanHuyen: document.getElementById("addr-district").value.trim(),
+            tinhThanhPho: document.getElementById("addr-city").value.trim()
         };
+
+        if (!data.tenNguoiNhan || !data.soDienThoai || !data.diaChiCuThe || !data.phuongXa || !data.quanHuyen || !data.tinhThanhPho) {
+            alert("Vui lòng điền đầy đủ thông tin địa chỉ.");
+            return;
+        }
+
         try {
-            await api("POST", "/api/dia-chi/" + currentUser.id, data);
+            const savedAddress = await api("POST", "/api/dia-chi/" + currentUser.id, data);
+            selectedAddressId = savedAddress.id;
             closeAddressModal();
-            loadAddresses();
-        } catch (e) { alert("Lỗi: " + e.message); }
+            document.getElementById("new-address-checkbox").checked = false;
+            document.getElementById("new-address-form").style.display = 'none';
+            await loadAddresses();
+        } catch (e) {
+            alert("Lỗi: " + e.message);
+        }
     }
 
     function formatPrice(price) { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price); }
