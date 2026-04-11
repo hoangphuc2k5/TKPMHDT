@@ -1,12 +1,15 @@
 package TKPMHDT.Entity.donhang;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import TKPMHDT.Entity.sanpham.ChiTietTopping;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -16,6 +19,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -53,5 +57,9 @@ public class ChiTietDonHang {
 
     @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
+
+    @OneToMany(mappedBy = "chiTietDonHang", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChiTietTopping> toppings;
+    
 }
 

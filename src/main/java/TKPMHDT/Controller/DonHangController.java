@@ -1,35 +1,44 @@
 package TKPMHDT.Controller;
 
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.enums.TrangThaiDonHangEnum;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Service.donhang.DonHangService;
+import TKPMHDT.Util.ResponseFactory;
+import TKPMHDT.facade.PosFacade;
+import lombok.RequiredArgsConstructor;
+import TKPMHDT.DTO.ApiResponse;
+import TKPMHDT.DTO.request.SanPhamOrderRequest;
+import TKPMHDT.DTO.response.DonHangResponse;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/don-hang")
 public class DonHangController {
 
     private final DonHangService donHangService;
-
-    public DonHangController(DonHangService donHangService) {
-        this.donHangService = donHangService;
-    }
+    private final PosFacade posFacade;
+    
 
     @PreAuthorize("hasRole('KHACH_HANG')")
     @PostMapping("/tao-tu-gio-hang")
@@ -126,42 +135,82 @@ public class DonHangController {
     public record DonTaiQuayRequest(UUID khachHangId, UUID nuocUongId, int soLuong) {
     }
 
-    @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
-    @PostMapping("/tao-tai-quay")
-    public ResponseEntity<DonHang> taoTaiQuay(@RequestBody TaoDonHangTaiQuayRequest request) {
-        // Convert ChiTietTaiQuayRequest list to Map list for service
-        List<Map<String, Object>> chiTietMaps = request.chiTietItems().stream()
-                .map(item -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("nuocUongId", item.nuocUongId());
-                    map.put("soLuong", item.soLuong());
-                    map.put("duong", item.duong());
-                    map.put("da", item.da());
-                    map.put("thanhTien", item.thanhTien());
-                    return map;
-                })
-                .collect(Collectors.toList());
-        
-        DonHang donHang = donHangService.taoDonHangTaiQuay(
-                request.tenKhachHang(),
-                request.soDienThoai(),
-                chiTietMaps
-        );
-        return ResponseEntity.ok(donHang);
+
+    // POS API
+    // Xem tất cả đơn hàng tại quầy
+    @GetMapping("/pos/orders-offline")
+    public ResponseEntity<ApiResponse<Page<DonHangResponse>>> layTatCaDonHangOffline(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayDat").descending());
+
+        Page<DonHangResponse> donHangs = donHangService.layTatCaDonHangOffline(pageable);
+
+        return ResponseFactory.success(donHangs, "Lấy đơn hàng thành công");
     }
 
-    public record TaoDonHangTaiQuayRequest(
-            String tenKhachHang,
-            String soDienThoai,
-            java.util.List<ChiTietTaiQuayRequest> chiTietItems
-    ) {}
+    // Xem đơn hàng tại quầy
+    @GetMapping("/pos/{donHangId}")
+    public ResponseEntity<ApiResponse<DonHangResponse>> layDonHangTaiQuay(@PathVariable UUID donHangId) {
+        DonHangResponse donHang = donHangService.layDonHangTaiQuay(donHangId);
+        return ResponseFactory.success(donHang, "Lấy đơn hàng tại quầy thành công");
+    }
 
-    public record ChiTietTaiQuayRequest(
-            UUID nuocUongId,
-            Integer soLuong,
-            Integer duong,
-            Integer da,
-            java.math.BigDecimal thanhTien
-    ) {}
+    // Tạo đơn hàng tại quầy
+    @PostMapping("/pos/tao-don-tai-quay")
+    public ResponseEntity<ApiResponse<UUID>> taoDonTaiQuay() {
+
+        UUID donHangId = posFacade.taoDonHangTaiQuay();
+
+        return ResponseFactory.success(donHangId, "Tạo đơn thành công");
+    }
+
+    // Thêm sản phẩm vào đơn hàng tại quầy
+    @PostMapping("/pos/{donHangId}/them-san-pham")
+    public ResponseEntity<ApiResponse<DonHangResponse>> themSanPham(
+            @PathVariable UUID donHangId,
+            @RequestBody SanPhamOrderRequest request
+    ) {
+
+        DonHangResponse donHang = posFacade.themSanPham(donHangId, request);
+
+        return ResponseFactory.success(donHang, "Thêm sản phẩm thành công");
+    }
+
+    // Xác nhận đơn hàng tại quầy
+    @PatchMapping("/pos/{donHangId}/xac-nhan")
+    public ResponseEntity<ApiResponse<UUID>> xacNhanDonHang(@PathVariable UUID donHangId) {
+        posFacade.xacNhanDonHang(donHangId);
+        return ResponseFactory.success(donHangId, "Xác nhận đơn hàng thành công");
+    }
+
+    //Hoàn thành đơn hàng tại quầy
+    @PatchMapping("/pos/{donHangId}/hoan-thanh")
+    public ResponseEntity<ApiResponse<UUID>> hoanThanhDonHang(@PathVariable UUID donHangId) {
+        posFacade.hoanThanhDonHang(donHangId);
+        return ResponseFactory.success(donHangId, "Hoàn thành đơn hàng thành công");
+    }
+
+    // Bỏ sản phẩm khỏi đơn hàng tại quầy
+    @PatchMapping("/pos/chi-tiet/{chiTietDonHangId}/xoa")
+    public ResponseEntity<ApiResponse<UUID>> xoaChiTietDonHang(@PathVariable UUID chiTietDonHangId) {
+        posFacade.xoaChiTietDonHang(chiTietDonHangId);
+        return ResponseFactory.success(chiTietDonHangId, "Xóa chi tiết đơn hàng thành công");
+    }
+
+    // Tăng số lượng sản phẩm trong đơn hàng tại quầy
+    @PatchMapping("/pos/chi-tiet/{chiTietDonHangId}/tang")
+    public ResponseEntity<ApiResponse<String>> tangSoLuong(@PathVariable UUID chiTietDonHangId) {
+        posFacade.tangSoLuong(chiTietDonHangId);
+        return ResponseFactory.success(null,"Tăng số lượng thành công");
+    }
+
+    // Giảm số lượng sản phẩm trong đơn hàng tại quầy
+    @PatchMapping("/pos/chi-tiet/{chiTietDonHangId}/giam")
+    public ResponseEntity<ApiResponse<String>> giamSoLuong(@PathVariable UUID chiTietDonHangId) {
+        posFacade.giamSoLuong(chiTietDonHangId);
+        return ResponseFactory.success(null,"Giảm số lượng thành công");
+    }
 }
 

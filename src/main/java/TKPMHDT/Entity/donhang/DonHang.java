@@ -76,6 +76,7 @@ public class DonHang {
     @JoinColumn(name = "ma_giam_gia_id")
     private MaGiamGia maGiamGia;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dia_chi_giao_hang_id")
     private TKPMHDT.Entity.nguoidung.DiaChi diaChiGiaoHang;
@@ -169,6 +170,11 @@ public class DonHang {
     @JsonProperty("trangThai")
     public String getTrangThaiCode() {
         return trangThaiDb != null ? trangThaiDb : (trangThai != null ? trangThai.getTenTrangThai() : null);
+    }
+
+    public void setTrangThai(TrangThaiDonHang trangThai) {
+        this.trangThai = trangThai;
+        this.trangThaiDb = trangThai.getTenTrangThai(); // 🔥 đồng bộ luôn
     }
 }
 

@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,5 +22,9 @@ public interface DonHangRepository extends JpaRepository<DonHang, UUID> {
 
     @Query("select coalesce(sum(d.tongTien),0) from DonHang d where d.ngayDat between :from and :to")
     BigDecimal tinhDoanhThuTrongKhoang(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Lấy tất cả đơn hàng OFFLINE
+    Page<DonHang> findByKhachHangIsNull(Pageable pageable);
+
 }
 
