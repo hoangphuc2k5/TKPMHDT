@@ -66,43 +66,9 @@ async function timNuocUong() {
     }
 }
 
-    function renderProducts(products) {
-        const grid = document.getElementById("products-grid");
-        grid.innerHTML = "";
-        
-        if (!products || products.length === 0) {
-            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem;">Không tìm thấy món nào phù hợp.</div>';
-            return;
-        }
-
-        products.forEach(p => {
-            const img = (p.hinhAnh && p.hinhAnh.length > 0) ? p.hinhAnh[0] : '/uploads/default-drink.jpg';
-            const card = `
-                <div class="card product-card" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
-                    <div style="height: 220px; overflow: hidden; position: relative;">
-                        <img src="${img}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;" 
-                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                        <div style="position: absolute; top: 10px; right: 10px; background: var(--phuclong-gold); color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem;">
-                            ${formatPrice(p.gia)}
-                        </div>
-                    </div>
-                    <div class="card-content" style="flex: 1; display: flex; flex-direction: column;">
-                        <h3 style="margin-top: 0; margin-bottom: 0.5rem; color: var(--phuclong-green);">${p.ten}</h3>
-                        <p class="muted" style="font-size: 0.85rem; margin-bottom: 1.5rem; flex: 1;">${p.moTa || 'Hương vị tuyệt hảo từ drink, mang lại cảm giác sảng khoái.'}</p>
-                        <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: auto;">
-                            <button data-id="${p.id}" data-name="${p.ten}" onclick="openCustomizeModal(this.dataset.id, this.dataset.name)" class="btn-highlight" style="flex: 1; padding: 0.9rem;">
-                                Thêm vào giỏ
-                            </button>
-                            <button data-id="${p.id}" onclick="buyNow(this.dataset.id)" class="btn-secondary" style="flex: 1; padding: 0.9rem;">
-                                Mua ngay
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            grid.innerHTML += card;
-        });
-    }
+function renderProducts(products) {
+    const grid = document.getElementById("products-grid");
+    grid.innerHTML = "";
 
     if (!products || products.length === 0) {
         grid.innerHTML = "<p>Không có sản phẩm nào.</p>";
@@ -147,17 +113,19 @@ function goToDetail(id) {
         return;
     }
 
-    function buyNow(productId) {
-        const params = new URLSearchParams({
-            buyNow: 'true',
-            productId: productId,
-            quantity: '1',
-            mucDuong: '100',
-            mucDa: '100',
-            ghiChu: ''
-        });
-        window.location.href = '/ui/don-hang?' + params.toString();
-    }
+    window.location.href = `/ui/san-pham/chi-tiet?id=${id}`;
+}
+
+function formatPrice(price) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(price);
+}
+
+function showLoading(show) {
+    document.getElementById("loading").style.display = show ? "block" : "none";
+}
 </script>
 
 </body>
