@@ -49,5 +49,6 @@ public class ThanhToan {
     @Enumerated(EnumType.STRING)
     @Column(name = "trang_thai", nullable = false, length = 30)
     private TrangThaiThanhToanEnum trangThai;
+    
 }
 

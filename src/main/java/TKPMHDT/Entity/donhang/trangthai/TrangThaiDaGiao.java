@@ -14,6 +14,7 @@ public class TrangThaiDaGiao implements TrangThaiDonHang {
         throw new IllegalStateException("Đơn hàng đã giao, không thể thay đổi trạng thái.");
     }
 
+
     @Override
     public void dangGiao(DonHang donHang) {
         throw new IllegalStateException("Đơn hàng đã giao, không thể thay đổi trạng thái.");

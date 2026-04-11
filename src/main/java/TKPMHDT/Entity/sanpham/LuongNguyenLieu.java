@@ -47,5 +47,6 @@ public class LuongNguyenLieu {
 
     @Column(name = "don_vi", nullable = false, length = 50)
     private String donVi;
+    
 }
 

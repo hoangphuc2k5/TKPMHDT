@@ -45,5 +45,6 @@ public class CongThuc {
     @Builder.Default
     @OneToMany(mappedBy = "congThuc", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LuongNguyenLieu> luongNguyenLieus = new ArrayList<>();
+    
 }
 

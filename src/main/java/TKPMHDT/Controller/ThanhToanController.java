@@ -1,9 +1,16 @@
 package TKPMHDT.Controller;
 
+import TKPMHDT.DTO.ApiResponse;
+import TKPMHDT.DTO.request.TaoThanhToanRequest;
+import TKPMHDT.DTO.response.ThanhToanResponse;
 import TKPMHDT.Entity.thanhtoan.ThanhToan;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Entity.thanhtoan.enums.TrangThaiThanhToanEnum;
 import TKPMHDT.Service.thanhtoan.ThanhToanService;
+import TKPMHDT.Util.ResponseFactory;
+import TKPMHDT.facade.PosFacade;
+import lombok.RequiredArgsConstructor;
+
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
@@ -15,22 +22,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/thanh-toan")
 public class ThanhToanController {
 
     private final ThanhToanService thanhToanService;
+    private final PosFacade posFacade;
 
-    public ThanhToanController(ThanhToanService thanhToanService) {
-        this.thanhToanService = thanhToanService;
+    // Tạo thanh toán cho đơn hàng
+    //@PreAuthorize("hasAnyRole('KHACH_HANG','NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PostMapping("/tao-thanh-toan")
+    public ResponseEntity<ApiResponse<ThanhToanResponse>> taoThanhToan(@RequestBody TaoThanhToanRequest request) {
+        ThanhToanResponse thanhToan = posFacade.taoThanhToan(request);
+        return ResponseFactory.success(thanhToan, "Tao thanh toan thanh cong");
     }
 
-    @PreAuthorize("hasAnyRole('KHACH_HANG','NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
-    @PostMapping
-    public ResponseEntity<ThanhToan> taoThanhToan(@RequestBody TaoThanhToanRequest request) {
-        ThanhToan thanhToan = thanhToanService.taoThanhToan(request.donHangId(), request.phuongThuc());
-        return ResponseEntity.ok(thanhToan);
-    }
+
+
 
     @PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
     @PatchMapping("/{thanhToanId}/trang-thai")
@@ -50,10 +59,17 @@ public class ThanhToanController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    public record TaoThanhToanRequest(UUID donHangId, PhuongThucThanhToanEnum phuongThuc) {
-    }
+    
 
     public record CapNhatTrangThaiThanhToanRequest(TrangThaiThanhToanEnum trangThaiMoi) {
+    }
+
+    // Xác nhận thanh toán thành công, in hóa đơn
+    //@PreAuthorize("hasAnyRole('NHAN_VIEN_BAN_HANG','QUAN_TRI_VIEN')")
+    @PatchMapping("/{thanhToanId}/xac-nhan-thanh-toan")
+    public ResponseEntity<ApiResponse<String>> xacNhanThanhToan(@PathVariable UUID thanhToanId) {
+        posFacade.xacNhanThanhToan(thanhToanId);
+        return ResponseFactory.success(null,"Xác nhận thanh toán thành công và in hóa đơn");
     }
 }
 

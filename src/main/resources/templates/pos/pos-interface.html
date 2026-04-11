@@ -53,21 +53,14 @@
 
                 <button onclick="applyCouponPOS()" class="btn-secondary" style="width: 100%; padding: 10px; margin-bottom: 1rem;">Áp dụng mã</button>
 
-                <div style="margin-bottom: 1rem;">
-                    <label style="font-size: 0.875rem;">Tên khách hàng</label>
-                    <input id="posCustomerName" type="text" placeholder="Nhập tên..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem;">
-                    
-                    <label style="font-size: 0.875rem;">Số điện thoại</label>
-                    <input id="posCustomerPhone" type="text" placeholder="Nhập số điện thoại..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                </div>
-
+                
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                     <button onclick="clearOrder()" class="btn-secondary" style="padding: 10px;">Xóa đơn</button>
                     <button onclick="saveDraftOrder()" class="btn-secondary" style="padding: 10px;">Lưu nháp</button>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 1rem;">
-                    <button onclick="checkoutOrder()" class="btn-highlight" style="padding: 12px; background: #16a34a; border: none; cursor: pointer; color: white; border-radius: 6px; font-weight: bold;">✓ Hoàn tất đơn hàng</button>
+                    <button onclick="confirmOrder()" class="btn-highlight" style="padding: 12px; background: #16a34a; border: none; cursor: pointer; color: white; border-radius: 6px; font-weight: bold;">✓ Xác nhận đơn hàng</button>
                 </div>
             </div>
         </div>
@@ -79,6 +72,16 @@
             <div class="card-content">
                 <h3 id="posModalTitle">Tùy chỉnh món</h3>
                 <input type="hidden" id="posModalProdId">
+
+                
+                <div style="margin-bottom: 1rem;">
+                    <label>Kích cỡ</label>
+                    <select id="posSize" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <option value="S">Nhỏ</option>
+                        <option value="M">Vừa</option>
+                        <option value="L">Lớn</option>
+                    </select>
+                </div>
 
                 <div style="margin-bottom: 1rem;">
                     <label>Mức đường</label>
@@ -104,11 +107,59 @@
                     <input type="number" id="posQty" value="1" min="1" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
                 </div>
 
+                <!-- chọn topping-->
+                <div style="margin-bottom: 1rem;">
+                    <label>Topping</label>
+                    <div id="posToppings"></div>
+                </div>
+
                 <div style="display: flex; gap: 1rem;">
                     <button onclick="closeModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
                     <button onclick="addItemPOS()" class="btn-highlight" style="flex: 1;">Thêm vào đơn</button>
                 </div>
+                
+                
             </div>
+        </div>
+    </div>
+
+    <div id="paymentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; padding:20px; border-radius:10px; width:300px;">
+            <h3>Thanh toán</h3>
+
+            <div style="margin-bottom: 10px;">
+                <button onclick="selectPayment('TIEN_MAT')" style="width:100%; margin-bottom:5px;">
+                    💵 Tiền mặt
+                </button>
+
+                <button onclick="selectPayment('MOMO')" style="width:100%;">
+                    📱 MoMo
+                </button>
+            </div>
+
+            <hr>
+
+            <button onclick="confirmPayment()" 
+                    style="width:100%; margin-top:10px; background:#16a34a; color:white;">
+                ✅ Xác nhận thanh toán
+            </button>
+
+            <button onclick="closePaymentModal()" 
+                    style="width:100%; margin-top:5px;">
+                Hủy
+            </button>
+        </div>
+    </div>
+
+    <div id="invoiceModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; padding:20px; border-radius:10px; width:350px; max-height:80vh; overflow:auto;">
+            <h3>🧾 Hóa đơn</h3>
+
+            <div id="invoiceContent"></div>
+
+            <button onclick="closeInvoice()" style="width:100%; margin-top:10px;">
+                Đóng
+            </button>
         </div>
     </div>
 
@@ -121,9 +172,28 @@
 <script th:inline="javascript">
     let posOrder = [];
     let currentProduct = null;
+    let currentOrderId = null;
+    let toppings = [];
+    let toppingsLoaded = false;
+    let selectedPaymentMethod = null;
+    let currentPaymentId = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
+        currentOrderId = localStorage.getItem("currentOrderId");
+
+        if (!currentOrderId) {
+            showMessage("Không tìm thấy đơn hàng", "error");
+            setTimeout(() => {
+                window.location.href = "/danh-sach-don-hang.html"; // hoặc trang danh sách đơn của bạn
+            }, 1500);
+            return;
+        }
+
         loadProducts();
+        loadToppingsOnce();
+        loadOrder();
+
+        console.log("Đang xử lý đơn:", currentOrderId); // debug
     });
 
     async function loadProducts() {
@@ -151,13 +221,71 @@
         }
     }
 
+    async function loadToppingsOnce() {
+        if (toppingsLoaded) return;
+
+        try {
+            const res = await api('GET', '/api/nguyen-lieu/topping');
+
+            // ⚠️ tùy backend bạn trả gì
+            toppings = Array.isArray(res) ? res : res.data;
+
+            toppingsLoaded = true;
+
+            console.log("✅ Loaded toppings:", toppings);
+        } catch (e) {
+            console.error("❌ Lỗi load topping:", e);
+            showMessage("Không tải được topping");
+        }
+    }
+
+    function renderToppings() {
+        const container = document.getElementById('posToppings');
+        container.innerHTML = '';
+
+        if (!toppings || toppings.length === 0) {
+            container.innerHTML = '<p class="muted">Không có topping</p>';
+            return;
+        }
+
+        toppings.forEach(t => {
+            const price = Number(t.giaDonVi || 0);
+
+            const el = document.createElement('label');
+            el.style.display = 'flex';
+            el.style.justifyContent = 'space-between';
+            el.style.alignItems = 'center';
+            el.style.border = '1px solid var(--border-color)';
+            el.style.padding = '6px 10px';
+            el.style.borderRadius = '6px';
+            el.style.cursor = 'pointer';
+            el.style.marginBottom = '6px';
+
+            el.innerHTML = `
+                <div>
+                    <input type="checkbox" value="${t.id}" data-price="${price}">
+                    <span style="margin-left: 6px;">${t.ten}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--phuclong-green); font-weight: 600;">
+                    +${formatCurrency(price)} / ${t.donVi}
+                </div>
+            `;
+
+            container.appendChild(el);
+        });
+    }
+
     function selectProduct(id, name, price) {
         currentProduct = { id, name, price };
+
         document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + name;
         document.getElementById('posModalProdId').value = id;
         document.getElementById('posSugar').value = '100';
         document.getElementById('posIce').value = '100';
         document.getElementById('posQty').value = '1';
+
+        renderToppings(); // 🔥 chỉ render thôi
+
         document.getElementById('posModal').style.display = 'flex';
     }
 
@@ -165,28 +293,104 @@
         document.getElementById('posModal').style.display = 'none';
     }
 
-    function addItemPOS() {
+    async function addItemPOS() {
         const qty = parseInt(document.getElementById('posQty').value);
-        const sugar = document.getElementById('posSugar').value;
-        const ice = document.getElementById('posIce').value;
+        const size = document.getElementById('posSize').value;
+        const sugar = parseInt(document.getElementById('posSugar').value);
+        const ice = parseInt(document.getElementById('posIce').value);
 
-        posOrder.push({
-            productId: currentProduct.id,  // ✅ Store product ID separately
-            name: currentProduct.name,
-            price: currentProduct.price,
-            qty: qty,
-            sugar: sugar,
-            ice: ice,
-            total: currentProduct.price * qty
-        });
+        // ✅ LẤY CHECKBOX
+        const toppingInputs = document.querySelectorAll('#posToppings input:checked');
+
+        // ✅ MAP CHUẨN + FILTER NULL
+        const selectedToppings = Array.from(toppingInputs)
+            .map(input => {
+                const id = input.value;
+
+                if (!id) {
+                    console.error("❌ toppingId bị null");
+                    return null;
+                }
+
+                return {
+                    nguyenLieuId: id, // UUID dạng string OK
+                    soLuong: 1
+                };
+            })
+            .filter(t => t !== null); // ✅ tránh null gây crash backend
+
+        console.log("📦 Payload toppings:", selectedToppings); // 🔥 debug
+
+        try {
+            const order = await api(
+                'POST',
+                `/api/don-hang/pos/${currentOrderId}/them-san-pham`,
+                {
+                    nuocUongId: currentProduct?.id, // ✅ safe access
+                    soLuong: qty,
+                    tuyChinh: {
+                        kichCo: size,
+                        mucDuong: sugar,
+                        mucDa: ice
+                    },
+                    toppings: selectedToppings // ✅ dùng biến mới
+                }
+            );
+
+            showMessage('Đã thêm ' + qty + ' ' + currentProduct.name);
+
+            closeModal();
+
+            mapOrderToUI(order);
+
+        } catch (e) {
+            showMessage('Lỗi thêm sản phẩm: ' + e.message, 'error');
+            console.error("❌ API ERROR:", e);
+        }
+    }
+
+    function mapOrderToUI(order) {
+        posOrder = (order.chiTietDonHang || []).map(item => ({
+            id: item.idChiTietDonHang,
+            name: item.tenSanPham,
+            price: item.giaTien,
+            qty: item.soLuong,
+            size: item.kichCo,
+            sugar: item.mucDuong,
+            ice: item.mucDa,
+            total: item.thanhTien,
+
+            toppings: (item.toppings || []).map(t => ({
+                name: t.ten,
+                qty: t.soLuong,
+                price: t.giaTien
+            }))
+        }));
 
         renderOrder();
-        closeModal();
-        showMessage('Thêm ' + qty + ' ' + currentProduct.name + ' vào đơn');
+
+        // 🔥 update tổng tiền từ backend
+        document.getElementById('posSubtotal').textContent = formatCurrency(order.tongTien);
+        document.getElementById('posTotal').textContent = formatCurrency(order.tongTien);
+    }
+
+    async function loadOrder() {
+        try {
+            const order = await api('GET', `/api/don-hang/pos/${currentOrderId}`);
+
+            mapOrderToUI(order);
+
+            renderOrder();
+
+        } catch (e) {
+            showMessage('Lỗi tải đơn: ' + e.message, 'error');
+            console.error(e);
+        }
     }
 
     function renderOrder() {
         const container = document.getElementById('posOrder');
+
         if (posOrder.length === 0) {
             container.innerHTML = '<p class="muted" style="text-align: center;">Chưa có item nào</p>';
             updateTotal();
@@ -194,17 +398,40 @@
         }
 
         container.innerHTML = '';
+
         posOrder.forEach((item, idx) => {
             const html = `
-                <div style="padding: 0.5rem; background: var(--bg-subtle); border-radius: 6px; margin-bottom: 0.5rem;">
+                <div style="padding: 0.6rem; background: var(--bg-subtle); border-radius: 6px; margin-bottom: 0.6rem;">
+                    
                     <div style="display: flex; justify-content: space-between;">
-                        <strong style="font-size: 0.9rem;">${item.name}</strong>
-                        <button onclick="removeItem(${idx})" style="background: none; border: none; color: #e74c3c; cursor: pointer;">✕</button>
+                        <strong style="font-size: 0.95rem;">
+                            ${item.name} (${item.size})
+                        </strong>
+                        <button onclick="removeItem(${idx})" 
+                            style="background: none; border: none; color: #e74c3c; cursor: pointer;">
+                            ✕
+                        </button>
                     </div>
-                    <small class="muted">${item.qty} x ${formatCurrency(item.price)}</small>
-                    <small class="muted" style="display: block;">Đường: ${item.sugar}%, Đá: ${item.ice}%</small>
+
+                    <small class="muted">
+                        ${item.qty} x ${formatCurrency(item.price)}
+                    </small>
+
+                    <small class="muted" style="display: block;">
+                        Đường: ${item.sugar}% | Đá: ${item.ice}%
+                    </small>
+
+                    ${
+                        item.toppings.length > 0
+                            ? `<div style="font-size: 0.8rem; color: gray; margin-top: 4px;">
+                                + ${item.toppings.map(t => `${t.name} x${t.qty}`).join(', ')}
+                            </div>`
+                            : ''
+                    }
+
                 </div>
             `;
+
             container.innerHTML += html;
         });
 
@@ -239,57 +466,119 @@
         showMessage('Lưu nháp thành công!');
     }
 
-    function paymentMethod(method) {
+    async function confirmOrder() {
         if (posOrder.length === 0) {
             showMessage('Vui lòng thêm sản phẩm vào đơn');
             return;
         }
 
-        const total = posOrder.reduce((sum, item) => sum + item.total, 0);
-        alert('Thanh toán ' + formatCurrency(total) + ' bằng ' + (method === 'CASH' ? 'tiền mặt' : 'thẻ/chuyển khoản'));
-        // Here you would create order via API
-        posOrder = [];
-        renderOrder();
+
+        try {
+            // 🔥 XÁC NHẬN ĐƠN
+            await api('PATCH', `/api/don-hang/pos/${currentOrderId}/xac-nhan`);
+
+            showMessage('Đơn hàng đã xác nhận');
+
+            // 🔥 HIỆN CHỌN THANH TOÁN
+            showPaymentOptions();
+
+        } catch (e) {
+            showMessage('Lỗi xác nhận đơn: ' + e.message, 'error');
+            console.error(e);
+        }
     }
 
-    async function checkoutOrder() {
-        if (posOrder.length === 0) {
-            showMessage('Vui lòng thêm sản phẩm vào đơn');
-            return;
+    async function selectPayment(method) {
+        try {
+            selectedPaymentMethod = method;
+
+            const payment = await api('POST', `/api/thanh-toan/tao-thanh-toan`, {
+                donHangId: currentOrderId,
+                phuongThuc: method
+            });
+
+            // 🔥 LƯU paymentId
+            currentPaymentId = payment.id;
+
+            showMessage('Đã chọn: ' + (method === 'TIEN_MAT' ? 'Tiền mặt' : 'MoMo'));
+
+        } catch (e) {
+            showMessage('Lỗi tạo thanh toán: ' + e.message, 'error');
+            console.error(e);
         }
+    }
 
-        const customerName = document.getElementById('posCustomerName').value.trim();
-        const customerPhone = document.getElementById('posCustomerPhone').value.trim();
+    function showPaymentOptions() {
+        document.getElementById('paymentModal').style.display = 'flex';
+    }
 
-        if (!customerName || !customerPhone) {
-            showMessage('Vui lòng nhập tên và số điện thoại khách hàng');
+    function closePaymentModal() {
+        document.getElementById('paymentModal').style.display = 'none';
+    }
+    async function confirmPayment() {
+        if (!currentPaymentId) {
+            showMessage('Chưa tạo thanh toán', 'error');
             return;
         }
 
         try {
-            const chiTietItems = posOrder.map(item => ({
-                nuocUongId: item.productId,  // ✅ Use the correct product ID
-                soLuong: item.qty,
-                duong: parseInt(item.sugar),
-                da: parseInt(item.ice),
-                thanhTien: item.total
-            }));
+            await api(
+                'PATCH',
+                `/api/thanh-toan/${currentPaymentId}/xac-nhan-thanh-toan`
+            );
 
-            const order = await api('POST', '/api/don-hang/tao-tai-quay', {
-                tenKhachHang: customerName,
-                soDienThoai: customerPhone,
-                chiTietItems: chiTietItems
-            });
+            showMessage('Thanh toán thành công!');
 
-            showMessage('Tạo đơn hàng thành công! Mã: ' + order.id.substring(0, 8));
-            posOrder = [];
-            document.getElementById('posCustomerName').value = '';
-            document.getElementById('posCustomerPhone').value = '';
-            renderOrder();
+            closePaymentModal();
+
+            // 🔥 lấy order mới nhất
+            const order = await api('GET', `/api/don-hang/pos/${currentOrderId}`);
+
+            showInvoice(order);
+
         } catch (e) {
-            showMessage('Lỗi: ' + e.message);
+            showMessage('Lỗi thanh toán: ' + e.message, 'error');
             console.error(e);
         }
+    }
+
+    function showInvoice(order) {
+        const container = document.getElementById('invoiceContent');
+
+        let html = '';
+
+        order.chiTietDonHang.forEach(item => {
+            html += `
+                <div style="margin-bottom:10px;">
+                    <strong>${item.tenSanPham} (${item.kichCo})</strong><br>
+                    ${item.soLuong} x ${formatCurrency(item.giaTien)}<br>
+                    Đường: ${item.mucDuong}% | Đá: ${item.mucDa}%<br>
+                    
+                    ${
+                        item.toppings?.length > 0
+                        ? `<small>+ ${item.toppings.map(t => t.ten).join(', ')}</small>`
+                        : ''
+                    }
+                </div>
+            `;
+        });
+
+        html += `<hr><strong>Tổng: ${formatCurrency(order.tongTien)}</strong>`;
+
+        container.innerHTML = html;
+
+        document.getElementById('invoiceModal').style.display = 'flex';
+    }
+
+    function closeInvoice() {
+        document.getElementById('invoiceModal').style.display = 'none';
+
+        // reset POS
+        posOrder = [];
+        renderOrder();
+        localStorage.removeItem("currentOrderId");
+
+        // 👉 có thể redirect tạo đơn mới
     }
 
     function applyCouponPOS() {

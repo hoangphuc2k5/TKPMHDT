@@ -180,6 +180,9 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.luuNguyenLieu(nguyenLieu));
     }
 
+    //Lấy danh sách nguyên liệu là topping
+   
+
     // ==================== Request Classes ====================
 
     public record TuyChinhRequest(

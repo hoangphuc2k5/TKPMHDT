@@ -78,5 +78,6 @@ public abstract class SanPham {
     public boolean isDangKinhDoanh() {
         return dangKinhDoanh == null || dangKinhDoanh;
     }
+    
 }
 

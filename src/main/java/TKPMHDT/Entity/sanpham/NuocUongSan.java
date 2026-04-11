@@ -69,5 +69,6 @@ public class NuocUongSan extends SanPham {
 
     @Column(name = "topping_cho_phep", length = 2000)
     private String toppingChoPhep;
+    
 }
 

@@ -6,8 +6,11 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -58,8 +61,9 @@ public class HoaDon {
     @Column(name = "tien_thanh_toan", nullable = false, precision = 18, scale = 2)
     private BigDecimal tienThanhToan;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "phuong_thuc_thanh_toan", length = 100)
-    private String phuongThucThanhToan;
+    private PhuongThucThanhToanEnum phuongThucThanhToan;
 
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;

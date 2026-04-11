@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>POS - Danh sách đơn</title>
+</head>
+<body>
+
+<h2>📋 Danh sách đơn OFFLINE</h2>
+
+<!-- FILTER -->
+<div style="margin-bottom: 10px;">
+    <select id="statusFilter">
+        <option value="">-- Tất cả trạng thái --</option>
+        <option value="CHO_XAC_NHAN">Chờ xác nhận</option>
+        <option value="DA_XAC_NHAN">Đã xác nhận</option>
+        <option value="DANG_GIAO">Đang giao</option>
+        <option value="DA_GIAO">Đã giao</option>
+        <option value="DA_HUY">Đã hủy</option>
+
+    </select>
+
+    <button onclick="loadOrders()">🔍 Lọc</button>
+</div>
+
+<button onclick="createOrder()">➕ Tạo đơn mới</button>
+
+<div id="orderList" style="margin-top:20px;"></div>
+
+<!-- PAGINATION -->
+<div style="margin-top: 10px;">
+    <button onclick="prevPage()">⬅️</button>
+    <span id="pageInfo"></span>
+    <button onclick="nextPage()">➡️</button>
+</div>
+
+<!-- MODAL -->
+<div id="orderModal" style="display:none; position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+    <div style="background:white; padding:20px; width:400px; margin:100px auto;">
+        <h3>Chi tiết đơn</h3>
+
+        <div id="orderDetail"></div>
+
+        <button onclick="nextStatus()">➡️ Chuyển trạng thái</button>
+        <button onclick="closeModal()">Đóng</button>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+
+<script>
+let currentPage = 0;
+let pageSize = 10;
+let currentOrder = null;
+
+// ================= LOAD ORDERS =================
+async function loadOrders() {
+    try {
+        const status = document.getElementById('statusFilter').value;
+
+        let url = `/api/don-hang/pos/orders-offline?page=${currentPage}&size=${pageSize}`;
+        if (status) {
+            url += `&status=${status}`;
+        }
+
+        const res = await api('GET', url);
+
+        const orders = res.content || res; // hỗ trợ cả pagination và list thường
+        
+        const el = document.getElementById('orderList');
+        el.innerHTML = '';
+
+        if (!orders || orders.length === 0) {
+            el.innerHTML = "<p>Không có đơn hàng nào</p>";
+            return;
+        }
+
+        orders.forEach(o => {
+            const div = document.createElement('div');
+            div.style = "padding:10px;border:1px solid #ccc;margin-bottom:5px;";
+
+            div.innerHTML = `
+                Đơn #${(o.id || '').substring(0,6)} - ${o.trangThai}
+                <button onclick="viewOrder('${o.id}')">Chi tiết</button>
+            `;
+
+            el.appendChild(div);
+        });
+
+        // PAGE INFO
+        if (res.totalPages !== undefined) {
+            document.getElementById('pageInfo').innerText =
+                `Trang ${currentPage + 1} / ${res.totalPages}`;
+        }
+
+    } catch (err) {
+        console.error(err);
+        showMessage("Lỗi tải danh sách đơn", "error");
+    }
+}
+
+// ================= PAGINATION =================
+function nextPage() {
+    currentPage++;
+    loadOrders();
+}
+
+function prevPage() {
+    if (currentPage > 0) {
+        currentPage--;
+        loadOrders();
+    }
+}
+
+// ================= CREATE =================
+async function createOrder() {
+    try {
+        const id = await api('POST', '/api/don-hang/pos/tao-don-tai-quay');
+
+        localStorage.setItem("currentOrderId", id);
+        window.location.href = "/ui/pos";
+
+    } catch (err) {
+        console.error(err);
+        showMessage("Lỗi tạo đơn", "error");
+    }
+}
+
+// ================= VIEW DETAIL =================
+async function viewOrder(id) {
+    try {
+        const order = await api('GET', `/api/don-hang/${id}`);
+        currentOrder = order;
+
+        const detailEl = document.getElementById('orderDetail');
+        detailEl.innerHTML = '';
+
+        detailEl.innerHTML = `
+            <p><b>Mã:</b> ${order.id}</p>
+            <p><b>Trạng thái:</b> ${order.trangThai}</p>
+            <p><b>Tổng tiền:</b> ${formatCurrency(order.tongTien)}</p>
+        `;
+
+        document.getElementById('orderModal').style.display = 'block';
+
+    } catch (e) {
+        console.error(e);
+        showMessage("Lỗi load chi tiết đơn" + e.message, "error");
+    }
+}
+
+// ================= NEXT STATUS =================
+async function nextStatus() {
+    if (!currentOrder) return;
+
+    try {
+        await api('PATCH', `/api/don-hang/pos/${currentOrder.id}/hoan-thanh`);
+
+        showMessage("Cập nhật trạng thái thành công");
+
+        closeModal();
+        loadOrders();
+
+    } catch (e) {
+        console.error(e);
+        showMessage("Lỗi cập nhật trạng thái");
+    }
+}
+
+// ================= CLOSE MODAL =================
+function closeModal() {
+    document.getElementById('orderModal').style.display = 'none';
+}
+
+// ================= INIT =================
+document.addEventListener("DOMContentLoaded", loadOrders);
+</script>
+
+</body>
+</html>

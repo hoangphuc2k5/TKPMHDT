@@ -25,6 +25,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/khuyen-mai/ma/**", "/api/khuyen-mai/tinh-tien-giam").permitAll()
                         .requestMatchers("/api/nguoi-dung/me").authenticated()
                         .requestMatchers("/api/gio-hang/**").authenticated()
+                        .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

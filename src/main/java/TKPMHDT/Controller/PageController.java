@@ -5,6 +5,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import TKPMHDT.Service.sanpham.SanPhamService;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @Controller
 public class PageController {
@@ -91,5 +93,17 @@ public class PageController {
     public String posPage() {
         return "pos/pos-interface";
     }
+
+
+    @GetMapping("/ui/pos/danh-sach-don-hang")
+    public String posDanhSachDonHang() {
+        return "pos/danh-sach-don-hang";
+    }
+
+    @GetMapping("/ui/pos/QB")
+    public String posQB() {
+        return "pos/posQB";
+    }
+    
 }
 
