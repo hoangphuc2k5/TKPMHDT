@@ -38,13 +38,18 @@
                 <div class="card-content">
                     <h3 th:text="${p.ten}">Tên sản phẩm</h3>
                     <p class="muted" th:text="${p.moTa}">Mô tả sản phẩm</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; gap: 0.5rem; flex-wrap: wrap;">
                         <span style="font-weight: 700; color: var(--phuclong-green);" 
                               th:text="${#numbers.formatDecimal(p.gia, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</span>
-                        <button class="btn-secondary" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
-                                th:data-id="${p.id}"
-                                th:data-name="${p.ten}"
-                                onclick="openCustomizeModal(this.dataset.id, this.dataset.name)">Thêm vào giỏ</button>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn-secondary" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
+                                    th:data-id="${p.id}"
+                                    th:data-name="${p.ten}"
+                                    onclick="openCustomizeModal(this.dataset.id, this.dataset.name)">Thêm vào giỏ</button>
+                            <button class="btn-highlight" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
+                                    th:attr="data-id=${p.id}"
+                                    onclick="buyNow(this.getAttribute('data-id'))">Mua ngay</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -197,6 +202,18 @@
                 alert("Lỗi: " + e.message);
             }
         }
+    }
+
+    function buyNow(productId) {
+        const params = new URLSearchParams({
+            buyNow: 'true',
+            productId: productId,
+            quantity: '1',
+            mucDuong: '100',
+            mucDa: '100',
+            ghiChu: ''
+        });
+        window.location.href = '/ui/don-hang?' + params.toString();
     }
 </script>
 

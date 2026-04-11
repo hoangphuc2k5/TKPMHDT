@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.enums.TrangThaiDonHangEnum;
+import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Service.donhang.DonHangService;
 
 @RestController
@@ -36,7 +37,25 @@ public class DonHangController {
         DonHang donHang = donHangService.taoDonHangTuGioHang(
                 request.khachHangId(),
                 request.diaChiId(),
-                request.maGiamGiaCode()
+                request.maGiamGiaCode(),
+                request.phuongThuc()
+        );
+        return ResponseEntity.ok(donHang);
+    }
+
+    @PreAuthorize("hasRole('KHACH_HANG')")
+    @PostMapping("/tao-tu-san-pham")
+    public ResponseEntity<DonHang> taoTuSanPham(@RequestBody TaoDonHangSanPhamRequest request) {
+        DonHang donHang = donHangService.taoDonHangTuSanPham(
+                request.khachHangId(),
+                request.nuocUongId(),
+                request.soLuong(),
+                request.mucDuong(),
+                request.mucDa(),
+                request.ghiChu(),
+                request.diaChiId(),
+                request.maGiamGiaCode(),
+                request.phuongThuc()
         );
         return ResponseEntity.ok(donHang);
     }
@@ -85,7 +104,20 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.huyDonHang(donHangId));
     }
 
-    public record TaoDonHangRequest(UUID khachHangId, UUID diaChiId, String maGiamGiaCode) {
+    public record TaoDonHangRequest(UUID khachHangId, UUID diaChiId, String maGiamGiaCode, TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum phuongThuc) {
+    }
+
+    public record TaoDonHangSanPhamRequest(
+            UUID khachHangId,
+            UUID nuocUongId,
+            Integer soLuong,
+            Integer mucDuong,
+            Integer mucDa,
+            String ghiChu,
+            UUID diaChiId,
+            String maGiamGiaCode,
+            TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum phuongThuc
+    ) {
     }
 
     public record CapNhatTrangThaiRequest(TrangThaiDonHangEnum trangThaiMoi) {

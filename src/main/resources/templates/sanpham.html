@@ -135,9 +135,14 @@
                     <div class="card-content" style="flex: 1; display: flex; flex-direction: column;">
                         <h3 style="margin-top: 0; margin-bottom: 0.5rem; color: var(--phuclong-green);">${p.ten}</h3>
                         <p class="muted" style="font-size: 0.85rem; margin-bottom: 1.5rem; flex: 1;">${p.moTa || 'Hương vị tuyệt hảo từ drink, mang lại cảm giác sảng khoái.'}</p>
-                        <button onclick="openCustomizeModal('${p.id}', '${p.ten}')" class="btn-highlight" style="width: 100%; margin-top: auto;">
-                            Thêm vào giỏ
-                        </button>
+                        <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: auto;">
+                            <button data-id="${p.id}" data-name="${p.ten}" onclick="openCustomizeModal(this.dataset.id, this.dataset.name)" class="btn-highlight" style="flex: 1; padding: 0.9rem;">
+                                Thêm vào giỏ
+                            </button>
+                            <button data-id="${p.id}" onclick="buyNow(this.dataset.id)" class="btn-secondary" style="flex: 1; padding: 0.9rem;">
+                                Mua ngay
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -198,6 +203,18 @@
     function showLoading(show) {
         document.getElementById("loading").style.display = show ? "block" : "none";
         document.getElementById("products-grid").style.opacity = show ? "0.3" : "1";
+    }
+
+    function buyNow(productId) {
+        const params = new URLSearchParams({
+            buyNow: 'true',
+            productId: productId,
+            quantity: '1',
+            mucDuong: '100',
+            mucDa: '100',
+            ghiChu: ''
+        });
+        window.location.href = '/ui/don-hang?' + params.toString();
     }
 </script>
 
