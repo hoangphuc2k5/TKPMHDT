@@ -28,8 +28,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/uploads/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
                         .requestMatchers("/", "/ui/san-pham/**", "/ui/khuyen-mai").permitAll()
-                        .requestMatchers("/ui/admin/**").hasAnyRole("QUAN_TRI_VIEN", "QUAN_TRI_VIEN_CAP_CAO")
-                        .requestMatchers("/ui/pos/**").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN", "QUAN_TRI_VIEN_CAP_CAO", "QUAN_LY_KHO")
+                        .requestMatchers("/ui/admin/**").hasRole("QUAN_TRI_VIEN")
+                        .requestMatchers("/ui/pos/**").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN")
                         .requestMatchers("/api/nguoi-dung/dang-ky-khach-hang").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/san-pham/**").permitAll()
@@ -62,7 +62,7 @@ public class SecurityConfig {
         return (request, response, authentication) -> {
             String redirect = request.getParameter("redirect");
             boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_QUAN_TRI_VIEN") || authority.getAuthority().equals("ROLE_QUAN_TRI_VIEN_CAP_CAO"));
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_QUAN_TRI_VIEN"));
 
             if (redirect != null && !redirect.isBlank() && redirect.startsWith("/") && !redirect.startsWith("//") && !isAdmin) {
                 response.sendRedirect(redirect);
@@ -70,7 +70,7 @@ public class SecurityConfig {
             }
 
             boolean isPosUser = authentication.getAuthorities().stream()
-                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_NHAN_VIEN_BAN_HANG") || authority.getAuthority().equals("ROLE_QUAN_LY_KHO"));
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_NHAN_VIEN_BAN_HANG"));
 
             if (isAdmin) {
                 response.sendRedirect("/ui/admin/dashboard");

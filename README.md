@@ -49,11 +49,9 @@ san_pham (Base Class)
 
 ```
 nguoi_dung (Base User)
-    ├── KHACH_HANG (Customer)
-    ├── QUAN_TRI_VIEN (Admin)
-    │   ├── QUAN_TRI_VIEN_CAP_CAO (Super Admin)
-    │   ├── QUAN_LY_KHO (Warehouse Manager)
-    │   └── NHAN_VIEN_BAN_HANG (Sales Staff)
+    ├── KHACH_HANG (Khách hàng)
+    ├── QUAN_TRI_VIEN (Quản trị viên)
+    └── NHAN_VIEN_BAN_HANG (Nhân viên bán hàng, JPA extends QuanTriVien)
 ```
 
 | Bảng | Cột Chính | Mô Tả |
@@ -359,11 +357,7 @@ CHO_XAC_NHAN → DA_XAC_NHAN → DANG_GIAO → DA_GIAO
 
 #### UC22: Quản Lý Nhân Viên
 - Thêm/Sửa/Xóa nhân viên
-- Phân công vai trò:
-  - QUAN_TRI_VIEN: Quản trị viên
-  - QUAN_TRI_VIEN_CAP_CAO: Quản trị cấp cao
-  - QUAN_LY_KHO: Quản lý kho
-  - NHAN_VIEN_BAN_HANG: Nhân viên bán hàng
+- Phân công vai trò (hệ thống chỉ còn 3 `VaiTro`): `KHACH_HANG`, `NHAN_VIEN_BAN_HANG`, `QUAN_TRI_VIEN`. Form admin chỉ tạo nhân viên bán hàng; tài khoản quản trị viên tạo qua seed/cấu hình.
 
 **Controller**: `AdminController`
 - Protected: `@PreAuthorize("hasRole('QUAN_TRI_VIEN')")`
@@ -441,11 +435,9 @@ CHO_XAC_NHAN → DA_XAC_NHAN → DANG_GIAO → DA_GIAO
 
 ```
 VaiTro enum:
-├── KHACH_HANG            // Khách hàng thường
-├── QUAN_TRI_VIEN         // Quản trị viên
-├── QUAN_TRI_VIEN_CAP_CAO // Quản trị cấp cao
-├── QUAN_LY_KHO           // Quản lý kho
-└── NHAN_VIEN_BAN_HANG    // Nhân viên bán hàng
+├── KHACH_HANG         // Khách hàng
+├── NHAN_VIEN_BAN_HANG // Nhân viên bán hàng
+└── QUAN_TRI_VIEN      // Quản trị viên (đầy đủ quyền vận hành / kho / nhân sự)
 ```
 
 ### Kiểm Soát Truy Cập

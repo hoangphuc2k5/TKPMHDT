@@ -55,20 +55,6 @@ public final class PermissionCatalog {
                     "staff:manage",
                     "role:assign"
             ));
-            case QUAN_TRI_VIEN_CAP_CAO, QUAN_LY_KHO -> permissions.addAll(List.of(
-                    "pos:create",
-                    "order:view",
-                    "order:update",
-                    "print:invoice",
-                    "print:recipe",
-                    "product:manage",
-                    "recipe:edit",
-                    "order:manage-all",
-                    "customer:manage",
-                    "promotion:manage",
-                    "report:view",
-                    "inventory:manage"
-            ));
             default -> {
             }
         }

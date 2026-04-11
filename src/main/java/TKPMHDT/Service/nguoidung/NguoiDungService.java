@@ -92,7 +92,7 @@ public class NguoiDungService {
 
     @Transactional(readOnly = true)
     public List<NguoiDung> danhSachNhanVien() {
-        return nguoiDungRepository.findByVaiTroIn(List.of(VaiTro.NHAN_VIEN_BAN_HANG, VaiTro.QUAN_LY_KHO));
+        return nguoiDungRepository.findByVaiTro(VaiTro.NHAN_VIEN_BAN_HANG);
     }
 
     @Transactional
@@ -131,11 +131,10 @@ public class NguoiDungService {
 
     @Transactional
     public NhanVienBanHang taoNhanVien(String tenDangNhap, String email, String matKhau, VaiTro vaiTro) {
-        NhanVienBanHang nhanVien = taoNhanVien(tenDangNhap, email, matKhau);
-        if (vaiTro != null && (vaiTro == VaiTro.NHAN_VIEN_BAN_HANG || vaiTro == VaiTro.QUAN_LY_KHO)) {
-            nhanVien.setVaiTro(vaiTro);
+        if (vaiTro != null && vaiTro != VaiTro.NHAN_VIEN_BAN_HANG) {
+            throw new IllegalArgumentException("Chi co the tao tai khoan nhan vien ban hang");
         }
-        return nhanVienBanHangRepository.save(nhanVien);
+        return taoNhanVien(tenDangNhap, email, matKhau);
     }
 
     @Transactional
@@ -145,7 +144,10 @@ public class NguoiDungService {
         if (email != null && !email.isBlank()) {
             nguoiDung.setEmail(email.trim());
         }
-        if (vaiTro != null && (vaiTro == VaiTro.NHAN_VIEN_BAN_HANG || vaiTro == VaiTro.QUAN_LY_KHO)) {
+        if (vaiTro != null) {
+            if (vaiTro != VaiTro.NHAN_VIEN_BAN_HANG) {
+                throw new IllegalArgumentException("Chi cap nhat duoc vai tro nhan vien ban hang");
+            }
             nguoiDung.setVaiTro(vaiTro);
         }
         if (kichHoat != null) {

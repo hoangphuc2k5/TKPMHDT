@@ -61,10 +61,10 @@
     </div>
 
     <!-- Staff & Admin Dashboard -->
-    <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_LY_KHO', 'QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
+    <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')">
         <h2 style="border-bottom: 2px solid var(--phuclong-green); display: inline-block; padding-bottom: 5px;">Bảng điều khiển quản trị</h2>
         <div class="grid">
-            <div class="card" sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
+            <div class="card" sec:authorize="hasRole('QUAN_TRI_VIEN')">
                 <div class="card-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <span style="font-size: 24px;">👤</span>
@@ -88,7 +88,7 @@
                 </div>
             </div>
 
-            <div class="card" sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')">
+            <div class="card" sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')">
                 <div class="card-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <span style="font-size: 24px;">🥤</span>
@@ -100,7 +100,7 @@
                 </div>
             </div>
 
-            <div class="card" sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
+            <div class="card" sec:authorize="hasRole('QUAN_TRI_VIEN')">
                 <div class="card-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <span style="font-size: 24px;">💳</span>

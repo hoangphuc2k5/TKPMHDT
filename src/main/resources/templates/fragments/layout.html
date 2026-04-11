@@ -53,7 +53,7 @@
             <!-- Role-based Navigation -->
             <div class="nav-links">
                 <!-- Public Links -->
-                <span sec:authorize="!hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')" style="display: contents;">
+                <span sec:authorize="!hasRole('QUAN_TRI_VIEN')" style="display: contents;">
                     <a th:href="@{/}" th:classappend="${activePage == 'home' ? 'active' : ''}">Trang chủ</a>
                     <a th:href="@{/ui/san-pham}" th:classappend="${activePage == 'products' ? 'active' : ''}">Sản phẩm</a>
                 </span>
@@ -65,7 +65,7 @@
                 </span>
 
                 <!-- Staff Links -->
-                <span sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_LY_KHO')" style="display: contents;">
+                <span sec:authorize="hasRole('NHAN_VIEN_BAN_HANG')" style="display: contents;">
                     <a th:href="@{/ui/don-hang}" th:classappend="${activePage == 'orders' ? 'active' : ''}">Quản lý đơn hàng</a>
                     <a th:href="@{/ui/khuyen-mai}" th:classappend="${activePage == 'promotions' ? 'active' : ''}">Khuyến mãi</a>
                 </span>

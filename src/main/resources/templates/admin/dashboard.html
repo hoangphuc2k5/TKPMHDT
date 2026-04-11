@@ -13,6 +13,9 @@
             <button class="admin-menu-item" data-section="inventory">Kho</button>
             <button class="admin-menu-item" data-section="orders">Đơn hàng</button>
             <button class="admin-menu-item" data-section="customers">Khách hàng</button>
+            <button class="admin-menu-item" data-section="addresses">Địa chỉ giao</button>
+            <button class="admin-menu-item" data-section="invoices">Hóa đơn</button>
+            <button class="admin-menu-item" data-section="deliveries">Phiếu giao hàng</button>
             <button class="admin-menu-item" data-section="staff">Nhân viên</button>
             <button class="admin-menu-item" data-section="promotions">Khuyến mãi & Voucher</button>
             <button class="admin-menu-item" data-section="reports">Báo cáo</button>
@@ -82,14 +85,17 @@
                             <div id="product-recipe" class="admin-mini-panel">
                                 <div id="recipeProductLabel" class="muted">Chọn sản phẩm để cấu hình công thức</div>
                                 <h4>Nguyên liệu trong công thức mặc định</h4>
+                                <p class="muted" style="margin: 0.35rem 0 0.5rem;">Nguyên liệu pha chế: nhập định lượng và đơn vị. <strong>Topping</strong>: chỉ chọn trong danh sách và bấm thêm — không cần nhập định lượng.</p>
                                 <div class="admin-inline-form">
-                                    <select id="recipeIngredientId"></select>
-                                    <input id="recipeIngredientQty" type="number" min="0" step="0.001" placeholder="Định lượng">
-                                    <input id="recipeIngredientUnit" placeholder="Đơn vị">
-                                    <button class="btn-highlight" onclick="saveRecipeIngredient()">Thêm/Cập nhật</button>
+                                    <select id="recipeIngredientId" onchange="syncRecipeIngredientForm()"></select>
+                                    <span id="recipeQtyRow">
+                                        <input id="recipeIngredientQty" type="number" min="0" step="0.001" placeholder="Định lượng">
+                                        <input id="recipeIngredientUnit" placeholder="Đơn vị">
+                                    </span>
+                                    <button type="button" class="btn-highlight" id="recipeIngredientSaveBtn" onclick="saveRecipeIngredient()">Thêm/Cập nhật</button>
                                 </div>
                                 <table class="admin-table">
-                                    <thead><tr><th>Nguyên liệu</th><th>Số lượng</th><th>Đơn vị</th><th>Tác vụ</th></tr></thead>
+                                    <thead><tr><th>Nguyên liệu</th><th>Loại</th><th>Số lượng</th><th>Đơn vị</th><th>Tác vụ</th></tr></thead>
                                     <tbody id="recipeIngredientBody"></tbody>
                                 </table>                                
                                 <button class="btn-highlight" onclick="saveRecipeCustomization()">Lưu tùy chỉnh công thức</button>
@@ -101,32 +107,63 @@
 
             <section id="section-inventory" class="admin-section">
                 <h2>Quản lý kho</h2>
+                <div class="admin-toolbar" style="margin-bottom: 1rem;">
+                    <input id="inventorySearch" placeholder="Tìm theo tên nguyên liệu">
+                    <button class="btn-secondary" type="button" onclick="loadInventory()">Tìm / Làm mới</button>
+                </div>
                 <div class="admin-split">
                     <div class="card">
                         <div class="card-content">
-                            <h3>Tồn kho nguyên liệu</h3>
-                            <table class="admin-table">
-                                <thead><tr><th>Tên</th><th>Tồn</th><th>Đơn vị</th><th>Ngưỡng</th><th>Tác vụ</th></tr></thead>
-                                <tbody id="ingredientBody"></tbody>
-                            </table>
+                            <h3>Thêm / sửa nguyên liệu</h3>
+                            <input type="hidden" id="invId">
+                            <label>Tên</label>
+                            <input id="invTen" placeholder="Ví dụ: Sữa tươi">
+                            <label>Đơn vị</label>
+                            <input id="invDonVi" placeholder="kg, l, g, ..." value="kg">
+                            <label>Tồn ban đầu / tồn hiện tại (sửa trực tiếp khi cần)</label>
+                            <input id="invSoLuongTon" type="number" min="0" step="0.001" value="0">
+                            <label>Giá đơn vị (VNĐ)</label>
+                            <input id="invGiaDonVi" type="number" min="0" step="1" value="0">
+                            <label>Ngưỡng cảnh báo</label>
+                            <input id="invNguongCanhBao" type="number" min="0" step="0.001" value="0">
+                            <label>Loại</label>
+                            <select id="invLoai">
+                                <option value="INGREDIENT">Nguyên liệu pha chế</option>
+                                <option value="TOPPING">Topping</option>
+                            </select>
+                            <div class="admin-actions" style="margin-top: 0.75rem;">
+                                <button class="btn-highlight" type="button" onclick="saveIngredient()">Lưu</button>
+                                <button class="btn-secondary" type="button" onclick="resetIngredientForm()">Làm mới form</button>
+                            </div>
                         </div>
                     </div>
                     <div class="card">
                         <div class="card-content">
                             <h3>Nhập / Xuất kho</h3>
-                            <label>Nguyên liệu ID</label>
-                            <input id="stockIngredientId">
+                            <label>Nguyên liệu</label>
+                            <select id="stockIngredientId">
+                                <option value="">— Chọn nguyên liệu —</option>
+                            </select>
                             <label>Số lượng</label>
                             <input id="stockQuantity" type="number" min="0" step="0.001">
                             <label>Ghi chú</label>
-                            <input id="stockNote">
+                            <input id="stockNote" placeholder="Ghi chú phiếu nhập/xuất">
                             <div class="admin-actions">
-                                <button class="btn-highlight" onclick="stockIn()">Nhập kho</button>
-                                <button class="btn-secondary" onclick="stockOut()">Xuất kho</button>
+                                <button class="btn-highlight" type="button" onclick="stockIn()">Nhập kho</button>
+                                <button class="btn-secondary" type="button" onclick="stockOut()">Xuất kho</button>
                             </div>
-                            <h4>Cảnh báo hết hàng</h4>
+                            <h4>Cảnh báo tồn thấp</h4>
                             <div id="stockAlertList" class="admin-list"></div>
                         </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <h3>Danh mục tồn kho</h3>
+                        <table class="admin-table">
+                            <thead><tr><th>Tên</th><th>Loại</th><th>Tồn</th><th>Đơn vị</th><th>Giá ĐV</th><th>Ngưỡng CB</th><th>Tác vụ</th></tr></thead>
+                            <tbody id="ingredientBody"></tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="card">
@@ -158,13 +195,123 @@
 
             <section id="section-customers" class="admin-section">
                 <h2>Quản lý khách hàng</h2>
+                <div class="admin-split">
+                    <div class="card">
+                        <div class="card-content">
+                            <h3>Danh sách khách hàng</h3>
+                            <div class="admin-toolbar">
+                                <input id="customerSearch" placeholder="Tìm khách hàng">
+                                <button class="btn-secondary" onclick="loadCustomers()">Tìm</button>
+                            </div>
+                            <table class="admin-table">
+                                <thead><tr><th>Username</th><th>Email</th><th>SĐT</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead>
+                                <tbody id="customerBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-content">
+                            <h3>Tạo khách hàng mới</h3>
+                            <input type="hidden" id="customerId">
+                            <label>Tên đăng nhập</label>
+                            <input id="customerUsername" placeholder="Tài khoản">
+                            <label>Email</label>
+                            <input id="customerEmail" type="email" placeholder="Email">
+                            <label>Họ tên</label>
+                            <input id="customerFullName" placeholder="Họ tên">
+                            <label>Số điện thoại</label>
+                            <input id="customerPhone" placeholder="SĐT">
+                            <div class="admin-actions">
+                                <button class="btn-highlight" onclick="createCustomer()">Tạo khách hàng</button>
+                                <button class="btn-secondary" onclick="resetCustomerForm()">Mới</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-addresses" class="admin-section">
+                <h2>Quản lý địa chỉ giao hàng</h2>
+                <div class="admin-split">
+                    <div class="card">
+                        <div class="card-content">
+                            <h3>Chọn khách hàng</h3>
+                            <select id="addressCustomerSelect" onchange="loadCustomerAddresses()">
+                                <option value="">-- Chọn khách hàng --</option>
+                            </select>
+                            <h3 style="margin-top:1rem;">Danh sách địa chỉ</h3>
+                            <table id="addressTable" class="admin-table" style="display:none;">
+                                <thead><tr><th>Người nhận</th><th>Địa chỉ</th><th>Phường/Xã</th><th>SĐT</th><th>Mặc định</th><th>Tác vụ</th></tr></thead>
+                                <tbody id="addressTableBody"></tbody>
+                            </table>
+                            <div id="noAddressMessage" class="muted">Chọn khách hàng để xem địa chỉ</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-content">
+                            <h3>Thêm / Sửa địa chỉ</h3>
+                            <input type="hidden" id="addressId">
+                            <input type="hidden" id="addressKhachHangId">
+                            <label>Tên người nhận</label>
+                            <input id="addressName" placeholder="Họ tên">
+                            <label>Số điện thoại</label>
+                            <input id="addressPhone" placeholder="SĐT">
+                            <label>Địa chỉ cụ thể</label>
+                            <input id="addressStreet" placeholder="Số nhà, tên đường">
+                            <label>Phường / Xã</label>
+                            <input id="addressWard" placeholder="Phường/Xã">
+                            <label>Quận / Huyện</label>
+                            <input id="addressDistrict" placeholder="Quận/Huyện">
+                            <label>Tỉnh / Thành phố</label>
+                            <input id="addressCity" placeholder="Tỉnh/Thành phố">
+                            <label><input id="addressDefault" type="checkbox"> Đặt làm mặc định</label>
+                            <div class="admin-actions">
+                                <button class="btn-highlight" onclick="saveAddress()">Lưu địa chỉ</button>
+                                <button class="btn-secondary" onclick="resetAddressForm()">Mới</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-invoices" class="admin-section">
+                <h2>Quản lý hóa đơn</h2>
                 <div class="admin-toolbar">
-                    <input id="customerSearch" placeholder="Tìm khách hàng">
-                    <button class="btn-secondary" onclick="loadCustomers()">Tìm</button>
+                    <input id="invoiceSearch" placeholder="Tìm mã hoá đơn hoặc đơn hàng">
+                    <select id="invoiceStatusFilter">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="CHO_IN">Chờ in</option>
+                        <option value="DA_IN">Đã in</option>
+                        <option value="HUY">Hủy</option>
+                    </select>
+                    <input id="invoiceDateFrom" type="date" placeholder="Từ ngày">
+                    <input id="invoiceDateTo" type="date" placeholder="Đến ngày">
+                    <button class="btn-secondary" onclick="loadInvoices()">Lọc</button>
                 </div>
                 <table class="admin-table">
-                    <thead><tr><th>Khách hàng</th><th>Email</th><th>SĐT</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead>
-                    <tbody id="customerBody"></tbody>
+                    <thead><tr><th>Mã hóa đơn</th><th>Mã đơn hàng</th><th>Ngày lập</th><th>Tổng tiền</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead>
+                    <tbody id="invoiceBody"></tbody>
+                </table>
+            </section>
+
+            <section id="section-deliveries" class="admin-section">
+                <h2>Quản lý phiếu giao hàng</h2>
+                <div class="admin-toolbar">
+                    <input id="deliverySearch" placeholder="Tìm phiếu giao hoặc đơn hàng">
+                    <select id="deliveryStatusFilter">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="CHO_GIAO">Chờ giao</option>
+                        <option value="DANG_GIAO">Đang giao</option>
+                        <option value="DA_GIAO">Đã giao</option>
+                        <option value="KHONG_GIAO">Không giao được</option>
+                    </select>
+                    <input id="deliveryDateFrom" type="date" placeholder="Từ ngày">
+                    <input id="deliveryDateTo" type="date" placeholder="Đến ngày">
+                    <button class="btn-secondary" onclick="loadDeliveries()">Lọc</button>
+                </div>
+                <table class="admin-table">
+                    <thead><tr><th>Phiếu giao</th><th>Đơn hàng</th><th>Nhân viên giao</th><th>Trạng thái</th><th>Ngày dự kiến</th><th>Tác vụ</th></tr></thead>
+                    <tbody id="deliveryBody"></tbody>
                 </table>
             </section>
 
@@ -186,10 +333,8 @@
                             <input id="staffUsername" placeholder="Tên đăng nhập">
                             <input id="staffEmail" placeholder="Email">
                             <input id="staffPassword" type="password" placeholder="Mật khẩu">
-                            <select id="staffRole">
-                                <option value="NHAN_VIEN_BAN_HANG">Nhân viên bán hàng</option>
-                                <option value="QUAN_LY_KHO">Quản lý kho</option>
-                            </select>
+                            <p class="muted" style="margin: 0.5rem 0;">Vai trò tạo mới: <strong>Nhân viên bán hàng</strong> (quản trị viên chỉ thêm qua seed / cấu hình).</p>
+                            <input type="hidden" id="staffRole" value="NHAN_VIEN_BAN_HANG">
                             <button class="btn-highlight" onclick="createStaff()">Tạo nhân viên</button>
                             <h4>Log hoạt động</h4>
                             <div id="staffActivity" class="admin-list"></div>
@@ -287,6 +432,7 @@
     let promotionMap = {};
     let recipeIngredientMap = {};
     let optionMap = {};
+    let ingredientMap = {};
 
     document.addEventListener('DOMContentLoaded', async () => {
         bindSidebar();
@@ -296,7 +442,7 @@
         document.getElementById('reportFrom').value = past;
         document.getElementById('reportTo').value = today;
         applyInitialSectionFromUrl();
-        await Promise.all([loadKpi(), loadProducts(), loadOptions(), loadInventory(), loadOrders(), loadCustomers(), loadStaff(), loadPromotions(), loadReports(), loadSystemData()]);
+        await Promise.all([loadKpi(), loadProducts(), loadOptions(), loadInventory(), loadOrders(), loadCustomers(), loadInvoices(), loadDeliveries(), loadStaff(), loadPromotions(), loadReports(), loadSystemData(), populateCustomerAddressSelect()]);
     });
 
     function bindSidebar() {
@@ -316,6 +462,10 @@
         document.querySelectorAll('.admin-section').forEach(x => x.classList.remove('active'));
         targetMenu.classList.add('active');
         targetSection.classList.add('active');
+
+        if (section === 'inventory') {
+            loadInventory().catch(e => showMessage('Lỗi tải kho: ' + e.message, 'error'));
+        }
 
         if (syncUrl) {
             const u = new URL(window.location.href);
@@ -486,14 +636,23 @@
         currentRecipeData = data;
         recipeIngredientMap = {};
         const ingredientSelect = document.getElementById('recipeIngredientId');
-        ingredientSelect.innerHTML = (data.danhSachNguyenLieuCoSan || []).map(i => `<option value="${i.id}">${i.ten} (${i.donVi})</option>`).join('');
+        ingredientSelect.innerHTML = (data.danhSachNguyenLieuCoSan || []).map(i => {
+            const loai = i.loaiNguyenLieu || 'INGREDIENT';
+            const tag = loai === 'TOPPING' ? ' [topping]' : '';
+            return `<option value="${i.id}" data-loai="${loai}">${i.ten}${tag} (${i.donVi || ''})</option>`;
+        }).join('');
         document.getElementById('recipeIngredientBody').innerHTML = (data.nguyenLieu || []).map(row => {
             recipeIngredientMap[row.id] = row;
+            const isTop = row.loaiNguyenLieu === 'TOPPING';
+            const loaiLabel = isTop ? 'Topping' : 'Pha chế';
             return `<tr>
-            <td>${row.tenNguyenLieu}</td><td>${row.soLuong || 0}</td><td>${row.donVi || ''}</td>
+            <td>${row.tenNguyenLieu}</td>
+            <td>${loaiLabel}</td>
+            <td>${isTop ? '—' : (row.soLuong ?? 0)}</td>
+            <td>${isTop ? '—' : (row.donVi || '')}</td>
             <td>
-                <button class="btn-secondary" onclick="prefillRecipeIngredient('${row.id}')">Sửa</button>
-                <button class="btn-secondary" onclick="deleteRecipeIngredient('${row.id}')">Xóa</button>
+                <button type="button" class="btn-secondary" onclick="prefillRecipeIngredient('${row.id}')">Sửa</button>
+                <button type="button" class="btn-secondary" onclick="deleteRecipeIngredient('${row.id}')">Xóa</button>
             </td>
         </tr>`;
         }).join('');
@@ -508,6 +667,22 @@
         document.getElementById('customToppingList').innerHTML = (data.toppingCoSan || []).map(t => `
             <label><input type="checkbox" value="${t.id}" ${selectedTopping.has(t.id) ? 'checked' : ''}> ${t.ten} (${formatCurrency(t.giaThem)})</label>
         `).join('') || '<div class="muted">Chưa có topping, hãy tạo ở nhóm TOPPING trong mục tùy chọn</div>';
+        syncRecipeIngredientForm();
+    }
+
+    function recipeIngredientIsTopping() {
+        const sel = document.getElementById('recipeIngredientId');
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) return false;
+        return (opt.getAttribute('data-loai') || 'INGREDIENT') === 'TOPPING';
+    }
+
+    function syncRecipeIngredientForm() {
+        const top = recipeIngredientIsTopping();
+        const row = document.getElementById('recipeQtyRow');
+        if (row) row.style.display = top ? 'none' : '';
+        const btn = document.getElementById('recipeIngredientSaveBtn');
+        if (btn) btn.textContent = top ? 'Thêm topping vào công thức' : 'Thêm/Cập nhật';
     }
 
     function prefillRecipeIngredient(id) {
@@ -517,15 +692,22 @@
         document.getElementById('recipeIngredientId').value = item.nguyenLieuId;
         document.getElementById('recipeIngredientQty').value = item.soLuong || 0;
         document.getElementById('recipeIngredientUnit').value = item.donVi || '';
+        syncRecipeIngredientForm();
     }
 
     async function saveRecipeIngredient() {
         if (!currentRecipeProductId) return showMessage('Vui lòng chọn sản phẩm trước', 'error');
+        const nlId = document.getElementById('recipeIngredientId').value;
+        if (!nlId) return showMessage('Chọn nguyên liệu', 'error');
+        const topping = recipeIngredientIsTopping();
         const payload = {
-            nguyenLieuId: document.getElementById('recipeIngredientId').value,
-            soLuong: Number(document.getElementById('recipeIngredientQty').value || 0),
-            donVi: document.getElementById('recipeIngredientUnit').value.trim()
+            nguyenLieuId: nlId,
+            soLuong: topping ? null : Number(document.getElementById('recipeIngredientQty').value || 0),
+            donVi: topping ? null : document.getElementById('recipeIngredientUnit').value.trim()
         };
+        if (!topping && (!payload.soLuong || payload.soLuong <= 0)) {
+            return showMessage('Nhập định lượng dương cho nguyên liệu pha chế', 'error');
+        }
         if (selectedRecipeIngredientId) {
             await api('PUT', `/api/admin/san-pham/${currentRecipeProductId}/cong-thuc/nguyen-lieu/${selectedRecipeIngredientId}`, payload);
         } else {
@@ -612,30 +794,148 @@
         return (text || '').split(',').map(x => x.trim()).filter(Boolean);
     }
 
+    function labelLoaiNguyenLieu(loai) {
+        if (loai === 'TOPPING') return 'Topping';
+        return 'Nguyên liệu';
+    }
+
+    function resetIngredientForm() {
+        document.getElementById('invId').value = '';
+        document.getElementById('invTen').value = '';
+        document.getElementById('invDonVi').value = 'kg';
+        document.getElementById('invSoLuongTon').value = '0';
+        document.getElementById('invGiaDonVi').value = '0';
+        document.getElementById('invNguongCanhBao').value = '0';
+        document.getElementById('invLoai').value = 'INGREDIENT';
+    }
+
+    function editIngredient(id) {
+        const i = ingredientMap[id];
+        if (!i) return;
+        document.getElementById('invId').value = i.id;
+        document.getElementById('invTen').value = i.ten || '';
+        document.getElementById('invDonVi').value = i.donVi || 'kg';
+        document.getElementById('invSoLuongTon').value = i.soLuongTon ?? 0;
+        document.getElementById('invGiaDonVi').value = i.giaDonVi ?? 0;
+        document.getElementById('invNguongCanhBao').value = i.nguongCanhBao ?? 0;
+        document.getElementById('invLoai').value = i.loaiNguyenLieu === 'TOPPING' ? 'TOPPING' : 'INGREDIENT';
+        document.getElementById('stockIngredientId').value = i.id;
+        window.scrollTo({ top: document.getElementById('section-inventory').offsetTop - 40, behavior: 'smooth' });
+    }
+
+    async function saveIngredient() {
+        const ten = document.getElementById('invTen').value.trim();
+        if (!ten) return showMessage('Vui lòng nhập tên nguyên liệu', 'error');
+        const id = document.getElementById('invId').value.trim();
+        const payload = {
+            ten,
+            donVi: document.getElementById('invDonVi').value.trim() || 'kg',
+            soLuongTon: Number(document.getElementById('invSoLuongTon').value || 0),
+            giaDonVi: Number(document.getElementById('invGiaDonVi').value || 0),
+            nguongCanhBao: Number(document.getElementById('invNguongCanhBao').value || 0),
+            loaiNguyenLieu: document.getElementById('invLoai').value
+        };
+        try {
+            if (id) {
+                await api('PUT', '/api/admin/nguyen-lieu/' + id, payload);
+                showMessage('Đã cập nhật nguyên liệu');
+            } else {
+                await api('POST', '/api/admin/nguyen-lieu', payload);
+                showMessage('Đã thêm nguyên liệu');
+            }
+            resetIngredientForm();
+            await loadInventory();
+            await loadKpi();
+        } catch (e) {
+            showMessage('Lỗi lưu nguyên liệu: ' + e.message, 'error');
+        }
+    }
+
+    async function deleteIngredient(id) {
+        if (!confirm('Xóa nguyên liệu này? Thao tác có thể thất bại nếu đang được dùng trong công thức hoặc đơn hàng.')) return;
+        try {
+            await api('DELETE', '/api/admin/nguyen-lieu/' + id);
+            showMessage('Đã xóa nguyên liệu');
+            if (document.getElementById('invId').value === id) resetIngredientForm();
+            await loadInventory();
+            await loadKpi();
+        } catch (e) {
+            showMessage('Không xóa được (có thể đang được tham chiếu): ' + e.message, 'error');
+        }
+    }
+
     async function loadInventory() {
-        const [ingredients, alerts, history] = await Promise.all([api('GET', '/api/admin/nguyen-lieu'), api('GET', '/api/admin/kho/canh-bao'), api('GET', '/api/admin/kho/lich-su')]);
-        document.getElementById('ingredientBody').innerHTML = ingredients.map(i => `<tr>
-            <td>${i.ten}</td><td>${i.soLuongTon}</td><td>${i.donVi}</td><td>${i.nguongCanhBao || 0}</td>
-            <td><button class="btn-secondary" onclick="document.getElementById('stockIngredientId').value='${i.id}'">Chọn</button></td>
-        </tr>`).join('');
-        document.getElementById('stockAlertList').innerHTML = alerts.map(a => `<div>${a.ten}: ${a.soLuongTon} ${a.donVi}</div>`).join('') || '<div class="muted">Không có cảnh báo</div>';
-        document.getElementById('inventoryHistory').innerHTML = history.map(h => `<div>${formatDateTime(h.thoiGian)} | ${h.loai} | ${h.nguyenLieu?.ten || ''} | ${h.soLuong}</div>`).join('');
+        const q = document.getElementById('inventorySearch').value || '';
+        const url = '/api/admin/nguyen-lieu' + (q.trim() ? ('?q=' + encodeURIComponent(q.trim())) : '');
+        try {
+            const [ingredients, alerts, history] = await Promise.all([
+                api('GET', url),
+                api('GET', '/api/admin/kho/canh-bao'),
+                api('GET', '/api/admin/kho/lich-su')
+            ]);
+            ingredientMap = {};
+            ingredients.forEach(i => { ingredientMap[i.id] = i; });
+            const stockSel = document.getElementById('stockIngredientId');
+            const keepStock = stockSel.value;
+            stockSel.innerHTML = '<option value="">— Chọn nguyên liệu —</option>' +
+                ingredients.map(i => `<option value="${i.id}">${i.ten} (${i.donVi})</option>`).join('');
+            if (keepStock && ingredientMap[keepStock]) stockSel.value = keepStock;
+
+            document.getElementById('ingredientBody').innerHTML = ingredients.map(i => `<tr>
+                <td>${i.ten || ''}</td>
+                <td>${labelLoaiNguyenLieu(i.loaiNguyenLieu)}</td>
+                <td>${i.soLuongTon ?? ''}</td>
+                <td>${i.donVi || ''}</td>
+                <td>${formatCurrency(i.giaDonVi)}</td>
+                <td>${i.nguongCanhBao ?? 0}</td>
+                <td>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('stockIngredientId').value='${i.id}'">Nhập/Xuất</button>
+                    <button type="button" class="btn-secondary" onclick="editIngredient('${i.id}')">Sửa</button>
+                    <button type="button" class="btn-secondary" onclick="deleteIngredient('${i.id}')">Xóa</button>
+                </td>
+            </tr>`).join('') || '<tr><td colspan="7" class="muted">Chưa có nguyên liệu</td></tr>';
+            document.getElementById('stockAlertList').innerHTML = alerts.map(a => `<div>${a.ten}: ${a.soLuongTon} ${a.donVi}</div>`).join('') || '<div class="muted">Không có cảnh báo</div>';
+            document.getElementById('inventoryHistory').innerHTML = history.map(h => `<div>${formatDateTime(h.thoiGian)} | ${h.loai} | ${h.nguyenLieu?.ten || ''} | ${h.soLuong}</div>`).join('') || '<div class="muted">Chưa có lịch sử</div>';
+        } catch (e) {
+            showMessage('Lỗi tải dữ liệu kho: ' + e.message, 'error');
+        }
     }
 
     function stockPayload() {
-        return { nguyenLieuId: document.getElementById('stockIngredientId').value.trim(), soLuong: Number(document.getElementById('stockQuantity').value || 0), ghiChu: document.getElementById('stockNote').value.trim() };
+        const nguyenLieuId = document.getElementById('stockIngredientId').value.trim();
+        return {
+            nguyenLieuId: nguyenLieuId || null,
+            soLuong: Number(document.getElementById('stockQuantity').value || 0),
+            ghiChu: document.getElementById('stockNote').value.trim()
+        };
     }
 
     async function stockIn() {
-        await api('POST', '/api/admin/kho/nhap', stockPayload());
-        await loadInventory();
-        await loadKpi();
+        const p = stockPayload();
+        if (!p.nguyenLieuId) return showMessage('Chọn nguyên liệu để nhập kho', 'error');
+        if (!p.soLuong || p.soLuong <= 0) return showMessage('Nhập số lượng lớn hơn 0', 'error');
+        try {
+            await api('POST', '/api/admin/kho/nhap', p);
+            showMessage('Đã nhập kho');
+            await loadInventory();
+            await loadKpi();
+        } catch (e) {
+            showMessage('Lỗi nhập kho: ' + e.message, 'error');
+        }
     }
 
     async function stockOut() {
-        await api('POST', '/api/admin/kho/xuat', stockPayload());
-        await loadInventory();
-        await loadKpi();
+        const p = stockPayload();
+        if (!p.nguyenLieuId) return showMessage('Chọn nguyên liệu để xuất kho', 'error');
+        if (!p.soLuong || p.soLuong <= 0) return showMessage('Nhập số lượng lớn hơn 0', 'error');
+        try {
+            await api('POST', '/api/admin/kho/xuat', p);
+            showMessage('Đã xuất kho');
+            await loadInventory();
+            await loadKpi();
+        } catch (e) {
+            showMessage('Lỗi xuất kho: ' + e.message, 'error');
+        }
     }
 
     async function loadOrders() {
@@ -850,6 +1150,212 @@
         await api('PUT', '/api/admin/he-thong/rbac/' + role, { quyens });
         await loadSystemData();
     }
+
+    // ===== KHACH HANG / CUSTOMERS =====
+    async function createCustomer() {
+        try {
+            const username = document.getElementById('customerUsername').value.trim();
+            const email = document.getElementById('customerEmail').value.trim();
+            const hoTen = document.getElementById('customerFullName').value.trim();
+            const soDienThoai = document.getElementById('customerPhone').value.trim();
+            if (!username || !email) return showMessage('Vui lòng nhập username và email', 'error');
+            await api('POST', '/api/admin/khach-hang', { tenDangNhap: username, email, hoTen, soDienThoai });
+            showMessage('Đã tạo khách hàng thành công');
+            resetCustomerForm();
+            await loadCustomers();
+            await populateCustomerAddressSelect();
+            await loadKpi();
+        } catch (e) {
+            showMessage('Lỗi tạo khách hàng: ' + e.message, 'error');
+        }
+    }
+
+    function resetCustomerForm() {
+        document.getElementById('customerId').value = '';
+        document.getElementById('customerUsername').value = '';
+        document.getElementById('customerEmail').value = '';
+        document.getElementById('customerFullName').value = '';
+        document.getElementById('customerPhone').value = '';
+    }
+
+    // ===== DIA CHI / ADDRESSES =====
+    async function populateCustomerAddressSelect() {
+        try {
+            const customers = await api('GET', '/api/admin/khach-hang');
+            const select = document.getElementById('addressCustomerSelect');
+            select.innerHTML = '<option value="">-- Chọn khách hàng --</option>' + customers.map(c => `<option value="${c.id}">${c.tenDangNhap} (${c.email})</option>`).join('');
+        } catch (e) {
+            console.error('Lỗi populate customers:', e);
+        }
+    }
+
+    async function loadCustomerAddresses() {
+        const customerId = document.getElementById('addressCustomerSelect').value;
+        if (!customerId) {
+            document.getElementById('addressTable').style.display = 'none';
+            document.getElementById('noAddressMessage').style.display = 'block';
+            return;
+        }
+        try {
+            const addresses = await api('GET', `/api/admin/khach-hang/${customerId}/dia-chi`);
+            document.getElementById('addressKhachHangId').value = customerId;
+            const tbody = document.getElementById('addressTableBody');
+            tbody.innerHTML = addresses.map(a => `<tr>
+                <td>${a.tenNguoiNhan}</td>
+                <td>${a.diaChiCuThe}</td>
+                <td>${a.phuongXa}</td>
+                <td>${a.soDienThoai}</td>
+                <td>${a.laMacDinh ? '✓' : ''}</td>
+                <td>
+                    <button class="btn-secondary" onclick="editAddress('${customerId}', '${a.id}')">Sửa</button>
+                    <button class="btn-secondary" onclick="deleteAddress('${customerId}', '${a.id}')">Xóa</button>
+                </td>
+            </tr>`).join('');
+            document.getElementById('addressTable').style.display = 'table';
+            document.getElementById('noAddressMessage').style.display = 'none';
+            resetAddressForm();
+        } catch (e) {
+            showMessage('Lỗi load địa chỉ: ' + e.message, 'error');
+        }
+    }
+
+    async function editAddress(customerId, diaChiId) {
+        try {
+            const addresses = await api('GET', `/api/admin/khach-hang/${customerId}/dia-chi`);
+            const address = addresses.find(a => a.id === diaChiId);
+            if (!address) return;
+            document.getElementById('addressId').value = address.id;
+            document.getElementById('addressKhachHangId').value = customerId;
+            document.getElementById('addressName').value = address.tenNguoiNhan || '';
+            document.getElementById('addressPhone').value = address.soDienThoai || '';
+            document.getElementById('addressStreet').value = address.diaChiCuThe || '';
+            document.getElementById('addressWard').value = address.phuongXa || '';
+            document.getElementById('addressDistrict').value = address.quanHuyen || '';
+            document.getElementById('addressCity').value = address.tinhThanhPho || '';
+            document.getElementById('addressDefault').checked = address.laMacDinh || false;
+        } catch (e) {
+            showMessage('Lỗi load địa chỉ: ' + e.message, 'error');
+        }
+    }
+
+    async function saveAddress() {
+        try {
+            const customerId = document.getElementById('addressKhachHangId').value;
+            const addressId = document.getElementById('addressId').value;
+            if (!customerId) return showMessage('Vui lòng chọn khách hàng', 'error');
+            const payload = {
+                tenNguoiNhan: document.getElementById('addressName').value.trim(),
+                soDienThoai: document.getElementById('addressPhone').value.trim(),
+                diaChiCuThe: document.getElementById('addressStreet').value.trim(),
+                phuongXa: document.getElementById('addressWard').value.trim(),
+                quanHuyen: document.getElementById('addressDistrict').value.trim(),
+                tinhThanhPho: document.getElementById('addressCity').value.trim(),
+                laMacDinh: document.getElementById('addressDefault').checked
+            };
+            const method = addressId ? 'PUT' : 'POST';
+            const url = addressId 
+                ? `/api/admin/khach-hang/${customerId}/dia-chi/${addressId}`
+                : `/api/admin/khach-hang/${customerId}/dia-chi`;
+            await api(method, url, payload);
+            showMessage('Đã lưu địa chỉ thành công');
+            await loadCustomerAddresses();
+        } catch (e) {
+            showMessage('Lỗi lưu địa chỉ: ' + e.message, 'error');
+        }
+    }
+
+    function resetAddressForm() {
+        document.getElementById('addressId').value = '';
+        document.getElementById('addressName').value = '';
+        document.getElementById('addressPhone').value = '';
+        document.getElementById('addressStreet').value = '';
+        document.getElementById('addressWard').value = '';
+        document.getElementById('addressDistrict').value = '';
+        document.getElementById('addressCity').value = '';
+        document.getElementById('addressDefault').checked = false;
+    }
+
+    async function deleteAddress(customerId, diaChiId) {
+        if (!confirm('Xóa địa chỉ này?')) return;
+        try {
+            await api('DELETE', `/api/admin/khach-hang/${customerId}/dia-chi/${diaChiId}`);
+            showMessage('Đã xóa địa chỉ');
+            await loadCustomerAddresses();
+        } catch (e) {
+            showMessage('Lỗi xóa địa chỉ: ' + e.message, 'error');
+        }
+    }
+
+    // ===== HOA DON / INVOICES =====
+    async function loadInvoices() {
+        try {
+            const q = document.getElementById('invoiceSearch').value || '';
+            const trangThai = document.getElementById('invoiceStatusFilter').value || '';
+            const tuNgay = document.getElementById('invoiceDateFrom').value || '';
+            const denNgay = document.getElementById('invoiceDateTo').value || '';
+            let url = '/api/admin/hoa-don?';
+            if (q) url += 'q=' + encodeURIComponent(q) + '&';
+            if (trangThai) url += 'trangThai=' + trangThai + '&';
+            if (tuNgay) url += 'tuNgay=' + tuNgay + '&';
+            if (denNgay) url += 'denNgay=' + denNgay + '&';
+            const invoices = await api('GET', url);
+            document.getElementById('invoiceBody').innerHTML = invoices.map(i => `<tr>
+                <td>${i.soHoaDon || i.id}</td>
+                <td>${i.donHangId || ''}</td>
+                <td>${formatDateTime(i.ngayLap)}</td>
+                <td>${formatCurrency(i.tongTien)}</td>
+                <td>${i.trangThaiHoaDon}</td>
+                <td><button class="btn-secondary" onclick="viewInvoice('${i.id}')">Xem</button></td>
+            </tr>`).join('') || '<tr><td colspan="6" class="muted">Không có hoá đơn</td></tr>';
+        } catch (e) {
+            showMessage('Lỗi load hoá đơn: ' + e.message, 'error');
+        }
+    }
+
+    async function viewInvoice(hoaDonId) {
+        try {
+            const invoice = await api('GET', `/api/admin/hoa-don/${hoaDonId}`);
+            alert(`Hoá đơn: ${invoice.soHoaDon}\nNgày: ${formatDateTime(invoice.ngayLap)}\nTổng: ${formatCurrency(invoice.tongTien)}\nTrạng thái: ${invoice.trangThaiHoaDon}`);
+        } catch (e) {
+            showMessage('Lỗi load chi tiết hoá đơn: ' + e.message, 'error');
+        }
+    }
+
+    // ===== PHIEU GIAO / DELIVERY SLIPS =====
+    async function loadDeliveries() {
+        try {
+            const q = document.getElementById('deliverySearch').value || '';
+            const trangThai = document.getElementById('deliveryStatusFilter').value || '';
+            const tuNgay = document.getElementById('deliveryDateFrom').value || '';
+            const denNgay = document.getElementById('deliveryDateTo').value || '';
+            let url = '/api/admin/phieu-giao?';
+            if (q) url += 'q=' + encodeURIComponent(q) + '&';
+            if (trangThai) url += 'trangThai=' + trangThai + '&';
+            if (tuNgay) url += 'tuNgay=' + tuNgay + '&';
+            if (denNgay) url += 'denNgay=' + denNgay + '&';
+            const deliveries = await api('GET', url);
+            document.getElementById('deliveryBody').innerHTML = deliveries.map(d => `<tr>
+                <td>${d.soPhieuGiao || d.id}</td>
+                <td>${d.donHangId || ''}</td>
+                <td>${d.nhanVienGiao || '-'}</td>
+                <td>${d.trangThaiGiao}</td>
+                <td>${formatDateTime(d.ngayGiaoDuKien) || '-'}</td>
+                <td><button class="btn-secondary" onclick="viewDelivery('${d.id}')">Xem</button></td>
+            </tr>`).join('') || '<tr><td colspan="6" class="muted">Không có phiếu giao</td></tr>';
+        } catch (e) {
+            showMessage('Lỗi load phiếu giao: ' + e.message, 'error');
+        }
+    }
+
+    async function viewDelivery(phieuGiaoId) {
+        try {
+            const delivery = await api('GET', `/api/admin/phieu-giao/${phieuGiaoId}`);
+            alert(`Phiếu giao: ${delivery.soPhieuGiao}\nĐịa chỉ: ${delivery.diaChiGiao}\nTrạng thái: ${delivery.trangThaiGiao}\nNgày giao dự kiến: ${formatDateTime(delivery.ngayGiaoDuKien)}`);
+        } catch (e) {
+            showMessage('Lỗi load chi tiết phiếu giao: ' + e.message, 'error');
+        }
+    }
+
 </script>
 
 </body>
