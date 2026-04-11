@@ -65,8 +65,7 @@ public class GioHangService {
             ChiTietGioHang item = tonTai.get();
             item.setSoLuong(item.getSoLuong() + soLuong);
             item.setThanhTien(nuocUong.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())));
-            item.setTuyChinh(TuyChinhKhachHang.builder()
-                    .mucDuong(mucDuong)
+            item.setTuyChinh(TuyChinhKhachHang.builder()                  
                     .mucDa(mucDa)
                     .ghiChu(ghiChu)
                     .build());
@@ -76,8 +75,7 @@ public class GioHangService {
                     .gioHang(gioHang)
                     .nuocUong(nuocUong)
                     .soLuong(soLuong)
-                    .tuyChinh(TuyChinhKhachHang.builder()
-                            .mucDuong(mucDuong)
+                    .tuyChinh(TuyChinhKhachHang.builder()                          
                             .mucDa(mucDa)
                             .ghiChu(ghiChu)
                             .build())

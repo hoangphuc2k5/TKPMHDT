@@ -75,8 +75,7 @@ public class TuyChinhSanPhamService {
             throw new IllegalArgumentException("Mức đá phải trong khoảng 0-100");
         }
 
-        return TuyChinhKhachHang.builder()
-                .mucDuong(mucDuong)
+        return TuyChinhKhachHang.builder()                
                 .mucDa(mucDa)
                 .ghiChu(ghiChu)
                 .nguyenLieuThem(new java.util.ArrayList<>())

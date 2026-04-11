@@ -1065,7 +1065,6 @@ public class AdminController {
             row.put("congThuc", item.getNuocUong() != null && item.getNuocUong().getCongThucCoBan() != null
                     ? item.getNuocUong().getCongThucCoBan().getTen() : "Mặc định");
             Map<String, Object> tuyChinh = new HashMap<>();
-            tuyChinh.put("mucDuong", item.getTuyChinh() != null ? item.getTuyChinh().getMucDuong() : null);
             tuyChinh.put("mucDa", item.getTuyChinh() != null ? item.getTuyChinh().getMucDa() : null);
             tuyChinh.put("ghiChu", item.getTuyChinh() != null ? item.getTuyChinh().getGhiChu() : "");
             row.put("tuyChinh", tuyChinh);

@@ -194,8 +194,7 @@ public class DonHangService {
                 .donHang(donHang)
                 .soLuong(soLuong)
                 .nuocUong(nuocUong)
-                .tuyChinh(TuyChinhKhachHang.builder()
-                        .mucDuong(mucDuong)
+                .tuyChinh(TuyChinhKhachHang.builder()                        
                         .mucDa(mucDa)
                         .ghiChu(ghiChu)
                         .build())
@@ -317,8 +316,7 @@ public class DonHangService {
         
         // Xây tùy chỉnh 
         TuyChinhKhachHang tuyChinh = TuyChinhKhachHang.builder()
-                .kichCo(sanPhamRequest.getTuyChinh().getKichCo()) // Mặc định cỡ M, có thể mở rộng sau
-                .mucDuong(sanPhamRequest.getTuyChinh().getMucDuong()) // Mặc định 2 đường, có thể mở rộng sau
+                .kichCo(sanPhamRequest.getTuyChinh().getKichCo()) // Mặc định cỡ M, có thể mở rộng sau                
                 .mucDa(sanPhamRequest.getTuyChinh().getMucDa()) // Mặc định 1 đá, có thể mở rộng sau
                 .ghiChu(sanPhamRequest.getTuyChinh().getGhiChu()) // Mặc định không ghi chú, có thể mở rộng sau
                 .build();
@@ -488,7 +486,6 @@ public class DonHangService {
                         .tenSanPham(ct.getNuocUong().getTen())
                         .giaTien(ct.getNuocUong().getGia())
                         .kichCo(ct.getTuyChinh().getKichCo())
-                        .mucDuong(ct.getTuyChinh().getMucDuong())
                         .mucDa(ct.getTuyChinh().getMucDa())
                         .ghiChu(ct.getTuyChinh().getGhiChu())
                         .soLuong(ct.getSoLuong())
@@ -550,8 +547,7 @@ public class DonHangService {
 
         // So sánh các thuộc tính tùy chỉnh
         return tc1.getKichCo().equals(tc2.getKichCo()) &&
-               tc1.getMucDuong() == tc2.getMucDuong() &&
-               tc1.getMucDa() == tc2.getMucDa() &&
+                tc1.getMucDa() == tc2.getMucDa() &&
                ((tc1.getGhiChu() == null && tc2.getGhiChu() == null) ||
                 (tc1.getGhiChu() != null && tc1.getGhiChu().equals(tc2.getGhiChu())));
     }

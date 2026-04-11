@@ -22,10 +22,7 @@ public class TuyChinhKhachHang {
 
     @Column(name = "kich_co", length = 50)
     private String kichCo;
-
-    @Column(name = "muc_duong")
-    private Integer mucDuong;
-
+    
     @Column(name = "muc_da")
     private Integer mucDa;
 
