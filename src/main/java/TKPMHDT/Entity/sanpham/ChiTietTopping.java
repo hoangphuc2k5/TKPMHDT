@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import TKPMHDT.Entity.donhang.ChiTietDonHang;
 import TKPMHDT.Entity.giohang.ChiTietGioHang;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.*;
 
 @Getter
@@ -29,6 +28,10 @@ public class ChiTietTopping {
     private Integer soLuong;
 
     private BigDecimal donGia;
+
+    /** Tên hiển thị (tùy chọn tùy chỉnh / topping không gắn nguyên liệu). */
+    @Column(length = 255)
+    private String ten;
 
     @JsonBackReference
     @ManyToOne

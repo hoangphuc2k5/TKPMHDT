@@ -3,11 +3,11 @@ package TKPMHDT.Controller;
 import TKPMHDT.Entity.donhang.ChiTietDonHang;
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.HoaDon;
-import TKPMHDT.Entity.donhang.PhieuGiao;
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiChoXacNhan;
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiDaGiao;
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiDaHuy;
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiDaXacNhan;
+import TKPMHDT.Entity.donhang.trangthai.TrangThaiDangGiao;
 import TKPMHDT.Entity.hethong.CauHinhHeThong;
 import TKPMHDT.Entity.hethong.NhatKyHeThong;
 import TKPMHDT.Entity.hethong.VaiTroQuyen;
@@ -24,7 +24,7 @@ import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.enums.LoaiNguyenLieu;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
-import TKPMHDT.Entity.sanpham.TuyChonTuyChinh;
+import TKPMHDT.Entity.thanhtoan.ThanhToan;
 import TKPMHDT.Repository.donhang.DonHangRepository;
 import TKPMHDT.Repository.hethong.CauHinhHeThongRepository;
 import TKPMHDT.Repository.hethong.NhatKyHeThongRepository;
@@ -34,7 +34,6 @@ import TKPMHDT.Repository.sanpham.CongThucRepository;
 import TKPMHDT.Repository.sanpham.LichSuKhoRepository;
 import TKPMHDT.Repository.sanpham.LuongNguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
-import TKPMHDT.Repository.sanpham.TuyChonTuyChinhRepository;
 import TKPMHDT.Service.FileStorageService;
 import TKPMHDT.Service.nguoidung.NguoiDungService;
 import TKPMHDT.Service.sanpham.SanPhamService;
@@ -84,7 +83,6 @@ public class AdminController {
     private final SanPhamService sanPhamService;
     private final DonHangRepository donHangRepository;
     private final MaGiamGiaRepository maGiamGiaRepository;
-    private final TuyChonTuyChinhRepository tuyChonTuyChinhRepository;
     private final LichSuKhoRepository lichSuKhoRepository;
     private final NhatKyHeThongRepository nhatKyHeThongRepository;
     private final CauHinhHeThongRepository cauHinhHeThongRepository;
@@ -99,7 +97,6 @@ public class AdminController {
             SanPhamService sanPhamService,
             DonHangRepository donHangRepository,
             MaGiamGiaRepository maGiamGiaRepository,
-            TuyChonTuyChinhRepository tuyChonTuyChinhRepository,
             LichSuKhoRepository lichSuKhoRepository,
             NhatKyHeThongRepository nhatKyHeThongRepository,
             CauHinhHeThongRepository cauHinhHeThongRepository,
@@ -112,7 +109,6 @@ public class AdminController {
         this.sanPhamService = sanPhamService;
         this.donHangRepository = donHangRepository;
         this.maGiamGiaRepository = maGiamGiaRepository;
-        this.tuyChonTuyChinhRepository = tuyChonTuyChinhRepository;
         this.lichSuKhoRepository = lichSuKhoRepository;
         this.nhatKyHeThongRepository = nhatKyHeThongRepository;
         this.cauHinhHeThongRepository = cauHinhHeThongRepository;
@@ -211,16 +207,9 @@ public class AdminController {
             payload.put("congThucTen", congThuc != null ? congThuc.getTen() : "Công thức mặc định");
             payload.put("nguyenLieu", nguyenLieuCongThuc);
             payload.put("danhSachNguyenLieuCoSan", sanPhamService.layDanhSachNguyenLieu());
-            payload.put("toppingCoSan", tuyChonTuyChinhRepository.findAll().stream()
-                    .filter(opt -> "TOPPING".equalsIgnoreCase(opt.getNhom()))
-                    .toList());
-            payload.put("mucDuongTuyChon", parseCsv(sp.getMucDuongTuyChon(), List.of("Không đường", "Ít đường", "Bình thường", "Nhiều đường")));
-            payload.put("mucDuongMacDinh", sp.getMucDuongMacDinh() != null ? sp.getMucDuongMacDinh() : "Bình thường");
+            payload.put("toppingCoSan", sanPhamService.layDanhSachToppingNguyenLieu());
             payload.put("mucDaTuyChon", parseCsv(sp.getMucDaTuyChon(), List.of("Không đá", "Ít đá", "Bình thường", "Nhiều đá")));
             payload.put("mucDaMacDinh", sp.getMucDaMacDinh() != null ? sp.getMucDaMacDinh() : "Bình thường");
-            payload.put("kichCoTuyChon", parseCsv(sp.getKichCoTuyChon(), List.of("Nhỏ", "Vừa", "Lớn")));
-            payload.put("kichCoMacDinh", sp.getKichCoMacDinh() != null ? sp.getKichCoMacDinh() : "Vừa");
-            payload.put("coApDungSize", Boolean.TRUE.equals(sp.getCoApDungSize()));
             payload.put("toppingChoPhep", parseUuidCsv(sp.getToppingChoPhep()));
             return ResponseEntity.ok(payload);
         }).orElseGet(() -> ResponseEntity.notFound().build());
@@ -269,8 +258,17 @@ public class AdminController {
                     }
                     NguyenLieu nl = entity.getNguyenLieu();
                     if (nl != null && nl.getLoaiNguyenLieu() == LoaiNguyenLieu.TOPPING) {
-                        entity.setSoLuong(BigDecimal.ONE);
-                        entity.setDonVi(donViMacDinhChoCongThuc(nl, null));
+                        if (request.soLuong() != null && request.soLuong().compareTo(BigDecimal.ZERO) > 0) {
+                            entity.setSoLuong(request.soLuong());
+                        } else if (entity.getSoLuong() == null
+                                || entity.getSoLuong().compareTo(BigDecimal.ZERO) <= 0) {
+                            entity.setSoLuong(BigDecimal.ONE);
+                        }
+                        if (request.donVi() != null && !request.donVi().isBlank()) {
+                            entity.setDonVi(request.donVi().trim());
+                        } else if (entity.getDonVi() == null || entity.getDonVi().isBlank()) {
+                            entity.setDonVi(donViMacDinhChoCongThuc(nl, null));
+                        }
                     } else {
                         if (request.soLuong() != null) {
                             entity.setSoLuong(request.soLuong());
@@ -310,26 +308,11 @@ public class AdminController {
             @PathVariable UUID sanPhamId,
             @RequestBody TuyChinhCongThucRequest request) {
         return sanPhamService.layNuocUongTheoId(sanPhamId).map(sp -> {
-            if (request.mucDuongTuyChon() != null) {
-                sp.setMucDuongTuyChon(joinCsv(request.mucDuongTuyChon()));
-            }
-            if (request.mucDuongMacDinh() != null) {
-                sp.setMucDuongMacDinh(request.mucDuongMacDinh());
-            }
             if (request.mucDaTuyChon() != null) {
                 sp.setMucDaTuyChon(joinCsv(request.mucDaTuyChon()));
             }
             if (request.mucDaMacDinh() != null) {
                 sp.setMucDaMacDinh(request.mucDaMacDinh());
-            }
-            if (request.kichCoTuyChon() != null) {
-                sp.setKichCoTuyChon(joinCsv(request.kichCoTuyChon()));
-            }
-            if (request.kichCoMacDinh() != null) {
-                sp.setKichCoMacDinh(request.kichCoMacDinh());
-            }
-            if (request.coApDungSize() != null) {
-                sp.setCoApDungSize(request.coApDungSize());
             }
             if (request.toppingChoPhep() != null) {
                 sp.setToppingChoPhep(joinUuidCsv(request.toppingChoPhep()));
@@ -339,13 +322,8 @@ public class AdminController {
             Map<String, Object> payload = new HashMap<>();
             payload.put("success", true);
             payload.put("sanPhamId", updated.getId());
-            payload.put("mucDuongTuyChon", parseCsv(updated.getMucDuongTuyChon(), List.of()));
-            payload.put("mucDuongMacDinh", updated.getMucDuongMacDinh());
             payload.put("mucDaTuyChon", parseCsv(updated.getMucDaTuyChon(), List.of()));
             payload.put("mucDaMacDinh", updated.getMucDaMacDinh());
-            payload.put("kichCoTuyChon", parseCsv(updated.getKichCoTuyChon(), List.of()));
-            payload.put("kichCoMacDinh", updated.getKichCoMacDinh());
-            payload.put("coApDungSize", Boolean.TRUE.equals(updated.getCoApDungSize()));
             payload.put("toppingChoPhep", parseUuidCsv(updated.getToppingChoPhep()));
             return ResponseEntity.ok(payload);
         }).orElseGet(() -> ResponseEntity.notFound().build());
@@ -417,52 +395,6 @@ public class AdminController {
         ghiLog("SAN_PHAM", "XOA_ANH", sp.getTen());
 
         return ResponseEntity.ok(updated);
-    }
-
-    @GetMapping("/tuy-chon")
-    public ResponseEntity<List<TuyChonTuyChinh>> layTuyChon() {
-        return ResponseEntity.ok(tuyChonTuyChinhRepository.findAll());
-    }
-
-    @PostMapping("/tuy-chon")
-    public ResponseEntity<TuyChonTuyChinh> taoTuyChon(@RequestBody TuyChonRequest request) {
-        TuyChonTuyChinh entity = TuyChonTuyChinh.builder()
-                .ten(request.ten())
-                .nhom(request.nhom())
-                .giaThem(request.giaThem() != null ? request.giaThem() : BigDecimal.ZERO)
-                .kichHoat(request.kichHoat() == null || request.kichHoat())
-                .build();
-        TuyChonTuyChinh saved = tuyChonTuyChinhRepository.save(entity);
-        ghiLog("TUY_CHON", "TAO", saved.getTen());
-        return ResponseEntity.ok(saved);
-    }
-
-    @PutMapping("/tuy-chon/{id}")
-    public ResponseEntity<TuyChonTuyChinh> capNhatTuyChon(@PathVariable UUID id, @RequestBody TuyChonRequest request) {
-        return tuyChonTuyChinhRepository.findById(id).map(entity -> {
-            if (request.ten() != null) {
-                entity.setTen(request.ten());
-            }
-            if (request.nhom() != null) {
-                entity.setNhom(request.nhom());
-            }
-            if (request.giaThem() != null) {
-                entity.setGiaThem(request.giaThem());
-            }
-            if (request.kichHoat() != null) {
-                entity.setKichHoat(request.kichHoat());
-            }
-            TuyChonTuyChinh updated = tuyChonTuyChinhRepository.save(entity);
-            ghiLog("TUY_CHON", "CAP_NHAT", updated.getTen());
-            return ResponseEntity.ok(updated);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/tuy-chon/{id}")
-    public ResponseEntity<Map<String, Object>> xoaTuyChon(@PathVariable UUID id) {
-        tuyChonTuyChinhRepository.deleteById(id);
-        ghiLog("TUY_CHON", "XOA", id.toString());
-        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/nguyen-lieu")
@@ -590,6 +522,8 @@ public class AdminController {
                 donHang.setTrangThai(new TrangThaiChoXacNhan());
             } else if ("DA_XAC_NHAN".equals(dbStatus)) {
                 donHang.setTrangThai(new TrangThaiDaXacNhan());
+            } else if ("DANG_GIAO".equals(dbStatus)) {
+                donHang.setTrangThai(new TrangThaiDangGiao());
             } else if ("DA_GIAO".equals(dbStatus)) {
                 donHang.setTrangThai(new TrangThaiDaGiao());
             } else if ("DA_HUY".equals(dbStatus)) {
@@ -649,55 +583,6 @@ public class AdminController {
         }
         HoaDon hoaDon = allHD.get(0);
         return ResponseEntity.ok(toHoaDonDetailPayload(hoaDon));
-    }
-
-    @GetMapping("/phieu-giao")
-    public ResponseEntity<List<Map<String, Object>>> layDanhSachPhieuGiao(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String trangThai,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay) {
-        List<PhieuGiao> phieuGiaos = donHangRepository.findAll().stream()
-                .map(DonHang::getPhieuGiao)
-                .filter(pg -> pg != null)
-                .toList();
-        
-        List<PhieuGiao> filtered = phieuGiaos.stream()
-                .filter(pg -> {
-                    if (tuNgay == null || denNgay == null || pg.getNgayTao() == null) {
-                        return true;
-                    }
-                    LocalDate d = pg.getNgayTao().toLocalDate();
-                    return !d.isBefore(tuNgay) && !d.isAfter(denNgay);
-                })
-                .filter(pg -> trangThai == null || trangThai.isBlank() || pg.getTrangThaiGiao().equalsIgnoreCase(trangThai))
-                .filter(pg -> {
-                    if (q == null || q.isBlank()) {
-                        return true;
-                    }
-                    String k = q.toLowerCase(Locale.ROOT);
-                    String soPhieu = pg.getSoPhieuGiao() != null ? pg.getSoPhieuGiao().toLowerCase(Locale.ROOT) : "";
-                    String donHangId = pg.getDonHang() != null && pg.getDonHang().getId() != null 
-                            ? pg.getDonHang().getId().toString().toLowerCase(Locale.ROOT) : "";
-                    return soPhieu.contains(k) || donHangId.contains(k);
-                })
-                .sorted(Comparator.comparing(PhieuGiao::getNgayTao, Comparator.nullsLast(LocalDateTime::compareTo)).reversed())
-                .toList();
-        
-        return ResponseEntity.ok(filtered.stream().map(this::toPhieuGiaoPayload).toList());
-    }
-
-    @GetMapping("/phieu-giao/{phieuGiaoId}")
-    public ResponseEntity<Map<String, Object>> layChiTietPhieuGiao(@PathVariable UUID phieuGiaoId) {
-        List<PhieuGiao> allPG = donHangRepository.findAll().stream()
-                .map(DonHang::getPhieuGiao)
-                .filter(pg -> pg != null && pg.getId().equals(phieuGiaoId))
-                .toList();
-        if (allPG.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        PhieuGiao phieuGiao = allPG.get(0);
-        return ResponseEntity.ok(toPhieuGiaoDetailPayload(phieuGiao));
     }
 
     @GetMapping("/khach-hang")
@@ -941,6 +826,12 @@ public class AdminController {
         if (request.sanPhamIds() != null) {
             entity.setSanPhamApDung(new LinkedHashSet<>(nuocUongSanRepository.findAllById(request.sanPhamIds())));
         }
+        if (request.cacNgayApDung() != null) {
+            entity.setCacNgayApDung(new ArrayList<>(request.cacNgayApDung()));
+        }
+        if (request.danhMucApDung() != null) {
+            entity.setDanhMucApDung(chuanHoaDanhMuc(request.danhMucApDung()));
+        }
         MaGiamGia saved = maGiamGiaRepository.save(entity);
         ghiLog("KHUYEN_MAI", "TAO", saved.getMa());
         return ResponseEntity.ok(toKhuyenMaiPayload(saved));
@@ -974,6 +865,12 @@ public class AdminController {
             }
             if (request.sanPhamIds() != null) {
                 entity.setSanPhamApDung(new LinkedHashSet<>(nuocUongSanRepository.findAllById(request.sanPhamIds())));
+            }
+            if (request.cacNgayApDung() != null) {
+                entity.setCacNgayApDung(new ArrayList<>(request.cacNgayApDung()));
+            }
+            if (request.danhMucApDung() != null) {
+                entity.setDanhMucApDung(chuanHoaDanhMuc(request.danhMucApDung()));
             }
             MaGiamGia updated = maGiamGiaRepository.save(entity);
             ghiLog("KHUYEN_MAI", "CAP_NHAT", updated.getMa());
@@ -1186,6 +1083,7 @@ public class AdminController {
         return switch (normalized) {
             case "CHO_XU_LY", "CHO_XAC_NHAN" -> "CHO_XAC_NHAN";
             case "DANG_LAM", "DA_XAC_NHAN", "DANG_CHUAN_BI" -> "DA_XAC_NHAN";
+            case "DANG_GIAO", "GIAO_HANG" -> "DANG_GIAO";
             case "HOAN_THANH", "DA_GIAO" -> "DA_GIAO";
             case "HUY", "DA_HUY" -> "DA_HUY";
             default -> normalized;
@@ -1223,13 +1121,8 @@ public class AdminController {
     }
 
     private void apDungCauHinhTuyChinhMacDinh(NuocUongSan sanPham) {
-        sanPham.setMucDuongTuyChon("Không đường,Ít đường,Bình thường,Nhiều đường");
-        sanPham.setMucDuongMacDinh("Bình thường");
         sanPham.setMucDaTuyChon("Không đá,Ít đá,Bình thường,Nhiều đá");
         sanPham.setMucDaMacDinh("Bình thường");
-        sanPham.setKichCoTuyChon("Nhỏ,Vừa,Lớn");
-        sanPham.setKichCoMacDinh("Vừa");
-        sanPham.setCoApDungSize(true);
         sanPham.setToppingChoPhep("");
     }
 
@@ -1295,9 +1188,12 @@ public class AdminController {
         return payload;
     }
 
-    /** Topping trong công thức: không dùng định lượng thực tế, chỉ đánh dấu có trong công thức. */
+    /** Topping (sữa, kem...): định lượng do admin nhập; mặc định 1 nếu không gửi. */
     private static BigDecimal soLuongMacDinhChoCongThuc(NguyenLieu nl, BigDecimal tuRequest) {
         if (nl != null && nl.getLoaiNguyenLieu() == LoaiNguyenLieu.TOPPING) {
+            if (tuRequest != null && tuRequest.compareTo(BigDecimal.ZERO) > 0) {
+                return tuRequest;
+            }
             return BigDecimal.ONE;
         }
         return tuRequest != null ? tuRequest : BigDecimal.ZERO;
@@ -1305,6 +1201,9 @@ public class AdminController {
 
     private static String donViMacDinhChoCongThuc(NguyenLieu nl, String tuRequest) {
         if (nl != null && nl.getLoaiNguyenLieu() == LoaiNguyenLieu.TOPPING) {
+            if (tuRequest != null && !tuRequest.isBlank()) {
+                return tuRequest.trim();
+            }
             return nl.getDonVi() != null && !nl.getDonVi().isBlank() ? nl.getDonVi() : "phần";
         }
         if (tuRequest != null && !tuRequest.isBlank()) {
@@ -1331,9 +1230,29 @@ public class AdminController {
         payload.put("id", donHang.getId());
         payload.put("ngayDat", donHang.getNgayDat());
         payload.put("tongTien", donHang.getTongTien());
+        payload.put("tienGiamApDung", donHang.getTienGiamApDung());
         payload.put("trangThaiDb", donHang.getTrangThaiDb());
+        payload.put("trangThai", donHang.getTrangThaiCode());
         KhachHang kh = donHang.getKhachHang();
+        String tenKhach = "Khách lẻ";
+        if (kh != null) {
+            if (kh.getHoTen() != null && !kh.getHoTen().isBlank()) {
+                tenKhach = kh.getHoTen();
+            } else if (kh.getTenDangNhap() != null) {
+                tenKhach = kh.getTenDangNhap();
+            }
+        }
         payload.put("khachHang", kh != null && kh.getTenDangNhap() != null ? kh.getTenDangNhap() : "Khách lẻ");
+        payload.put("tenKhachHang", tenKhach);
+        ThanhToan tt = donHang.getThanhToan();
+        if (tt != null) {
+            if (tt.getPhuongThuc() != null) {
+                payload.put("phuongThucThanhToan", tt.getPhuongThuc().name());
+            }
+            if (tt.getTrangThai() != null) {
+                payload.put("trangThaiThanhToan", tt.getTrangThai().name());
+            }
+        }
         if (donHang.getDiaChiGiaoHang() != null) {
             payload.put("diaChiGiaoHang", toDiaChiPayload(donHang.getDiaChiGiaoHang()));
         }
@@ -1341,29 +1260,64 @@ public class AdminController {
             payload.put("maGiamGia", donHang.getMaGiamGia().getMa());
         }
         List<ChiTietDonHang> lines = donHang.getChiTietDonHangs();
-        payload.put("chiTiet", lines == null ? List.of() : lines.stream().map(this::toChiTietDonHangAdminPayload).toList());
+        List<Map<String, Object>> chiTietRows =
+                lines == null ? List.of() : lines.stream().map(this::toChiTietDonHangAdminPayload).toList();
+        payload.put("chiTiet", chiTietRows);
+        payload.put("chiTietDonHang", chiTietRows);
         return payload;
+    }
+
+    private Map<String, Object> toCongThucSanPhamPayload(NuocUongSan sp) {
+        if (sp == null || sp.getCongThucCoBan() == null) {
+            return null;
+        }
+        CongThuc ct = sp.getCongThucCoBan();
+        List<Map<String, Object>> ngl = new ArrayList<>();
+        if (ct.getLuongNguyenLieus() != null) {
+            for (LuongNguyenLieu ll : ct.getLuongNguyenLieus()) {
+                if (ll.getNguyenLieu() == null) {
+                    continue;
+                }
+                Map<String, Object> row = new HashMap<>();
+                row.put("tenNguyenLieu", ll.getNguyenLieu().getTen());
+                row.put("soLuong", ll.getSoLuong());
+                row.put("donVi", ll.getDonVi());
+                ngl.add(row);
+            }
+        }
+        Map<String, Object> m = new HashMap<>();
+        m.put("tenCongThuc", ct.getTen());
+        m.put("giaCoBan", ct.getGiaCoBan());
+        m.put("moTa", ct.getMoTa());
+        m.put("nguyenLieus", ngl);
+        return m;
     }
 
     private Map<String, Object> toChiTietDonHangAdminPayload(ChiTietDonHang ct) {
         Map<String, Object> m = new HashMap<>();
         m.put("id", ct.getId());
         NuocUongSan sp = ct.getNuocUong();
-        m.put("sanPham", sp != null && sp.getTen() != null ? sp.getTen() : "");
+        String tenSp = sp != null && sp.getTen() != null ? sp.getTen() : "";
+        m.put("sanPham", tenSp);
+        m.put("tenSanPham", tenSp);
         m.put("soLuong", ct.getSoLuong());
         m.put("thanhTien", ct.getThanhTien());
-        String congThucTen = "";
-        if (sp != null && sp.getCongThucCoBan() != null && sp.getCongThucCoBan().getTen() != null) {
-            congThucTen = sp.getCongThucCoBan().getTen();
-        }
-        m.put("congThuc", congThucTen);
+        m.put("giaTien", sp != null ? sp.getGia() : null);
+        m.put("congThuc", toCongThucSanPhamPayload(sp));
         m.put("tuyChinh", toTuyChinhKhachHangPayload(ct.getTuyChinh()));
+        if (ct.getTuyChinh() != null && ct.getTuyChinh().getMucDa() != null) {
+            m.put("mucDa", ct.getTuyChinh().getMucDa());
+        }
+        if (ct.getTuyChinh() != null && ct.getTuyChinh().getGhiChu() != null) {
+            m.put("ghiChu", ct.getTuyChinh().getGhiChu());
+        }
         if (ct.getToppings() != null && !ct.getToppings().isEmpty()) {
             m.put("toppings", ct.getToppings().stream().map(t -> {
                 Map<String, Object> tm = new HashMap<>();
-                tm.put("ten", t.getNguyenLieu() != null ? t.getNguyenLieu().getTen() : null);
+                tm.put("ten", t.getNguyenLieu() != null ? t.getNguyenLieu().getTen() : t.getTen());
                 tm.put("soLuong", t.getSoLuong());
                 tm.put("donGia", t.getDonGia());
+                tm.put("giaTien", t.getDonGia());
                 return tm;
             }).toList());
         }
@@ -1375,8 +1329,6 @@ public class AdminController {
         if (tc == null) {
             return m;
         }
-        m.put("kichCo", tc.getKichCo());
-        m.put("mucDuong", null);
         m.put("mucDa", tc.getMucDa());
         m.put("ghiChu", tc.getGhiChu());
         return m;
@@ -1406,29 +1358,21 @@ public class AdminController {
         return payload;
     }
 
-    private Map<String, Object> toPhieuGiaoPayload(PhieuGiao phieuGiao) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("id", phieuGiao.getId());
-        payload.put("soPhieuGiao", phieuGiao.getSoPhieuGiao());
-        payload.put("ngayTao", phieuGiao.getNgayTao());
-        payload.put("trangThaiGiao", phieuGiao.getTrangThaiGiao());
-        payload.put("donHangId", phieuGiao.getDonHang() != null ? phieuGiao.getDonHang().getId() : null);
-        return payload;
-    }
-
-    private Map<String, Object> toPhieuGiaoDetailPayload(PhieuGiao phieuGiao) {
-        Map<String, Object> payload = toPhieuGiaoPayload(phieuGiao);
-        payload.put("diaChiGiao", phieuGiao.getDiaChiGiao());
-        payload.put("soDienThoaiNhan", phieuGiao.getSoDienThoaiNhan());
-        payload.put("tenNhan", phieuGiao.getTenNhan());
-        payload.put("nhanVienGiao", phieuGiao.getNhanVienGiao() != null ? phieuGiao.getNhanVienGiao().getTenDangNhap() : null);
-        payload.put("ngayGiaoDuKien", phieuGiao.getNgayGiaoDuKien());
-        payload.put("ngayGiaoThucTe", phieuGiao.getNgayGiaoThucTe());
-        payload.put("ghiChu", phieuGiao.getGhiChu());
-        if (phieuGiao.getDonHang() != null) {
-            payload.put("donHang", toDonHangDetailPayload(phieuGiao.getDonHang()));
+    private static LinkedHashSet<String> chuanHoaDanhMuc(List<String> raw) {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        if (raw == null) {
+            return out;
         }
-        return payload;
+        for (String s : raw) {
+            if (s == null) {
+                continue;
+            }
+            String t = s.trim();
+            if (!t.isEmpty()) {
+                out.add(t);
+            }
+        }
+        return out;
     }
 
     private Map<String, Object> toKhuyenMaiPayload(MaGiamGia entity) {
@@ -1443,6 +1387,8 @@ public class AdminController {
         payload.put("apDungToanHeThong", entity.isApDungToanHeThong());
         payload.put("sanPhamIds", entity.getSanPhamApDung() == null ? List.of()
                 : entity.getSanPhamApDung().stream().map(s -> s.getId()).toList());
+        payload.put("cacNgayApDung", entity.getCacNgayApDung() == null ? List.of() : new ArrayList<>(entity.getCacNgayApDung()));
+        payload.put("danhMucApDung", entity.getDanhMucApDung() == null ? List.of() : new ArrayList<>(entity.getDanhMucApDung()));
         return payload;
     }
 
@@ -1493,13 +1439,6 @@ public class AdminController {
 
     public record TrangThaiBanRequest(boolean dangBan) {}
 
-    public record TuyChonRequest(
-            String ten,
-            String nhom,
-            BigDecimal giaThem,
-            Boolean kichHoat
-    ) {}
-
     public record NguyenLieuRequest(
             String ten,
             String donVi,
@@ -1522,13 +1461,8 @@ public class AdminController {
     ) {}
 
     public record TuyChinhCongThucRequest(
-            List<String> mucDuongTuyChon,
-            String mucDuongMacDinh,
             List<String> mucDaTuyChon,
             String mucDaMacDinh,
-            List<String> kichCoTuyChon,
-            String kichCoMacDinh,
-            Boolean coApDungSize,
             List<UUID> toppingChoPhep
     ) {}
 
@@ -1567,7 +1501,9 @@ public class AdminController {
             LocalDate ngayKetThuc,
             Boolean kichHoat,
             Boolean apDungToanHeThong,
-            List<UUID> sanPhamIds
+            List<UUID> sanPhamIds,
+            List<LocalDate> cacNgayApDung,
+            List<String> danhMucApDung
     ) {}
 
     public record CauHinhRequest(

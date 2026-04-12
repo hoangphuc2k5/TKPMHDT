@@ -226,13 +226,13 @@
 
         try {
             const result = await api('POST', '/api/khuyen-mai/tinh-tien-giam', {
-                maGiamGia: code,
+                ma: code,
                 tongTien: total
             });
 
             const resultEl = document.getElementById('calcResult');
             resultEl.style.display = 'block';
-            const discountAmount = result.giaTriGiam || 0;
+            const discountAmount = Number(result.tienGiam ?? result.giaTriGiam ?? 0);
             const finalTotal = total - discountAmount;
             
             resultEl.innerHTML = `

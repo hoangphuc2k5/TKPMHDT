@@ -2,7 +2,9 @@ package TKPMHDT.Entity.khuyenmai;
 
 import TKPMHDT.Entity.khuyenmai.enums.LoaiGiamGiaEnum;
 import TKPMHDT.Entity.sanpham.SanPham;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,7 +17,10 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -69,5 +74,22 @@ public class MaGiamGia {
     )
     @Builder.Default
     private Set<SanPham> sanPhamApDung = new HashSet<>();
+
+    /**
+     * Nếu không rỗng: chỉ các ngày này được áp dụng (vẫn phải nằm trong {@link #ngayBatDau}–{@link #ngayKetThuc} nếu hai trường đó có giá trị).
+     * Nếu rỗng: chỉ kiểm tra khoảng ngày bắt đầu/kết thúc.
+     */
+    @ElementCollection
+    @CollectionTable(name = "ma_giam_gia_ngay_ap_dung", joinColumns = @JoinColumn(name = "ma_giam_gia_id"))
+    @Column(name = "ngay_ap_dung")
+    @Builder.Default
+    private List<LocalDate> cacNgayApDung = new ArrayList<>();
+
+    /** Danh mục sản phẩm (so khớp {@code SanPham.danhMuc}, không phân biệt hoa thường). */
+    @ElementCollection
+    @CollectionTable(name = "ma_giam_gia_danh_muc", joinColumns = @JoinColumn(name = "ma_giam_gia_id"))
+    @Column(name = "danh_muc", length = 120)
+    @Builder.Default
+    private Set<String> danhMucApDung = new LinkedHashSet<>();
 }
 

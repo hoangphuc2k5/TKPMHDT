@@ -49,16 +49,22 @@
             <!-- Mật khẩu -->
             <div>
                 <label for="password">Mật khẩu</label>
-                <input type="password" id="password" placeholder="Tối thiểu 12 ký tự, đủ hoa/thường/số/ký tự đặc biệt" required>
+                <div class="password-field-wrap">
+                    <input type="password" id="password" placeholder="Tối thiểu 6 ký tự: chữ hoa, chữ thường, số" required autocomplete="new-password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword('password', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                </div>
                 <small class="muted" style="display: block; margin-top: 0.5rem;">
-                    ✓ Ít nhất 12 ký tự &nbsp; ✓ Bao gồm chữ hoa, chữ thường, số, ký tự đặc biệt
+                    ✓ Ít nhất 6 ký tự &nbsp; ✓ Có chữ hoa, chữ thường và số &nbsp; ✓ Không bắt buộc ký tự đặc biệt
                 </small>
             </div>
 
             <!-- Xác nhận mật khẩu -->
             <div>
                 <label for="passwordConfirm">Xác nhận mật khẩu</label>
-                <input type="password" id="passwordConfirm" placeholder="Nhập lại mật khẩu..." required>
+                <div class="password-field-wrap">
+                    <input type="password" id="passwordConfirm" placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword('passwordConfirm', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                </div>
             </div>
 
             <!-- Địa chỉ -->
@@ -95,7 +101,10 @@
 <script th:inline="javascript">
     // Validation
     function validatePassword(password) {
-        return password.length >= 12 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password);
+        if (typeof isPasswordPolicyCompliant === 'function') {
+            return isPasswordPolicyCompliant(password);
+        }
+        return password.length >= 6 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password);
     }
 
     function validateEmail(email) {
@@ -124,7 +133,7 @@
         }
 
         if (!validatePassword(password)) {
-            showError('Mật khẩu phải có ít nhất 12 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt');
+            showError(typeof PASSWORD_POLICY_MESSAGE_VI !== 'undefined' ? PASSWORD_POLICY_MESSAGE_VI : 'Mật khẩu không đủ điều kiện');
             return;
         }
 

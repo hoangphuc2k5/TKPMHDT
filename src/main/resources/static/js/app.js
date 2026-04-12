@@ -1,3 +1,33 @@
+/** Đồng bộ với TKPMHDT.security.PasswordPolicyValidator */
+function isPasswordPolicyCompliant(rawPassword) {
+  if (rawPassword == null || typeof rawPassword !== "string") {
+    return false;
+  }
+  return (
+    rawPassword.length >= 6 &&
+    /[A-Z]/.test(rawPassword) &&
+    /[a-z]/.test(rawPassword) &&
+    /\d/.test(rawPassword)
+  );
+}
+
+const PASSWORD_POLICY_MESSAGE_VI =
+  "Mật khẩu cần ít nhất 6 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số. Không bắt buộc ký tự đặc biệt.";
+
+/** Hiện/ẩn mật khẩu (inputId hoặc phần tử input). */
+function togglePassword(inputId, btn) {
+  const input =
+    typeof inputId === "string" ? document.getElementById(inputId) : inputId;
+  if (!input) return;
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+  if (btn) {
+    btn.textContent = isPassword ? "Ẩn" : "Hiện";
+    btn.setAttribute("aria-label", isPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+    btn.setAttribute("aria-pressed", isPassword ? "true" : "false");
+  }
+}
+
 async function api(method, url, body) {
   const options = {
     method: method,

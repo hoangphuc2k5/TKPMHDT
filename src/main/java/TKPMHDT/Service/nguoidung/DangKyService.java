@@ -79,13 +79,6 @@ public class DangKyService {
     }
 
     /**
-     * Kiểm tra tính hợp lệ của mật khẩu
-     */
-    private boolean isValidPassword(String password) {
-        return password != null && password.length() >= 6;
-    }
-
-    /**
      * Kiểm tra định dạng email
      */
     private boolean isValidEmail(String email) {

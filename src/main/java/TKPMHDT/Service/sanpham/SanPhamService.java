@@ -2,37 +2,34 @@ package TKPMHDT.Service.sanpham;
 
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
+import TKPMHDT.Entity.sanpham.enums.LoaiNguyenLieu;
 import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
-import TKPMHDT.Repository.sanpham.TuyChonTuyChinhRepository;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import TKPMHDT.Entity.sanpham.TuyChonTuyChinh;
 
 @Service
 public class SanPhamService {
 
-	private final TuyChonTuyChinhRepository tuyChonRepository;
     private final NuocUongSanRepository nuocUongSanRepository;
-    private final NguyenLieuRepository nguyenLieuRepository;	
-    
-    // sua contructor do them 1 field tuychonRepository
+    private final NguyenLieuRepository nguyenLieuRepository;
+
     public SanPhamService(
             NuocUongSanRepository nuocUongSanRepository,
-            NguyenLieuRepository nguyenLieuRepository,
-            TuyChonTuyChinhRepository tuyChonRepository
+            NguyenLieuRepository nguyenLieuRepository
     ) {
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.nguyenLieuRepository = nguyenLieuRepository;
-        this.tuyChonRepository = tuyChonRepository;
     }
 
     @Transactional(readOnly = true)
@@ -90,8 +87,20 @@ public class SanPhamService {
         return nguyenLieuRepository.findNguyenLieuCanhBao();
     }
 
-    private List<TuyChonTuyChinh> loadToppingOptions(NuocUongSan sp) {
-        return tuyChonRepository.findByNhomIgnoreCase("TOPPING");
+    /** Tất cả nguyên liệu loại TOPPING (cho admin / công thức). */
+    @Transactional(readOnly = true)
+    public List<NguyenLieu> layDanhSachToppingNguyenLieu() {
+        return nguyenLieuRepository.findAllNguyenLieuByLoaNguyenLieu(LoaiNguyenLieu.TOPPING);
+    }
+
+    private List<NguyenLieu> loadToppingOptions(NuocUongSan sp) {
+        List<NguyenLieu> candidates = layDanhSachToppingNguyenLieu();
+        List<UUID> allowedIds = parseUuidCsv(sp.getToppingChoPhep());
+        if (allowedIds.isEmpty()) {
+            return candidates;
+        }
+        Set<UUID> allow = new HashSet<>(allowedIds);
+        return candidates.stream().filter(n -> allow.contains(n.getId())).toList();
     }
 
     private List<UUID> parseUuidCsv(String csv) {
@@ -121,20 +130,18 @@ public class SanPhamService {
             return Optional.empty();
         }
     }
-    
-    // Them api cho nay
+
     @Transactional(readOnly = true)
     public Map<String, Object> layChiTietDayDu(UUID id) {
 
-        NuocUongSan sp = nuocUongSanRepository.findById(id)
+        NuocUongSan sp = nuocUongSanRepository.findByIdWithCongThucVaLuongNguyenLieu(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
         Map<String, Object> data = new HashMap<>();
 
         data.put("sanPham", sp);
-        data.put("size", tuyChonRepository.findByNhomIgnoreCase("SIZE"));
-        data.put("duong", tuyChonRepository.findByNhomIgnoreCase("DUONG"));
-        data.put("da", tuyChonRepository.findByNhomIgnoreCase("DA"));
+        data.put("size", List.of());
+        data.put("da", List.of());
         data.put("topping", loadToppingOptions(sp));
         data.put("coTheTuyChinh", sp.isCoTheTuyChinh());
         data.put("congThuc", sp.getCongThucCoBan());
@@ -144,10 +151,15 @@ public class SanPhamService {
             sp.getCongThucCoBan().getLuongNguyenLieus().forEach(l -> {
                 Map<String, Object> row = new HashMap<>();
                 row.put("id", l.getId());
-                row.put("ten", l.getNguyenLieu() != null ? l.getNguyenLieu().getTen() : "");
+                String tenNl = l.getNguyenLieu() != null ? l.getNguyenLieu().getTen() : "";
+                row.put("ten", tenNl);
+                row.put("tenNguyenLieu", tenNl);
                 row.put("soLuong", l.getSoLuong());
                 row.put("donVi", l.getDonVi());
                 row.put("donGia", l.getNguyenLieu() != null ? l.getNguyenLieu().getGiaDonVi() : null);
+                if (l.getNguyenLieu() != null && l.getNguyenLieu().getLoaiNguyenLieu() != null) {
+                    row.put("loaiNguyenLieu", l.getNguyenLieu().getLoaiNguyenLieu().name());
+                }
                 ingredientList.add(row);
             });
         }
@@ -156,4 +168,3 @@ public class SanPhamService {
         return data;
     }
 }
-

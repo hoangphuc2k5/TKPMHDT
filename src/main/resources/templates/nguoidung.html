@@ -71,17 +71,27 @@
 
                     <div style="margin-bottom: 1rem;">
                         <label for="oldPassword">Mật khẩu hiện tại</label>
-                        <input type="password" id="oldPassword" placeholder="Nhập mật khẩu hiện tại...">
+                        <div class="password-field-wrap">
+                            <input type="password" id="oldPassword" placeholder="Nhập mật khẩu hiện tại..." autocomplete="current-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('oldPassword', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 1rem;">
                         <label for="newPassword">Mật khẩu mới</label>
-                        <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới...">
+                        <div class="password-field-wrap">
+                            <input type="password" id="newPassword" placeholder="Tối thiểu 6 ký tự: hoa, thường, số" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('newPassword', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                        </div>
+                        <small class="muted" style="display:block;margin-top:0.35rem;">Ít nhất 6 ký tự; có chữ hoa, chữ thường và số. Không bắt buộc ký tự đặc biệt.</small>
                     </div>
 
                     <div style="margin-bottom: 1rem;">
                         <label for="confirmPassword">Xác nhận mật khẩu</label>
-                        <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu...">
+                        <div class="password-field-wrap">
+                            <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu..." autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('confirmPassword', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                        </div>
                     </div>
 
                     <button onclick="changePassword()" class="btn-secondary" style="width: 100%;">Đổi mật khẩu</button>
@@ -254,7 +264,7 @@
         }
 
         try {
-            await api('PATCH', '/api/nguoi-dung/' + currentUserId, {
+            await api('PATCH', '/api/nguoi-dung/me', {
                 hoTen: name,
                 soDienThoai: phone
             });
@@ -262,7 +272,7 @@
             if (avatarFile) {
                 const formData = new FormData();
                 formData.append('avatar', avatarFile);
-                await apiUpload('/api/nguoi-dung/' + currentUserId + '/avatar', formData);
+                await apiUpload('/api/nguoi-dung/me/avatar', formData);
             }
 
             showSuccess('Cập nhật thông tin thành công!');
@@ -287,15 +297,19 @@
             return;
         }
 
-        if (newPwd.length < 8) {
-            showError('Mật khẩu phải có ít nhất 8 ký tự');
+        const pwdOk = typeof isPasswordPolicyCompliant === 'function'
+            ? isPasswordPolicyCompliant(newPwd)
+            : (newPwd.length >= 6 && /[A-Z]/.test(newPwd) && /[a-z]/.test(newPwd) && /\d/.test(newPwd));
+        if (!pwdOk) {
+            showError(typeof PASSWORD_POLICY_MESSAGE_VI !== 'undefined' ? PASSWORD_POLICY_MESSAGE_VI : 'Mật khẩu mới không đủ điều kiện');
             return;
         }
 
         try {
-            await api('PATCH', '/api/nguoi-dung/' + currentUserId + '/doi-mat-khau', {
+            await api('POST', '/api/nguoi-dung/me/doi-mat-khau', {
                 matKhauCu: old,
-                matKhauMoi: newPwd
+                matKhauMoi: newPwd,
+                xacNhanMatKhau: confirm
             });
 
             showSuccess('Đổi mật khẩu thành công!');

@@ -39,7 +39,6 @@ public class GioHangController {
                 request.khachHangId(),
                 request.nuocUongId(),
                 request.soLuong(),
-                request.mucDuong(),
                 request.mucDa(),
                 request.ghiChu(),
                 request.toppings()
@@ -57,7 +56,6 @@ public class GioHangController {
                 khachHangId,
                 chiTietGioHangId,
                 request.soLuong(),
-                request.mucDuong(),
                 request.mucDa(),
                 request.ghiChu(),
                 request.toppings()
@@ -95,7 +93,6 @@ public class GioHangController {
             UUID khachHangId,
             UUID nuocUongId,
             int soLuong,
-            Integer mucDuong,
             Integer mucDa,
             String ghiChu,
             List<ToppingRequest> toppings
@@ -104,7 +101,6 @@ public class GioHangController {
 
     public record CapNhatMatHangRequest(
             int soLuong,
-            Integer mucDuong,
             Integer mucDa,
             String ghiChu,
             List<ToppingRequest> toppings

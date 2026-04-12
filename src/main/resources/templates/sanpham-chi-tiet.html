@@ -5,7 +5,7 @@
 
 <body>
 	<header th:replace="~{fragments/layout :: header('products')}"></header>
-	<div class="container" style="max-width:1100px; padding-top:16px; padding-bottom:100px;">
+	<main class="container product-detail-page" style="max-width:1100px; padding-top:16px; padding-bottom:48px;">
 		<div style="display:flex; gap: 32px; flex-wrap: wrap;">
 			<div style="flex: 1 1 360px; min-width: 320px; max-width: 520px;">
 				<div style="position: relative;">
@@ -32,11 +32,10 @@
 
 				<div id="toppingContainer" class="section-card" style="display:none; margin-top:10px;">
 					<h3 style="margin-top:0;">Chọn topping</h3>
-                    <div id="toppingOptions" class="topping-options"></div>
+					<div id="toppingOptions" class="topping-options"></div>
+				</div>
 				<div id="tuyChinhContainer" class="section-card" style="display:none; margin-top:10px;">
 					<h3 style="margin-top:0;">Tùy chỉnh công thức</h3>
-
-					<!-- ĐÃ XÓA PHẦN "LƯỢNG ĐƯỜNG" THEO YÊU CẦU -->
 
 					<label>Lượng đá</label>
 					<div style="display:flex; gap:8px; align-items:center;">
@@ -48,7 +47,6 @@
 					</div>
 					<small id="mucDaValue">100%</small>
 
-
 					<label>Ghi chú</label>
 					<textarea id="ghiChu" style="width:100%;"
 						placeholder="Ví dụ: ít ngọt, không đá viên to..."></textarea>
@@ -59,26 +57,29 @@
 					<div style="margin-top:10px;">
 						<strong>Tạm tính:</strong> <span id="giaTamTinh">0đ</span>
 					</div>
-                    <div id="ingredientAdjustSection" style="margin-top:18px; display:none;">
-                        <h4 style="margin:0 0 10px; font-size:1rem;">Điều chỉnh nguyên liệu</h4>
-                        <div class="table-wrap">
-                            <table id="ingredientAdjustTable" class="data-table"></table>
-                        </div>
-                    </div>
+					<div id="ingredientAdjustSection" style="margin-top:18px; display:none;">
+						<h4 style="margin:0 0 10px; font-size:1rem;">Điều chỉnh nguyên liệu</h4>
+						<div class="table-wrap">
+							<table id="ingredientAdjustTable" class="data-table"></table>
+						</div>
+					</div>
 
-		<div id="productAddBar"
-			style="margin-top:18px; background:#fff; border:1px solid var(--border-color); border-radius:14px; padding:16px; box-shadow: 0 0 0 1px rgba(0,0,0,.03);">
-			<div
-				style="display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:760px; margin:0 auto;">
-				<div>
-					<div class="muted" style="font-size:0.9rem;">Giá hiện tại</div>
-					<strong id="fixedPrice">0đ</strong>
+					<div id="productAddBar"
+						style="margin-top:18px; background:#fff; border:1px solid var(--border-color); border-radius:14px; padding:16px; box-shadow: 0 0 0 1px rgba(0,0,0,.03);">
+						<div
+							style="display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:760px; margin:0 auto;">
+							<div>
+								<div class="muted" style="font-size:0.9rem;">Giá hiện tại</div>
+								<strong id="fixedPrice">0đ</strong>
+							</div>
+							<button id="themVaoGioHangBtn" class="btn-highlight" style="margin-top:0; min-width:180px;">Thêm vào giỏ
+								hàng</button>
+						</div>
+					</div>
 				</div>
-				<button id="themVaoGioHangBtn" class="btn-highlight" style="margin-top:0; min-width:180px;">Thêm vào giỏ
-					hàng</button>
 			</div>
 		</div>
-	</div>
+	</main>
 
 	<script>
 		const urlParams = new URLSearchParams(window.location.search);
@@ -280,7 +281,7 @@
 				}
 
 				updateNavigationButtons();
-				renderCongThucChips(data, sp, formula);
+				renderCongThucGocTuDb(data);
 				renderToppingOptions(data.topping);
 				initIngredientAdjustments(data);
 
@@ -313,7 +314,6 @@
 			const payload = {
 				nuocUongId: sanPhamId,
 				soLuong: Number(document.getElementById("soLuong").value || 1),
-				mucDuong: 100,  // giữ mặc định 100% vì UI không còn hiển thị điều chỉnh
 				mucDa: Number(document.getElementById("mucDa").value || 100),
 				ghiChu: document.getElementById("ghiChu").value || null,
 				toppings: getSelectedToppingsPayload()
@@ -362,8 +362,6 @@
 	}
 
 	function updateRealtimePrice() {
-		// Do UI không còn hiển thị mucDuong, ta mặc định dùng 100%
-		const duong = 100;
 		const da = Number(document.getElementById("mucDa").value || 100);
 		const qty = Math.max(1, Number(document.getElementById("soLuong").value || 1));
 
@@ -397,15 +395,15 @@
 		return toppings
 			.filter(item => selectedToppingIds.has(item.id))
 			.map(item => ({
-				toppingId: item.id,
+				nguyenLieuId: item.id,
 				ten: item.ten,
-				giaThem: Number(item.giaThem || 0),
+				giaThem: Number(item.giaDonVi || item.giaThem || 0),
 				soLuong: 1
 			}));
 	}
 
 	function renderToppingOptions(data) {
-		toppings = Array.isArray(data) ? data.filter(item => item && item.kichHoat !== false) : [];
+		toppings = Array.isArray(data) ? data.filter(item => item && item.id) : [];
 		const wrap = document.getElementById('toppingOptions');
 		if (!wrap) return;
 		selectedToppingIds = new Set();
@@ -416,7 +414,7 @@
 		}
 
 		wrap.innerHTML = toppings.map((item) => {
-			const price = Number(item.giaThem || 0);
+			const price = Number(item.giaDonVi || item.giaThem || 0);
 			return `
 			<label class="topping-item" for="topping-${item.id}">
 				<input type="checkbox" id="topping-${item.id}" value="${item.id}" onchange="toggleTopping('${item.id}')">
@@ -455,7 +453,9 @@
 	function initIngredientAdjustments(data) {
 		const rows = [];
 		if (Array.isArray(data.nguyenLieu)) {
-			data.nguyenLieu.forEach((x, index) => {
+			data.nguyenLieu
+				.filter((x) => x.loaiNguyenLieu !== 'TOPPING')
+				.forEach((x, index) => {
 				rows.push({
 					key: index,
 					ten: x.ten || x.tenNguyenLieu || `Nguyên liệu ${index + 1}`,
@@ -487,27 +487,51 @@
     `).join("");
 	}
 
-	function renderCongThucChips(data, sp, formula) {
-			const chips = [];
-			if (Array.isArray(data.nguyenLieu)) {
-				data.nguyenLieu.forEach(x => chips.push(x.ten));
-			}
-			if (Array.isArray(sp.nguyenLieuSuDung)) {
-				sp.nguyenLieuSuDung.forEach(x => chips.push(x.ten));
-			}
-			if (formula && Array.isArray(formula.luongNguyenLieus)) {
-				formula.luongNguyenLieus.forEach(x => {
-					const name = x.ten || x.tenNguyenLieu || (x.nguyenLieu ? x.nguyenLieu.ten : null);
-					chips.push(name);
-				});
-			}
-			const unique = Array.from(new Set(chips.filter(Boolean)));
+	function escapeHtmlProduct(s) {
+			if (s == null) return '';
+			const d = document.createElement('div');
+			d.textContent = String(s);
+			return d.innerHTML;
+		}
+
+		/** Công thức gốc: chỉ từ DB (data.congThuc + data.nguyenLieu do backend build từ luong_nguyen_lieu). */
+		function renderCongThucGocTuDb(data) {
 			const wrap = document.getElementById("congThucChips");
-			if (!unique.length) {
-				wrap.innerHTML = "<span class='muted'>Chưa có dữ liệu công thức.</span>";
+			if (!wrap) return;
+
+			const ct = data.congThuc;
+			let meta = '';
+			if (ct && (ct.ten || ct.moTa)) {
+				const title = ct.ten ? escapeHtmlProduct(ct.ten) : '';
+				const desc = ct.moTa ? escapeHtmlProduct(ct.moTa) : '';
+				meta = `<div class="muted" style="margin-bottom:10px;line-height:1.45;">`
+					+ (title ? `<strong>${title}</strong>` : '')
+					+ (title && desc ? '<br>' : '')
+					+ (desc ? `<span style="font-weight:400;">${desc}</span>` : '')
+					+ `</div>`;
+			}
+
+			const lines = Array.isArray(data.nguyenLieu) ? data.nguyenLieu : [];
+			const isPhaChe = (row) => row.loaiNguyenLieu !== 'TOPPING';
+
+			const chipRows = lines.filter(isPhaChe);
+			const chipsHtml = chipRows.length
+				? chipRows.map((x) => {
+					const name = (x.ten || x.tenNguyenLieu || '').trim() || 'Nguyên liệu';
+					const qty = x.soLuong != null && x.soLuong !== '' ? String(x.soLuong).trim() : '';
+					const unit = (x.donVi || '').trim();
+					const qtyPart = [qty, unit].filter(Boolean).join(' ');
+					const label = qtyPart ? `${name} — ${qtyPart}` : name;
+					return `<span class="chip pending">${escapeHtmlProduct(label)}</span>`;
+				}).join('')
+				: '';
+
+			if (!meta && !chipsHtml) {
+				wrap.innerHTML = '<span class="muted">Chưa có công thức gốc trong cơ sở dữ liệu (cấu hình công thức cho sản phẩm).</span>';
 				return;
 			}
-			wrap.innerHTML = unique.map(name => `<span class="chip pending">${name}</span>`).join("");
+
+			wrap.innerHTML = meta + (chipsHtml || '<span class="muted">Chưa có dòng định lượng pha chế trong công thức.</span>');
 		}
 
 		function formatPrice(value) {
@@ -515,7 +539,9 @@
 		}
 	</script>
 
-	<footer th:replace="~{fragments/layout :: footer}"></footer>
+	<div class="product-detail-footer-wrap">
+		<footer th:replace="~{fragments/layout :: footer}"></footer>
+	</div>
 </body>
 
 </html>

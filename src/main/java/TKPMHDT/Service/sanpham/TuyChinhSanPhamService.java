@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * TuyChinhSanPhamService - UC07: Tùy chỉnh sản phẩm
- * Mục đích: Cho phép khách hàng tùy chỉnh thành phần, đường, đá của sản phẩm
+ * Mục đích: Cho phép khách hàng tùy chỉnh thành phần, đá của sản phẩm
  */
 @Service
 public class TuyChinhSanPhamService {
@@ -61,21 +61,16 @@ public class TuyChinhSanPhamService {
 
     /**
      * Tạo cấu hình tùy chỉnh sản phẩm
-     * @param mucDuong - Mức đường (0-100%, tương ứng với số lượng đường)
      * @param mucDa - Mức đá (0-100%, tương ứng với khối lượng đá)
      * @param ghiChu - Ghi chú thêm
      */
     @Transactional(readOnly = true)
-    public TuyChinhKhachHang taoTuyChinh(Integer mucDuong, Integer mucDa, String ghiChu) {
-        // Validate
-        if (mucDuong != null && (mucDuong < 0 || mucDuong > 100)) {
-            throw new IllegalArgumentException("Mức đường phải trong khoảng 0-100");
-        }
+    public TuyChinhKhachHang taoTuyChinh(Integer mucDa, String ghiChu) {
         if (mucDa != null && (mucDa < 0 || mucDa > 100)) {
             throw new IllegalArgumentException("Mức đá phải trong khoảng 0-100");
         }
 
-        return TuyChinhKhachHang.builder()                
+        return TuyChinhKhachHang.builder()
                 .mucDa(mucDa)
                 .ghiChu(ghiChu)
                 .nguyenLieuThem(new java.util.ArrayList<>())

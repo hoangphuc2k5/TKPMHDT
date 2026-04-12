@@ -20,14 +20,21 @@ public class HoaDonService {
     // Tạo hóa đơn cho đơn hàng sau khi thanh toán thành công
     public HoaDon taoHoaDonChoDonHangKhiThanhToanThanhCong(ThanhToan thanhToan) {
         DonHang donHang = thanhToan.getDonHang();
+        BigDecimal tienGiam = donHang.getTienGiamApDung();
+        if (tienGiam == null) {
+            tienGiam = donHang.getMaGiamGia() != null ? donHang.getMaGiamGia().getGiaTri() : BigDecimal.ZERO;
+        }
+        BigDecimal tongThanhToan = donHang.getTongTien();
+        BigDecimal tongTruocGiam = tongThanhToan.add(tienGiam);
+
         HoaDon hoaDon = HoaDon.builder()
                 .donHang(donHang)
                 .soHoaDon(generateSoHoaDon())
                 .ngayLap(LocalDateTime.now())
-                .tongTien(donHang.getTongTien())
-                .tienGiam(donHang.getMaGiamGia() != null ? donHang.getMaGiamGia().getGiaTri() : BigDecimal.ZERO) // tiền giảm nếu có mã giảm giá không thì để 0
+                .tongTien(tongTruocGiam)
+                .tienGiam(tienGiam)
                 .phuongThucThanhToan(thanhToan.getPhuongThuc())
-                .tienThanhToan(donHang.getTongTien().subtract(donHang.getMaGiamGia() != null ? donHang.getMaGiamGia().getGiaTri() : BigDecimal.ZERO))
+                .tienThanhToan(tongThanhToan)
                 .trangThaiHoaDon("CHO_IN")
                 .build();
         return hoaDonRepository.save(hoaDon);

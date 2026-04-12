@@ -4,7 +4,7 @@
 <head th:replace="~{fragments/layout :: head('POS - Điểm bán hàng - TKPMHDT')}"></head>
 
 <body>
-    <header th:replace="~{fragments/layout :: header('pos')}"></header>
+    <header th:replace="~{fragments/layout :: header('pos-tao-don')}"></header>
 
     <div class="container">
         <div class="page-header">
@@ -12,7 +12,8 @@
                 <h1 class="brand-font">Bán Hàng Tại Quầy</h1>
                 <p class="muted">Chọn món, tùy chỉnh và thanh toán nhanh cho khách tại cửa hàng.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+            <div sec:authorize="!hasRole('NHAN_VIEN_BAN_HANG')"
+                style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
                 <a href="/ui/pos" class="btn-secondary" style="text-decoration:none; margin-top:0;">Xem danh sách
                     đơn</a>
                 <a href="/ui/don-hang" class="btn-secondary" style="text-decoration:none; margin-top:0;">Trang đơn
@@ -30,8 +31,7 @@
                         style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 1rem;">
                 </div>
 
-                <div id="posProducts"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; max-height: 620px; overflow-y: auto;">
+                <div id="posProducts" class="pos-product-grid">
                     <!-- Products loaded via JS -->
                 </div>
             </div>
@@ -95,27 +95,6 @@
                     <h3 id="posModalTitle">Tùy chỉnh món</h3>
                     <input type="hidden" id="posModalProdId">
 
-
-                    <div style="margin-bottom: 1rem;">
-                        <label>Kích cỡ</label>
-                        <select id="posSize"
-                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <option value="S">Nhỏ</option>
-                            <option value="M">Vừa</option>
-                            <option value="L">Lớn</option>
-                        </select>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label>Mức đường</label>
-                        <select id="posSugar"
-                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <option value="100">100% (Bình thường)</option>
-                            <option value="70">70% (Ít đường)</option>
-                            <option value="50">50% (Vừa phải)</option>
-                            <option value="0">0% (Không đường)</option>
-                        </select>
-                    </div>
 
                     <div style="margin-bottom: 1rem;">
                         <label>Mức đá</label>
@@ -198,26 +177,41 @@
             style="display: none; position: fixed; top: 100px; right: 20px; background: var(--phuclong-green); color: white; padding: 1rem; border-radius: 8px; z-index: 999;">
         </div>
     </div>
-
-    <div
-        style="position:fixed; left:0; right:0; bottom:0; z-index:1100; background:#fff; border-top:1px solid var(--border-color); padding:10px 16px;">
-        <div
-            style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-            <div style="font-weight:700;">Tổng tiền: <span id="posBottomTotal">0đ</span></div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn-highlight" style="margin-top:0;" onclick="confirmOrder()">Thanh toán</button>
-                <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in phiếu pha chế')">In
-                    phiếu pha chế</button>
-                <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in hóa đơn')">In hóa
-                    đơn</button>
-            </div>
-        </div>
-    </div>
-
     <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+    <style>
+        .pos-product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+            gap: 1rem;
+            max-height: 620px;
+            overflow-y: auto;
+        }
+        .pos-product-card {
+            overflow: hidden;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .pos-product-card .pos-product-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+            background: var(--bg-subtle);
+        }
+        .pos-product-card .pos-product-body {
+            padding: 0.75rem;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
 
     <script th:inline="javascript">
         let posOrder = [];
+        let allPosProducts = [];
         let currentProduct = null;
         let currentOrderId = null;
         let toppings = [];
@@ -236,6 +230,11 @@
                 return;
             }
 
+            const searchEl = document.getElementById('searchProd');
+            if (searchEl) {
+                searchEl.addEventListener('input', () => applyPosProductSearch());
+            }
+
             loadProducts();
             loadToppingsOnce();
             loadOrder();
@@ -243,32 +242,93 @@
             console.log("Đang xử lý đơn:", currentOrderId); // debug
         });
 
+        function posProductImageUrl(prod) {
+            const list = prod && prod.hinhAnh;
+            if (Array.isArray(list) && list.length > 0 && list[0]) {
+                return list[0];
+            }
+            return '/uploads/default-drink.jpg';
+        }
+
+        const POS_ERR_NEED_NEW_ORDER =
+            'Chỉ có thể thêm sản phẩm vào đơn hàng đang ở trạng thái CHO_XAC_NHAN';
+
+        function isPosNeedNewOrderError(e) {
+            const m = e && e.message != null ? String(e.message) : '';
+            return m.includes(POS_ERR_NEED_NEW_ORDER);
+        }
+
+        function redirectToPosListNeedNewOrder() {
+            localStorage.removeItem('currentOrderId');
+            window.location.href = '/ui/pos?posTaoDonMoi=1';
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function posProductMatchesQuery(prod, q) {
+            if (!q) return true;
+            const needle = q.trim().toLowerCase();
+            if (!needle) return true;
+            const hay = [prod.ten, prod.moTa, prod.danhMuc]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return hay.includes(needle);
+        }
+
+        function applyPosProductSearch() {
+            const q = document.getElementById('searchProd')?.value || '';
+            const list = allPosProducts.filter(p => posProductMatchesQuery(p, q));
+            renderPosProductCards(list);
+        }
+
+        function renderPosProductCards(products) {
+            const container = document.getElementById('posProducts');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!products.length) {
+                container.innerHTML = '<p class="muted" style="grid-column: 1 / -1; padding: 1rem;">Không có món phù hợp.</p>';
+                return;
+            }
+
+            products.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = 'card pos-product-card';
+                card.style.cursor = 'pointer';
+                const imgSrc = posProductImageUrl(prod);
+                card.innerHTML = `
+                    <img class="pos-product-img" alt="">
+                    <div class="pos-product-body">
+                    <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">${escapeHtml(prod.ten)}</h4>
+                    <p style="color: var(--phuclong-green); font-weight: 700; margin: 0 0 0.5rem;">${formatCurrency(prod.gia)}</p>
+                    </div>`;
+                const imgEl = card.querySelector('.pos-product-img');
+                imgEl.src = imgSrc;
+                imgEl.alt = prod.ten || 'Sản phẩm';
+                const chooseButton = document.createElement('button');
+                chooseButton.className = 'btn-highlight';
+                chooseButton.style.width = '100%';
+                chooseButton.style.padding = '8px';
+                chooseButton.style.fontSize = '0.85rem';
+                chooseButton.style.marginTop = 'auto';
+                chooseButton.textContent = 'Chọn';
+                chooseButton.addEventListener('click', () => selectProduct(prod));
+                card.querySelector('.pos-product-body').appendChild(chooseButton);
+                container.appendChild(card);
+            });
+        }
+
         async function loadProducts() {
             try {
                 const products = await api('GET', '/api/san-pham/nuoc-uong');
-                const container = document.getElementById('posProducts');
-                container.innerHTML = '';
-
-                products.forEach(prod => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.cursor = 'pointer';
-                    card.style.padding = '1rem';
-                    card.style.textAlign = 'center';
-                    card.innerHTML = `
-                    <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">${prod.ten}</h4>
-                    <p style="color: var(--phuclong-green); font-weight: 700; margin: 0 0 0.5rem;">${formatCurrency(prod.gia)}</p>
-                `;
-                    const chooseButton = document.createElement('button');
-                    chooseButton.className = 'btn-highlight';
-                    chooseButton.style.width = '100%';
-                    chooseButton.style.padding = '8px';
-                    chooseButton.style.fontSize = '0.85rem';
-                    chooseButton.textContent = 'Chọn';
-                    chooseButton.addEventListener('click', () => selectProduct(prod.id, prod.ten, prod.gia));
-                    card.appendChild(chooseButton);
-                    container.appendChild(card);
-                });
+                allPosProducts = Array.isArray(products) ? products : [];
+                applyPosProductSearch();
             } catch (e) {
                 showMessage('Lỗi tải sản phẩm: ' + e.message);
             }
@@ -337,13 +397,12 @@
             });
         }
 
-        async function selectProduct(id, name, price) {
-            currentProduct = { id, name, price };
+        async function selectProduct(prod) {
+            if (!prod || !prod.id) return;
+            currentProduct = { id: prod.id, name: prod.ten, price: prod.gia };
 
-            document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + name;
-            document.getElementById('posModalProdId').value = id;
-            document.getElementById('posSize').value = 'M';
-            document.getElementById('posSugar').value = '100';
+            document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + (prod.ten || '');
+            document.getElementById('posModalProdId').value = prod.id;
             document.getElementById('posIce').value = '100';
             document.getElementById('posQty').value = '1';
 
@@ -364,8 +423,6 @@
             }
 
             const qty = parseInt(document.getElementById('posQty').value, 10) || 1;
-            const size = document.getElementById('posSize').value;
-            const sugar = parseInt(document.getElementById('posSugar').value, 10) || 100;
             const ice = parseInt(document.getElementById('posIce').value, 10) || 100;
 
             // ✅ LẤY CHECKBOX
@@ -404,8 +461,6 @@
                         nuocUongId: currentProduct?.id, // ✅ safe access
                         soLuong: qty,
                         tuyChinh: {
-                            kichCo: size,
-                            mucDuong: sugar,
                             mucDa: ice
                         },
                         toppings: selectedToppings // ✅ dùng biến mới
@@ -416,6 +471,11 @@
                 closeModal();
                 mapOrderToUI(order);
             } catch (e) {
+                if (isPosNeedNewOrderError(e)) {
+                    console.error("❌ API ERROR:", e);
+                    redirectToPosListNeedNewOrder();
+                    return;
+                }
                 showMessage('Lỗi thêm sản phẩm: ' + e.message, 'error');
                 console.error("❌ API ERROR:", e);
             }
@@ -427,8 +487,6 @@
                 name: item.tenSanPham,
                 price: item.giaTien,
                 qty: item.soLuong,
-                size: item.kichCo,
-                sugar: item.mucDuong,
                 ice: item.mucDa,
                 total: item.thanhTien,
 
@@ -475,7 +533,7 @@
                     
                     <div style="display: flex; justify-content: space-between;">
                         <strong style="font-size: 0.95rem;">
-                            ${item.name} (${item.size})
+                            ${item.name}
                         </strong>
                         <button onclick="removeItem('${item.id}')" 
                             style="background: none; border: none; color: #e74c3c; cursor: pointer;">
@@ -486,7 +544,7 @@
                     <small class="muted">${item.qty} x ${formatCurrency(item.price)}</small>
 
                     <small class="muted" style="display: block;">
-                        Đường: ${item.sugar}% | Đá: ${item.ice}%
+                        Đá: ${item.ice != null ? item.ice : '—'}%
                     </small>
 
                     <div style="display:flex; gap:6px; margin-top:6px;">
@@ -541,7 +599,6 @@
             const subtotal = posOrder.reduce((sum, item) => sum + item.total, 0);
             document.getElementById('posSubtotal').textContent = formatCurrency(subtotal);
             document.getElementById('posTotal').textContent = formatCurrency(subtotal);
-            document.getElementById('posBottomTotal').textContent = formatCurrency(subtotal);
         }
 
         async function clearOrder() {
@@ -651,9 +708,9 @@
             order.chiTietDonHang.forEach(item => {
                 html += `
                 <div style="margin-bottom:10px;">
-                    <strong>${item.tenSanPham} (${item.kichCo})</strong><br>
+                    <strong>${item.tenSanPham}</strong><br>
                     ${item.soLuong} x ${formatCurrency(item.giaTien)}<br>
-                    Đường: ${item.mucDuong}% | Đá: ${item.mucDa}%<br>
+                    Đá: ${item.mucDa != null ? item.mucDa : '—'}%<br>
                     
                     ${item.toppings?.length > 0
                         ? `<small>+ ${item.toppings.map(t => t.ten).join(', ')}</small>`

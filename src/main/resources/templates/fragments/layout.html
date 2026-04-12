@@ -39,8 +39,8 @@
     <!-- Header Fragment -->
     <header th:fragment="header(activePage)">
         <div class="nav">
-            <!-- Logo Section -->
-            <a th:href="@{/}" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;">
+            <!-- Logo: admin → dashboard; nhân viên → đơn hàng; còn lại → trang chủ -->
+            <a th:href="${activePage == 'admin'} ? @{/ui/admin/dashboard} : (${#authorization.expression('hasRole(''NHAN_VIEN_BAN_HANG'')')} ? @{/ui/don-hang} : @{/})" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;">
                 <div style="background: var(--phuclong-green); padding: 6px; border-radius: 8px;">
                     <span style="font-size: 24px;">🥤</span>
                 </div>
@@ -50,8 +50,15 @@
                 </div>
             </a>
 
-            <!-- Role-based Navigation -->
-            <div class="nav-links">
+            <!-- Điều hướng nhân viên (đồng bộ POS / đơn hàng) -->
+            <nav class="nav-links nav-links-staff" sec:authorize="hasRole('NHAN_VIEN_BAN_HANG')" aria-label="Menu nhân viên">
+                <a th:href="@{/ui/don-hang}" th:classappend="${activePage == 'order' ? 'active' : ''}">Đơn hàng</a>
+                <a th:href="@{/ui/pos/tao-don}" th:classappend="${activePage == 'pos-tao-don' ? 'active' : ''}">POS tạo đơn</a>
+                <a th:href="@{/ui/pos}" th:classappend="${activePage == 'pos-danh-sach' ? 'active' : ''}">Danh sách đơn POS</a>
+            </nav>
+
+            <!-- Role-based Navigation (khách / công khai — không hiện cho nhân viên) -->
+            <div class="nav-links" sec:authorize="!hasRole('NHAN_VIEN_BAN_HANG')">
                 <!-- Public Links -->
                 <span sec:authorize="!hasRole('QUAN_TRI_VIEN')" style="display: contents;">
                     <a th:href="@{/}" th:classappend="${activePage == 'home' ? 'active' : ''}">Trang chủ</a>
@@ -62,12 +69,6 @@
                 <span sec:authorize="hasRole('KHACH_HANG')" style="display: contents;">
                     <a th:href="@{/ui/gio-hang}" th:classappend="${activePage == 'cart' ? 'active' : ''}">Giỏ hàng</a>
                     <a th:href="@{/ui/don-hang}" th:classappend="${activePage == 'orders' ? 'active' : ''}">Đơn hàng của tôi</a>
-                </span>
-
-                <!-- Staff Links -->
-                <span sec:authorize="hasRole('NHAN_VIEN_BAN_HANG')" style="display: contents;">
-                    <a th:href="@{/ui/don-hang}" th:classappend="${activePage == 'orders' ? 'active' : ''}">Quản lý đơn hàng</a>
-                    <a th:href="@{/ui/khuyen-mai}" th:classappend="${activePage == 'promotions' ? 'active' : ''}">Khuyến mãi</a>
                 </span>
 
                 <!-- Admin Links -->

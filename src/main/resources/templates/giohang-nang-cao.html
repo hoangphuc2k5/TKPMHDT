@@ -127,7 +127,7 @@
                 row.style.borderBottom = '1px solid var(--border-color)';
                 
                 const moTa = item.tuyChinh ? 
-                    `<small class="muted">Đường: ${item.tuyChinh.mucDuong}% | Đá: ${item.tuyChinh.mucDa}%</small>` : 
+                    `<small class="muted">Đá: ${item.tuyChinh.mucDa ?? 100}%</small>` : 
                     '';
 
                 row.innerHTML = `

@@ -73,21 +73,6 @@ public class PageController {
         return "admin/dashboard";
     }
 
-    @GetMapping("/ui/admin/quan-ly-san-pham")
-    public String adminProductManagement() {
-        return "admin/manage-products";
-    }
-
-    @GetMapping("/ui/admin/quan-ly-nhan-vien")
-    public String adminStaffManagement() {
-        return "admin/manage-staff";
-    }
-
-    @GetMapping("/ui/admin/quan-ly-khach-hang")
-    public String adminCustomersManagement() {
-        return "admin/manage-customers";
-    }
-
     @GetMapping("/ui/tai-khoan")
     public String taiKhoanPage() {
         return "tai-khoan";

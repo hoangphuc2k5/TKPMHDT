@@ -75,6 +75,10 @@ public class DonHang {
     @JoinColumn(name = "ma_giam_gia_id")
     private MaGiamGia maGiamGia;
 
+    /** Số tiền đã trừ thực tế khi áp mã (khác {@link MaGiamGia#getGiaTri()} khi loại là % hoặc giảm cố định trên nhóm SP). */
+    @Column(name = "tien_giam_ap_dung", precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal tienGiamApDung = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dia_chi_giao_hang_id")

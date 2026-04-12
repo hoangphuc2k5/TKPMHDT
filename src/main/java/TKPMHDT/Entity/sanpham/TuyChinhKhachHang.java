@@ -20,14 +20,8 @@ import lombok.Setter;
 @Embeddable
 public class TuyChinhKhachHang {
 
-    @Column(name = "kich_co", length = 50)
-    private String kichCo;
-    
     @Column(name = "muc_da")
     private Integer mucDa;
-
-    @Column(name = "muc_duong")
-    private Integer mucDuong;
 
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
@@ -37,17 +31,7 @@ public class TuyChinhKhachHang {
     private List<LuongNguyenLieu> nguyenLieuThem = new ArrayList<>();
 
     public BigDecimal tinhGiaCuoiCung(BigDecimal giaCoBan) {
-        // Logic tính toán giá có thể thêm vào đây khi có topping (nguyenLieuThem)
-
-        if (kichCo != null) {
-            if ("M".equalsIgnoreCase(kichCo)) {
-                giaCoBan = giaCoBan.add(BigDecimal.valueOf(3000));
-            } else if ("L".equalsIgnoreCase(kichCo)) {
-                giaCoBan = giaCoBan.add(BigDecimal.valueOf(7000));
-            }
-        }
-        BigDecimal tong = giaCoBan == null ? BigDecimal.ZERO : giaCoBan;
-        return tong;
+        return giaCoBan == null ? BigDecimal.ZERO : giaCoBan;
     }
 
 }

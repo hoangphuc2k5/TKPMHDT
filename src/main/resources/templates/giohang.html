@@ -100,25 +100,20 @@
                     <label for="editCartQuantity">Số lượng</label>
                     <input id="editCartQuantity" type="number" min="1" value="1">
                 </div>
-                <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div>
-                        <label for="editCartIce">Đá (%)</label>
-                        <input id="editCartIce" type="range" min="0" max="100" value="100" oninput="document.getElementById('editCartIceValue').textContent = this.value + '%';">
-                        <div class="muted" style="margin-top:6px;" id="editCartIceValue">100%</div>
-                    </div>
-                    <div>
-                        <label for="editCartSugar">Đường (%)</label>
-                        <input id="editCartSugar" type="range" min="0" max="100" value="100" oninput="document.getElementById('editCartSugarValue').textContent = this.value + '%';">
-                        <div class="muted" style="margin-top:6px;" id="editCartSugarValue">100%</div>
-                    </div>
+                <div style="margin-top:12px;">
+                    <label for="editCartIce">Đá (%)</label>
+                    <input id="editCartIce" type="range" min="0" max="100" value="100" oninput="document.getElementById('editCartIceValue').textContent = this.value + '%';">
+                    <div class="muted" style="margin-top:6px;" id="editCartIceValue">100%</div>
                 </div>
                 <div style="margin-top:12px;">
                     <label for="editCartNote">Ghi chú</label>
-                    <textarea id="editCartNote" rows="3" style="width:100%; min-height:70px;" placeholder="Ví dụ: ít đá, không đường, thêm kem cheese..."></textarea>
+                    <textarea id="editCartNote" rows="3" style="width:100%; min-height:70px;" placeholder="Ví dụ: ít đá, thêm kem cheese..."></textarea>
                 </div>
                 <div style="margin-top:12px;">
                     <label>Danh sách topping hiện tại</label>
+                    <div class="muted" style="font-size:0.85rem; margin-bottom:6px;">Mỗi ô đang tick ở dưới tương ứng một dòng (cộng dồn theo số lượng đã chọn).</div>
                     <div id="editCartToppings" class="muted" style="min-height:34px; padding:10px; border:1px solid var(--border-color); border-radius:var(--radius-sm); background:#fafbfc;"></div>
+                    <div id="editCartToppingCount" class="muted" style="font-size:0.85rem; margin-top:6px;"></div>
                 </div>
                 <div style="margin-top:16px;">
                     <label>Chọn topping</label>
@@ -141,7 +136,82 @@
     let editCartItemData = null;
     let editCartOptions = [];
 
-    document.addEventListener('DOMContentLoaded', initCart);
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('edit-cart-modal');
+        if (modal) {
+            modal.addEventListener('change', (e) => {
+                if (e.target && e.target.type === 'checkbox' && e.target.closest('#editCartToppingOptions')) {
+                    syncEditCartToppingsPreview();
+                }
+            });
+        }
+        initCart();
+    });
+
+    function escapeHtml(text) {
+        if (text == null) return '';
+        const d = document.createElement('div');
+        d.textContent = String(text);
+        return d.innerHTML;
+    }
+
+    /** Topping trong danh mục = nguyên liệu loại TOPPING (theo id hoặc trùng tên). */
+    function toppingThuocDanhMucCheckbox(t, catalogOptions) {
+        const opts = (catalogOptions && catalogOptions.length) ? catalogOptions : editCartOptions;
+        if (!opts.length) return false;
+        const catalogIds = new Set(opts.map(o => String(o.id)));
+        if (t.toppingId != null && catalogIds.has(String(t.toppingId))) return true;
+        const nlId = t.nguyenLieu?.id != null ? String(t.nguyenLieu.id)
+            : (t.nguyenLieuId != null ? String(t.nguyenLieuId) : null);
+        if (nlId && catalogIds.has(nlId)) return true;
+        const name = (t.ten || t.nguyenLieu?.ten || '').trim();
+        if (name && opts.some(o => (o.ten || '').trim() === name)) return true;
+        return false;
+    }
+
+    /**
+     * Danh sách hiển thị = topping từ giỏ không có trong danh sách checkbox (nguyên liệu lạ…)
+     * + đúng một dòng cho mỗi checkbox đang tick (cộng dồn).
+     */
+    function syncEditCartToppingsPreview() {
+        const el = document.getElementById('editCartToppings');
+        const countEl = document.getElementById('editCartToppingCount');
+        if (!el) return;
+
+        const unlistedLines = [];
+        if (editCartItemData && Array.isArray(editCartItemData.toppings)) {
+            editCartItemData.toppings.forEach(t => {
+                if (toppingThuocDanhMucCheckbox(t)) return;
+                const name = (t.ten || t.nguyenLieu?.ten || 'Topping').trim() || 'Topping';
+                const q = t.soLuong != null && Number(t.soLuong) > 1 ? ` ×${t.soLuong}` : '';
+                unlistedLines.push(`<li>${escapeHtml(name + q)} <span style="opacity:0.75">(không có trong danh sách chọn)</span></li>`);
+            });
+        }
+
+        const fromChecks = [];
+        document.querySelectorAll('#editCartToppingOptions input[type="checkbox"]:checked').forEach(input => {
+            const option = editCartOptions.find(o => String(o.id) === String(input.value));
+            if (option) {
+                const p = option.giaDonVi || option.giaThem || option.gia || 0;
+                fromChecks.push(`${option.ten || 'Topping'} (+${formatPrice(p)})`);
+            }
+        });
+
+        const liExtra = unlistedLines.join('');
+        const liChecks = fromChecks.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        const totalCount = unlistedLines.length + fromChecks.length;
+
+        if (!liExtra && !liChecks) {
+            el.innerHTML = '<span class="muted">Chưa có topping (chưa tick ô nào bên dưới).</span>';
+        } else {
+            el.innerHTML = '<ul style="margin:0;padding-left:1.25rem;">' + liExtra + liChecks + '</ul>';
+        }
+        if (countEl) {
+            countEl.textContent = totalCount
+                ? `Đang có ${totalCount} topping trong danh sách (${fromChecks.length} từ ô đã chọn).`
+                : '';
+        }
+    }
 
     async function initCart() {
         showLoading(true);
@@ -228,8 +298,7 @@
                                 </div>
                             </div>
                             <div style="font-size: 0.85rem; margin-top: 0.5rem;">
-                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px; margin-right: 5px;">Đường: ${tc.mucDuong || 100}%</span>
-                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa || 100}%</span>
+                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa ?? 100}%</span>
                                 ${tc.ghiChu ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Ghi chú: ${tc.ghiChu}</i></p>` : ''}
                                 ${toppingSummary ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Topping: ${toppingSummary}</i></p>` : ''}
                             </div>
@@ -250,9 +319,45 @@
             .filter(item => item.duocChonThanhToan)
             .reduce((sum, item) => sum + (item.thanhTien || 0), 0);
         document.getElementById("subtotal").innerText = formatPrice(selectedTotal);
-        document.getElementById("total").innerText = formatPrice(selectedTotal);
         document.getElementById("select-all-items").checked = currentCart.cacMatHang.length > 0
             && currentCart.cacMatHang.every(item => item.duocChonThanhToan);
+        refreshCheckoutDiscount(false);
+    }
+
+    /**
+     * @param {boolean} throwOnFail — true khi người dùng vừa bấm Áp dụng; false khi chỉ làm mới giao diện sau đổi giỏ.
+     */
+    async function refreshCheckoutDiscount(throwOnFail) {
+        const discountEl = document.getElementById("discount");
+        const totalEl = document.getElementById("total");
+        const code = sessionStorage.getItem("checkoutMaGiamGia");
+        const selected = (currentCart?.cacMatHang || []).filter(item => item.duocChonThanhToan);
+        const sub = selected.reduce((sum, item) => sum + (Number(item.thanhTien) || 0), 0);
+        if (!code || !selected.length) {
+            if (discountEl) discountEl.innerText = "-0đ";
+            if (totalEl) totalEl.innerText = formatPrice(sub);
+            return;
+        }
+        try {
+            const body = {
+                ma: code.trim(),
+                chiTiet: selected.map(item => ({
+                    nuocUongId: item.nuocUong?.id,
+                    thanhTien: item.thanhTien
+                }))
+            };
+            const r = await api("POST", "/api/khuyen-mai/tinh-cho-gio", body);
+            const giam = Number(r.tienGiam || 0);
+            if (discountEl) discountEl.innerText = "-" + formatPrice(giam);
+            if (totalEl) totalEl.innerText = formatPrice(Number(r.tongTienSauGiam != null ? r.tongTienSauGiam : sub - giam));
+        } catch (e) {
+            sessionStorage.removeItem("checkoutMaGiamGia");
+            if (discountEl) discountEl.innerText = "-0đ";
+            if (totalEl) totalEl.innerText = formatPrice(sub);
+            if (throwOnFail) {
+                throw e;
+            }
+        }
     }
 
     async function removeItem(itemId) {
@@ -280,22 +385,22 @@
         document.getElementById('editCartProductName').textContent = sp.ten || 'Sản phẩm không xác định';
         document.getElementById('editCartProductDesc').textContent = sp.moTa || 'Không có mô tả';
         document.getElementById('editCartQuantity').value = item.soLuong || 1;
-        document.getElementById('editCartIce').value = item.tuyChinh?.mucDa || 100;
-        document.getElementById('editCartIceValue').textContent = `${item.tuyChinh?.mucDa || 100}%`;
-        document.getElementById('editCartSugar').value = item.tuyChinh?.mucDuong || 100;
-        document.getElementById('editCartSugarValue').textContent = `${item.tuyChinh?.mucDuong || 100}%`;
+        document.getElementById('editCartIce').value = item.tuyChinh?.mucDa ?? 100;
+        document.getElementById('editCartIceValue').textContent = `${item.tuyChinh?.mucDa ?? 100}%`;
         document.getElementById('editCartNote').value = item.tuyChinh?.ghiChu || '';
-        document.getElementById('editCartToppings').textContent = Array.isArray(item.toppings) && item.toppings.length
-            ? item.toppings.map(t => t.ten || t.nguyenLieu?.ten || 'Topping').join(', ')
-            : 'Không có topping.';
+        document.getElementById('editCartToppings').innerHTML = '<span class="muted">Đang tải danh sách…</span>';
+        const cnt = document.getElementById('editCartToppingCount');
+        if (cnt) cnt.textContent = '';
 
         const selectedToppingIds = new Set();
         if (Array.isArray(item.toppings)) {
             item.toppings.forEach(t => {
-                if (t.toppingId) {
-                    selectedToppingIds.add(t.toppingId);
-                } else if (t.nguyenLieu?.id) {
-                    selectedToppingIds.add(t.nguyenLieu.id);
+                if (t.nguyenLieu?.id) {
+                    selectedToppingIds.add(String(t.nguyenLieu.id));
+                } else if (t.nguyenLieuId) {
+                    selectedToppingIds.add(String(t.nguyenLieuId));
+                } else if (t.toppingId) {
+                    selectedToppingIds.add(String(t.toppingId));
                 }
             });
         }
@@ -311,6 +416,16 @@
             if (response.ok) {
                 const detailData = await response.json();
                 editCartOptions = Array.isArray(detailData.topping) ? detailData.topping : [];
+                // Topping catalog = nguyên liệu TOPPING; ghép checkbox theo tên nếu thiếu id
+                if (Array.isArray(item.toppings)) {
+                    item.toppings.forEach(t => {
+                        if (t.nguyenLieu?.id || t.nguyenLieuId || t.toppingId) return;
+                        const name = (t.ten || t.nguyenLieu?.ten || '').trim();
+                        if (!name) return;
+                        const m = editCartOptions.find(o => (o.ten || '').trim() === name);
+                        if (m) selectedToppingIds.add(String(m.id));
+                    });
+                }
                 renderEditCartToppingOptions(editCartOptions, selectedToppingIds);
             } else {
                 renderEditCartToppingOptions([], selectedToppingIds);
@@ -329,19 +444,21 @@
 
         if (!Array.isArray(options) || options.length === 0) {
             toppingOptionsEl.innerHTML = '<div class="muted">Không có topping để chọn.</div>';
+            syncEditCartToppingsPreview();
             return;
         }
 
         toppingOptionsEl.innerHTML = options.map(option => {
-            const checked = selectedIds.has(option.id) ? 'checked' : '';
-            const priceLabel = option.giaThem || option.gia || 0;
+            const checked = selectedIds.has(String(option.id)) ? 'checked' : '';
+            const priceLabel = option.giaDonVi || option.giaThem || option.gia || 0;
             return `
                 <label style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
                     <input type="checkbox" value="${option.id}" ${checked}>
-                    <span>${option.ten || 'Topping'} (+${formatPrice(priceLabel)})</span>
+                    <span>${escapeHtml(option.ten || 'Topping')} (+${formatPrice(priceLabel)})</span>
                 </label>
             `;
         }).join('');
+        syncEditCartToppingsPreview();
     }
 
     function closeEditCartModal() {
@@ -358,37 +475,33 @@
         const selectedToppings = Array.from(document.querySelectorAll('#editCartToppingOptions input[type="checkbox"]'))
             .filter(input => input.checked)
             .map(input => {
-                const option = editCartOptions.find(o => o.id === input.value);
+                const option = editCartOptions.find(o => String(o.id) === String(input.value));
                 return {
-                    toppingId: option?.id || null,
-                    nguyenLieuId: null,
+                    nguyenLieuId: option?.id || null,
                     soLuong: 1,
                     ten: option?.ten || null,
-                    giaThem: option?.giaThem || option?.gia || 0
+                    giaThem: option?.giaDonVi || option?.giaThem || option?.gia || 0
                 };
             });
 
-        const preservedToppingIds = new Set(editCartOptions.map(o => o.id));
+        // Chỉ giữ topping không có checkbox (nguyên liệu / tùy chỉnh lạ). Topping trong danh mục chỉ đi theo ô đã tick.
         const preservedToppings = Array.isArray(editCartItemData.toppings)
-            ? editCartItemData.toppings.filter(t => {
-                const matchId = t.toppingId || t.nguyenLieu?.id || t.nguyenLieuId;
-                return !matchId || !preservedToppingIds.has(matchId);
-            }).map(t => ({
-                toppingId: t.toppingId || null,
-                nguyenLieuId: t.nguyenLieu?.id || t.nguyenLieuId || null,
-                soLuong: t.soLuong || 1,
-                ten: t.ten || t.nguyenLieu?.ten || null,
-                giaThem: t.giaThem || t.donGia || null
-            }))
+            ? editCartItemData.toppings
+                .filter(t => !toppingThuocDanhMucCheckbox(t))
+                .map(t => ({
+                    toppingId: t.toppingId || null,
+                    nguyenLieuId: t.nguyenLieu?.id || t.nguyenLieuId || null,
+                    soLuong: t.soLuong || 1,
+                    ten: t.ten || t.nguyenLieu?.ten || null,
+                    giaThem: t.giaThem || t.donGia || null
+                }))
             : [];
 
+        // Khớp CapNhatMatHangRequest: các field phẳng, không bọc tuyChinh (Spring không map được).
         const payload = {
             soLuong: Number(document.getElementById('editCartQuantity').value || 1),
-            tuyChinh: {
-                mucDa: Number(document.getElementById('editCartIce').value || 100),
-                mucDuong: Number(document.getElementById('editCartSugar').value || 100),
-                ghiChu: document.getElementById('editCartNote').value || null
-            },
+            mucDa: Number(document.getElementById('editCartIce').value || 100),
+            ghiChu: (document.getElementById('editCartNote').value || '').trim() || null,
             toppings: [...selectedToppings, ...preservedToppings]
         };
 
@@ -444,9 +557,27 @@
     }
 
     async function applyCoupon() {
-        const code = document.getElementById("coupon-code").value;
-        if (!code) return;
-        alert("Tính năng áp dụng mã giảm giá đang được cập nhật!");
+        const code = (document.getElementById("coupon-code").value || "").trim();
+        if (!code) {
+            alert("Vui lòng nhập mã.");
+            return;
+        }
+        if (!currentCart || !currentCart.cacMatHang?.length) {
+            alert("Giỏ hàng đang trống.");
+            return;
+        }
+        const selected = currentCart.cacMatHang.filter(item => item.duocChonThanhToan);
+        if (!selected.length) {
+            alert("Vui lòng chọn ít nhất một sản phẩm để áp dụng mã.");
+            return;
+        }
+        try {
+            sessionStorage.setItem("checkoutMaGiamGia", code);
+            await refreshCheckoutDiscount(true);
+            alert("Đã áp dụng mã. Kiểm tra mức giảm ở phần tóm tắt đơn hàng.");
+        } catch (e) {
+            alert(e.message || "Không áp dụng được mã.");
+        }
     }
 
     function changeAddress() {

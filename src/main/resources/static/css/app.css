@@ -123,6 +123,65 @@ h2 {
     border-bottom: 2px solid var(--phuclong-green);
 }
 
+/* Header — menu nhân viên: cùng phong cách link như .nav (khách hàng), không viền/nền nút */
+.nav-links-staff {
+    flex: 1;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    min-width: 0;
+    align-items: center;
+}
+
+.nav-links-staff .staff-nav-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 0;
+    white-space: nowrap;
+}
+
+.nav-links-staff a {
+    color: #444;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: var(--transition);
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+}
+
+.nav-links-staff a:hover {
+    color: var(--phuclong-green);
+}
+
+.nav-links-staff a.active {
+    color: var(--phuclong-green);
+    border-bottom: 2px solid var(--phuclong-green);
+}
+
+@media (max-width: 960px) {
+    .nav {
+        flex-wrap: wrap;
+        padding: 12px 18px;
+        row-gap: 10px;
+    }
+
+    .nav-links-staff {
+        order: 3;
+        flex: 1 1 100%;
+        justify-content: flex-start;
+    }
+}
+
 /* Components */
 .grid {
     display: grid;
@@ -385,6 +444,43 @@ pre {
     font-size: 0.75rem;
 }
 
+.admin-orders-card .table-wrap {
+    overflow-x: auto;
+    margin-top: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.admin-orders-table thead th {
+    white-space: nowrap;
+}
+
+.admin-orders-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.admin-order-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.admin-order-actions .btn-secondary {
+    font-size: 0.72rem;
+    padding: 6px 8px;
+    margin-right: 0;
+}
+
+.admin-modal-content.order-detail-wide {
+    width: min(560px, 100%);
+}
+
+.admin-order-detail-body {
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
 .admin-actions {
     display: flex;
     gap: 8px;
@@ -455,6 +551,47 @@ pre {
 
 .admin-check-grid input[type="checkbox"] {
     width: auto;
+}
+
+.admin-promo-multiselect {
+    width: 100%;
+    max-width: 480px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm, 8px);
+    border: 1px solid var(--border-color, #ddd);
+    background: #fff;
+    font-size: 0.9rem;
+}
+
+.admin-promo-dual-list {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+}
+
+.admin-promo-dual-col {
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+}
+
+.admin-promo-dual-list .admin-promo-multiselect {
+    max-width: none;
+}
+
+.admin-promo-dual-caption {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.admin-promo-dual-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 1.4rem;
 }
 
 .admin-modal {
@@ -700,6 +837,43 @@ pre {
     letter-spacing: normal;
 }
 
+.password-field-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.password-field-wrap > input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 4.25rem !important;
+}
+
+.password-field-wrap > .password-toggle-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    margin-top: 0;
+    padding: 6px 10px;
+    min-height: auto;
+    line-height: 1.2;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: var(--radius-sm);
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.password-field-wrap > .password-toggle-btn:hover {
+    color: var(--phuclong-green);
+    background: rgba(12, 113, 61, 0.06);
+}
+
 .social-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -756,6 +930,10 @@ pre {
     cursor: pointer;
     font-size: 0.82rem;
     background: #fff;
+    color: var(--text-main);
+    margin-top: 0;
+    text-transform: none;
+    letter-spacing: normal;
 }
 
 .category-tab.active {
@@ -764,10 +942,43 @@ pre {
     border-color: var(--phuclong-green);
 }
 
+/* Tab kiểu chữ (tài khoản, khuyến mãi, …) — ghi đè style nút CTA global */
+button.tab-btn {
+    margin-top: 0;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+button.tab-btn[data-tab="xoa-tai-khoan"] {
+    color: #f44336;
+}
+
+.account-settings-nav button[type="submit"] {
+    margin-top: 0;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Thực đơn /ui/san-pham: số cột theo chiều rộng (auto-fill + minmax) */
 .mobile-product-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
     gap: 12px;
+    align-items: stretch;
+}
+
+@media (min-width: 640px) {
+    .mobile-product-grid {
+        gap: 14px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .mobile-product-grid {
+        gap: 16px;
+    }
 }
 
 .mobile-product-card {
@@ -775,11 +986,24 @@ pre {
     border-radius: 12px;
     overflow: hidden;
     background: #fff;
+    min-width: 0;
 }
 
 .mobile-product-card img {
     width: 100%;
     aspect-ratio: 1/1;
     object-fit: cover;
+}
+
+/* Trang chi tiết sản phẩm — footer tách nội dung, đồng bộ màu thương hiệu */
+.product-detail-footer-wrap footer {
+    margin-top: 28px !important;
+    padding: 40px 0 28px !important;
+    border-top: 2px solid rgba(12, 113, 61, 0.15) !important;
+    background: linear-gradient(180deg, rgba(12, 113, 61, 0.04) 0%, #fff 45%) !important;
+}
+
+.product-detail-footer-wrap footer .container h3 {
+    color: var(--phuclong-green);
 }
 

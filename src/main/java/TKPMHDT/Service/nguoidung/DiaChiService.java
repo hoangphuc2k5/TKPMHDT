@@ -44,6 +44,34 @@ public class DiaChiService {
     }
 
     @Transactional
+    public DiaChi capNhatDiaChi(UUID khachHangId, UUID diaChiId, DiaChi duLieu) {
+        DiaChi hienTai = diaChiRepository.findById(diaChiId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ"));
+        if (!hienTai.getKhachHang().getId().equals(khachHangId)) {
+            throw new IllegalArgumentException("Địa chỉ không thuộc khách hàng này");
+        }
+        if (duLieu.getTenNguoiNhan() != null && !duLieu.getTenNguoiNhan().isBlank()) {
+            hienTai.setTenNguoiNhan(duLieu.getTenNguoiNhan().trim());
+        }
+        if (duLieu.getSoDienThoai() != null && !duLieu.getSoDienThoai().isBlank()) {
+            hienTai.setSoDienThoai(duLieu.getSoDienThoai().trim());
+        }
+        if (duLieu.getDiaChiCuThe() != null && !duLieu.getDiaChiCuThe().isBlank()) {
+            hienTai.setDiaChiCuThe(duLieu.getDiaChiCuThe().trim());
+        }
+        if (duLieu.getPhuongXa() != null && !duLieu.getPhuongXa().isBlank()) {
+            hienTai.setPhuongXa(duLieu.getPhuongXa().trim());
+        }
+        if (duLieu.getQuanHuyen() != null && !duLieu.getQuanHuyen().isBlank()) {
+            hienTai.setQuanHuyen(duLieu.getQuanHuyen().trim());
+        }
+        if (duLieu.getTinhThanhPho() != null && !duLieu.getTinhThanhPho().isBlank()) {
+            hienTai.setTinhThanhPho(duLieu.getTinhThanhPho().trim());
+        }
+        return diaChiRepository.save(hienTai);
+    }
+
+    @Transactional
     public void xoaDiaChi(UUID diaChiId) {
         DiaChi diaChi = diaChiRepository.findById(diaChiId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy địa chỉ"));

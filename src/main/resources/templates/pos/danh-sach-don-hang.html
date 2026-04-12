@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head th:replace="~{fragments/layout :: head('POS - Danh sách đơn hàng')}"></head>
 
 <body>
-    <header th:replace="~{fragments/layout :: header('pos')}"></header>
+    <header th:replace="~{fragments/layout :: header('pos-danh-sach')}"></header>
 
     <div class="container">
         <div class="page-header">
@@ -14,10 +14,10 @@
             </div>
             <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
                 <button class="btn-highlight" onclick="createOrder()" style="margin-top:0;">Tạo đơn mới</button>
-                <a href="/ui/pos/tao-don" class="btn-secondary" style="text-decoration:none; margin-top:0;">POS tạo
-                    đơn</a>
-                <a href="/ui/don-hang" class="btn-secondary" style="text-decoration:none; margin-top:0;">Trang đơn
-                    hàng</a>
+                <a sec:authorize="!hasRole('NHAN_VIEN_BAN_HANG')" th:href="@{/ui/pos/tao-don}" class="btn-secondary"
+                    style="text-decoration:none; margin-top:0;">POS tạo đơn</a>
+                <a sec:authorize="!hasRole('NHAN_VIEN_BAN_HANG')" th:href="@{/ui/don-hang}" class="btn-secondary"
+                    style="text-decoration:none; margin-top:0;">Trang đơn hàng</a>
             </div>
         </div>
 
@@ -171,8 +171,8 @@
                     <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
                         <div style="flex:1; min-width:180px;">
                             <div><strong>${idx + 1}. ${item.tenSanPham}</strong></div>
-                            <div class="muted">Kích cỡ: ${item.kichCo || '-'} | SL: ${item.soLuong || 0}</div>
-                            <div class="muted">Đường: ${item.mucDuong != null ? item.mucDuong + '%' : '-'} | Đá: ${item.mucDa != null ? item.mucDa + '%' : '-'}</div>
+                            <div class="muted">SL: ${item.soLuong || 0}</div>
+                            <div class="muted">Đá: ${item.mucDa != null ? item.mucDa + '%' : '-'}</div>
                             ${item.ghiChu ? `<div class="muted">Ghi chú: ${item.ghiChu}</div>` : ''}
                         </div>
                         <div style="text-align:right; min-width:130px;">
@@ -218,7 +218,32 @@
             document.getElementById('orderModal').classList.remove('show');
         }
 
-        document.addEventListener('DOMContentLoaded', loadOrders);
+        function showPosTaoDonMoiBannerIfNeeded() {
+            const q = new URLSearchParams(window.location.search);
+            if (q.get('posTaoDonMoi') !== '1') {
+                return;
+            }
+            const container = document.querySelector('.container');
+            const section = document.querySelector('.container .section-card');
+            if (!container || !section) {
+                return;
+            }
+            const box = document.createElement('div');
+            box.setAttribute('role', 'alert');
+            box.style.cssText =
+                'margin-bottom:1rem;padding:0.85rem 1rem;border-radius:8px;background:#fff3cd;border:1px solid #e0a800;color:#856404;';
+            box.innerHTML =
+                'Đơn đang mở trên POS không còn ở trạng thái chờ xác nhận. Vui lòng <strong>bấm nút &quot;Tạo đơn mới&quot;</strong> để thao tác tiếp.';
+            container.insertBefore(box, section);
+            q.delete('posTaoDonMoi');
+            const rest = q.toString();
+            window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showPosTaoDonMoiBannerIfNeeded();
+            loadOrders();
+        });
     </script>
 </body>
 

@@ -19,9 +19,9 @@
             <input type="text" name="username" placeholder="Nhập số điện thoại hoặc email..." required autofocus>
 
             <label>Mật khẩu</label>
-            <div class="input-with-action">
-                <input id="loginPassword" type="password" name="password" placeholder="••••••••" required>
-                <button type="button" onclick="togglePassword('loginPassword', this)">Hiện</button>
+            <div class="password-field-wrap">
+                <input id="loginPassword" type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                <button type="button" class="password-toggle-btn" onclick="togglePassword('loginPassword', this)" aria-label="Hiện mật khẩu" aria-pressed="false">Hiện</button>
             </div>
 
             <button type="submit" style="width:100%; font-weight:700;">Đăng nhập</button>
@@ -49,12 +49,6 @@
 </div>
 
 <script>
-    function togglePassword(inputId, btn) {
-        const input = document.getElementById(inputId);
-        const isPassword = input.type === 'password';
-        input.type = isPassword ? 'text' : 'password';
-        btn.textContent = isPassword ? 'Ẩn' : 'Hiện';
-    }
     const params = new URLSearchParams(window.location.search);
     const redirectTarget = params.get('redirect');
     if (redirectTarget) {

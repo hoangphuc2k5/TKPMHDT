@@ -71,13 +71,23 @@ function renderItems(order) {
         document.getElementById("orderItems").innerHTML = "<div class='muted'>Không có sản phẩm.</div>";
         return;
     }
-    document.getElementById("orderItems").innerHTML = lines.map(item => `
+    document.getElementById("orderItems").innerHTML = lines.map(item => {
+        const tops = item.toppings || [];
+        const topLine = tops.length
+            ? `<div class="muted" style="margin-top:6px; font-size:0.9rem;"><strong style="color:var(--phuclong-green);">Topping:</strong> ${tops.map(t => {
+                const name = t.ten || t.nguyenLieu?.ten || 'Topping';
+                const q = t.soLuong != null && t.soLuong > 1 ? ` ×${t.soLuong}` : '';
+                return name + q;
+            }).join(', ')}</div>`
+            : '';
+        return `
         <div style="padding:8px 0; border-bottom:1px solid var(--border-color);">
-            <strong>${item.nuocUong?.ten || "Sản phẩm"}</strong>
-            <div class="muted">Số lượng: ${item.soLuong || 1} | Đường: ${item.tuyChinh?.mucDuong ?? "-"} | Đá: ${item.tuyChinh?.mucDa ?? "-"}</div>
+            <strong>${item.nuocUong?.ten || item.tenSanPham || "Sản phẩm"}</strong>
+            <div class="muted">Số lượng: ${item.soLuong || 1} | Đá: ${item.tuyChinh?.mucDa ?? "-"}</div>
             <div class="muted">Ghi chú: ${item.tuyChinh?.ghiChu || "Không có"}</div>
-        </div>
-    `).join("");
+            ${topLine}
+        </div>`;
+    }).join("");
 }
 
 function lienHeShipper() {

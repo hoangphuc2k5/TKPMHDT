@@ -78,7 +78,7 @@ public class SanPhamController {
      * UC06 (Nâng cao): Xem chi tiết sản phẩm đầy đủ
      * Trả về:
      *   + Thông tin sản phẩm
-     *   + Các tùy chọn: size, đường, đá, topping
+     *   + Các tùy chọn: đá, topping
      * Sử dụng Singleton Pattern trong Service
      */
     @GetMapping("/nuoc-uong/{id}/detail")
@@ -124,7 +124,6 @@ public class SanPhamController {
             @RequestBody TuyChinhRequest request) {
         try {
             TuyChinhKhachHang tuyChinh = tuyChinhSanPhamService.taoTuyChinh(
-                    request.mucDuong(),
                     request.mucDa(),
                     request.ghiChu()
             );
@@ -198,7 +197,6 @@ public class SanPhamController {
     // ==================== Request Classes ====================
 
     public record TuyChinhRequest(
-            Integer mucDuong,
             Integer mucDa,
             String ghiChu,
             List<NguyenLieuThemRequest> nguyenLieuThem

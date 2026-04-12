@@ -45,27 +45,11 @@ public class NuocUongSan extends SanPham {
     @Builder.Default
     private boolean coTheTuyChinh = true;
 
-    @Column(name = "muc_duong_tuy_chon", length = 500)
-    private String mucDuongTuyChon;
-
-    @Column(name = "muc_duong_mac_dinh", length = 100)
-    private String mucDuongMacDinh;
-
     @Column(name = "muc_da_tuy_chon", length = 500)
     private String mucDaTuyChon;
 
     @Column(name = "muc_da_mac_dinh", length = 100)
     private String mucDaMacDinh;
-
-    @Column(name = "kich_co_tuy_chon", length = 500)
-    private String kichCoTuyChon;
-
-    @Column(name = "kich_co_mac_dinh", length = 100)
-    private String kichCoMacDinh;
-
-    @Column(name = "co_ap_dung_size")
-    @Builder.Default
-    private Boolean coApDungSize = true;
 
     @Column(name = "topping_cho_phep", length = 2000)
     private String toppingChoPhep;

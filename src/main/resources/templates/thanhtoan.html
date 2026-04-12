@@ -55,7 +55,7 @@ async function initCheckout() {
         const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
         defaultAddress = (addresses || []).find(x => x.macDinh) || (addresses || [])[0] || null;
         renderAddress();
-        renderItems();
+        await renderItems();
     } catch (e) {
         alert("Không thể tải dữ liệu thanh toán: " + e.message);
     }
@@ -70,12 +70,12 @@ function renderAddress() {
     wrap.textContent = `${defaultAddress.hoTenNhan || ""} - ${defaultAddress.soDienThoaiNhan || ""} | ${defaultAddress.diaChiChiTiet || ""}`;
 }
 
-function renderItems() {
+async function renderItems() {
     const items = (cart?.cacMatHang || []).filter(x => x.duocChonThanhToan);
     const wrap = document.getElementById("checkoutItems");
     if (!items.length) {
         wrap.innerHTML = "<div class='muted'>Không có sản phẩm được chọn để thanh toán.</div>";
-        updateTotal(0);
+        await applyCouponToCheckoutTotal([], 0);
         return;
     }
     let total = 0;
@@ -86,7 +86,28 @@ function renderItems() {
             <strong>${formatPrice(item.thanhTien || 0)}</strong>
         </div>`;
     }).join("");
-    updateTotal(total);
+    await applyCouponToCheckoutTotal(items, total);
+}
+
+async function applyCouponToCheckoutTotal(items, gross) {
+    const code = (sessionStorage.getItem("checkoutMaGiamGia") || "").trim();
+    if (!code || !items.length) {
+        updateTotal(gross);
+        return;
+    }
+    try {
+        const r = await api("POST", "/api/khuyen-mai/tinh-cho-gio", {
+            ma: code,
+            chiTiet: items.map((item) => ({
+                nuocUongId: item.nuocUong?.id,
+                thanhTien: item.thanhTien,
+            })),
+        });
+        updateTotal(Number(r.tongTienSauGiam != null ? r.tongTienSauGiam : gross));
+    } catch (e) {
+        sessionStorage.removeItem("checkoutMaGiamGia");
+        updateTotal(gross);
+    }
 }
 
 function updateTotal(total) {
@@ -102,12 +123,14 @@ async function datHang() {
     }
     const paymentMethod = document.querySelector("input[name='paymentMethod']:checked")?.value || "TIEN_MAT";
     try {
+        const ma = (sessionStorage.getItem("checkoutMaGiamGia") || "").trim() || null;
         await api("POST", "/api/don-hang/tao-tu-gio-hang", {
             khachHangId: currentUser.id,
             diaChiId: defaultAddress.id,
-            maGiamGiaCode: null,
+            maGiamGiaCode: ma,
             phuongThuc: paymentMethod
         });
+        sessionStorage.removeItem("checkoutMaGiamGia");
         alert("Đặt hàng thành công");
         window.location.href = "/ui/don-hang";
     } catch (e) {

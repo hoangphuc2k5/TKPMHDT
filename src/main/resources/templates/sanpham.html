@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments/layout :: header('products')}"></header>
 
-<div class="container" style="padding-top:18px; padding-bottom:84px; max-width:760px;">
+<div class="container" style="padding-top:18px; padding-bottom:84px;">
     <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
         <div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -18,10 +18,15 @@
 
     <div id="productCount" class="muted" style="margin-bottom:16px;">0 sản phẩm</div>
 
-    <div class="input-with-action" style="margin-bottom:10px;">
-        <input id="search-input" type="text" placeholder="Tìm kiếm đồ uống..." style="padding-right:70px;">
-        <button type="button" onclick="timNuocUong()">Tìm</button>
-    </div>
+    <form role="search" class="input-with-action" style="margin-bottom:10px;" autocomplete="on"
+          onsubmit="event.preventDefault(); timNuocUong(); return false;">
+        <input id="search-input" name="q" type="search" inputmode="search" enterkeyhint="search"
+               placeholder="Tìm kiếm đồ uống..." style="padding-right:70px;"
+               list="san-pham-search-datalist" autocomplete="on" autocapitalize="off" spellcheck="false"
+               aria-label="Tìm kiếm đồ uống trong thực đơn">
+        <button type="submit">Tìm</button>
+    </form>
+    <datalist id="san-pham-search-datalist"></datalist>
 
     <div id="category-tabs" class="category-tabs" style="margin-bottom:14px;"></div>
 
@@ -36,6 +41,10 @@ let activeCategory = 'Tất cả';
 const DEFAULT_CATEGORIES = ['Tất cả', 'Trà sữa', 'Cà phê', 'Sinh tố', 'Topping'];
 
 document.addEventListener("DOMContentLoaded", async () => {
+    const searchEl = document.getElementById("search-input");
+    if (searchEl) {
+        searchEl.addEventListener("change", () => timNuocUong());
+    }
     await dsNuocUong();
 });
 
@@ -45,6 +54,7 @@ async function dsNuocUong() {
         const res = await fetch("/api/san-pham/nuoc-uong");
         const data = await res.json();
         allProducts = data || [];
+        fillSanPhamSearchDatalist();
         renderCategories();
         renderProducts(filterProducts(allProducts));
     } catch (e) {
@@ -52,6 +62,23 @@ async function dsNuocUong() {
     } finally {
         showLoading(false);
     }
+}
+
+function fillSanPhamSearchDatalist() {
+    const dl = document.getElementById("san-pham-search-datalist");
+    if (!dl) return;
+    dl.replaceChildren();
+    const seen = new Set();
+    (allProducts || []).forEach(p => {
+        const t = (p.ten || "").trim();
+        if (!t) return;
+        const key = t.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        const opt = document.createElement("option");
+        opt.value = t;
+        dl.appendChild(opt);
+    });
 }
 
 async function timNuocUong() {
