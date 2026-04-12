@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.catalog;
 
 import TKPMHDT.Entity.khuyenmai.MaGiamGia;
 import TKPMHDT.Service.khuyenmai.KhuyenMaiService;

@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.customer;
 
 import java.security.Principal;
 

@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.auth;
 
 import TKPMHDT.Entity.nguoidung.NguoiDung;
 import TKPMHDT.Service.nguoidung.DangKyService;

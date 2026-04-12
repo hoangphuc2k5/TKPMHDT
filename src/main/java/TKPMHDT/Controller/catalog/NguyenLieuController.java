@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.catalog;
 
 import java.util.List;
 

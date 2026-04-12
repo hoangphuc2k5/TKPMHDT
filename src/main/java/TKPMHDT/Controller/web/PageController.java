@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

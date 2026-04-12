@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.catalog;
 
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;

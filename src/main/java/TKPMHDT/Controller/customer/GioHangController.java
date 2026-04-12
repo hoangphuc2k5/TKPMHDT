@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.customer;
 
 import TKPMHDT.Entity.giohang.GioHang;
 import TKPMHDT.Service.giohang.GioHangService;
