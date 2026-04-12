@@ -1,423 +1,476 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head th:replace="~{fragments/layout :: head('POS - Điểm bán hàng - TKPMHDT')}"></head>
+
 <body>
-<header th:replace="~{fragments/layout :: header('pos')}"></header>
+    <header th:replace="~{fragments/layout :: header('pos')}"></header>
 
-<div class="container">
-    <div class="page-header">
-        <div>
-            <h1 class="brand-font">Bán Hàng Tại Quầy</h1>
-            <p class="muted">Chọn món, tùy chỉnh và thanh toán nhanh cho khách tại cửa hàng.</p>
-        </div>
-        <a href="/ui/pos/danh-sach-don-hang" class="btn-secondary" style="text-decoration:none; margin-top:0;">Xem danh sách đơn</a>
-    </div>
-
-    <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem;">
-        
-        <!-- Product Selector -->
-        <div>
-            <div style="margin-bottom: 1rem;">
-                <h2 class="brand-font" style="margin-top: 0;">Chọn món</h2>
-                <input id="searchProd" type="text" placeholder="Tìm tên món..." 
-                       style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 1rem;">
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="brand-font">Bán Hàng Tại Quầy</h1>
+                <p class="muted">Chọn món, tùy chỉnh và thanh toán nhanh cho khách tại cửa hàng.</p>
             </div>
-
-            <div id="posProducts" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; max-height: 620px; overflow-y: auto;">
-                <!-- Products loaded via JS -->
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+                <a href="/ui/pos" class="btn-secondary" style="text-decoration:none; margin-top:0;">Xem danh sách
+                    đơn</a>
+                <a href="/ui/don-hang" class="btn-secondary" style="text-decoration:none; margin-top:0;">Trang đơn
+                    hàng</a>
             </div>
         </div>
 
-        <!-- Order Summary / Checkout -->
-        <div class="card" style="position: sticky; top: 100px; height: fit-content;">
-            <div class="card-content">
-                <h3 class="brand-font" style="margin-top: 0;">Đơn hàng hiện tại</h3>
-                
-                <div id="posOrder" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
-                    <!-- Items loaded here -->
+        <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem;">
+
+            <!-- Product Selector -->
+            <div>
+                <div style="margin-bottom: 1rem;">
+                    <h2 class="brand-font" style="margin-top: 0;">Chọn món</h2>
+                    <input id="searchProd" type="text" placeholder="Tìm tên món..."
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 1rem;">
                 </div>
 
-                <hr style="margin: 1rem 0;">
+                <div id="posProducts"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; max-height: 620px; overflow-y: auto;">
+                    <!-- Products loaded via JS -->
+                </div>
+            </div>
 
-                <div style="margin-bottom: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Tạm tính:</span>
-                        <span id="posSubtotal">0đ</span>
+            <!-- Order Summary / Checkout -->
+            <div class="card" style="position: sticky; top: 100px; height: fit-content;">
+                <div class="card-content">
+                    <h3 class="brand-font" style="margin-top: 0;">Đơn hàng hiện tại</h3>
+
+                    <div id="posOrder" style="max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+                        <!-- Items loaded here -->
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                        <span>Giảm giá:</span>
-                        <span id="posDiscount" style="color: #e74c3c;">-0đ</span>
+
+                    <hr style="margin: 1rem 0;">
+
+                    <div style="margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Tạm tính:</span>
+                            <span id="posSubtotal">0đ</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                            <span>Giảm giá:</span>
+                            <span id="posDiscount" style="color: #e74c3c;">-0đ</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; color: var(--phuclong-green);">
+                            <span>Tổng:</span>
+                            <span id="posTotal">0đ</span>
+                        </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; color: var(--phuclong-green);">
-                        <span>Tổng:</span>
-                        <span id="posTotal">0đ</span>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="posCoupon" style="font-size: 0.875rem;">Mã giảm giá</label>
+                        <input id="posCoupon" type="text" placeholder="Nhập mã..."
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
                     </div>
-                </div>
 
-                <div style="margin-bottom: 1rem;">
-                    <label for="posCoupon" style="font-size: 0.875rem;">Mã giảm giá</label>
-                    <input id="posCoupon" type="text" placeholder="Nhập mã..." style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                </div>
+                    <button onclick="applyCouponPOS()" class="btn-secondary"
+                        style="width: 100%; padding: 10px; margin-bottom: 1rem;">Áp dụng mã</button>
 
-                <button onclick="applyCouponPOS()" class="btn-secondary" style="width: 100%; padding: 10px; margin-bottom: 1rem;">Áp dụng mã</button>
 
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                    <button onclick="clearOrder()" class="btn-secondary" style="padding: 10px;">Xóa đơn</button>
-                    <button onclick="saveDraftOrder()" class="btn-secondary" style="padding: 10px;">Lưu nháp</button>
-                </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <button onclick="clearOrder()" class="btn-secondary" style="padding: 10px;">Xóa đơn</button>
+                        <button onclick="saveDraftOrder()" class="btn-secondary" style="padding: 10px;">Lưu
+                            nháp</button>
+                    </div>
 
-                <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 1rem;">
-                    <button onclick="confirmOrder()" class="btn-highlight" style="padding: 12px;">Xác nhận đơn hàng</button>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 1rem;">
+                        <button onclick="confirmOrder()" class="btn-highlight" style="padding: 12px;">Xác nhận đơn
+                            hàng</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Customize Modal -->
-    <div id="posModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-        <div class="card" style="width: 90%; max-width: 500px;">
-            <div class="card-content">
-                <h3 id="posModalTitle">Tùy chỉnh món</h3>
-                <input type="hidden" id="posModalProdId">
+        <!-- Customize Modal -->
+        <div id="posModal"
+            style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+            <div class="card" style="width: 90%; max-width: 500px;">
+                <div class="card-content">
+                    <h3 id="posModalTitle">Tùy chỉnh món</h3>
+                    <input type="hidden" id="posModalProdId">
 
-                
-                <div style="margin-bottom: 1rem;">
-                    <label>Kích cỡ</label>
-                    <select id="posSize" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <option value="S">Nhỏ</option>
-                        <option value="M">Vừa</option>
-                        <option value="L">Lớn</option>
-                    </select>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label>Kích cỡ</label>
+                        <select id="posSize"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <option value="S">Nhỏ</option>
+                            <option value="M">Vừa</option>
+                            <option value="L">Lớn</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label>Mức đường</label>
+                        <select id="posSugar"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <option value="100">100% (Bình thường)</option>
+                            <option value="70">70% (Ít đường)</option>
+                            <option value="50">50% (Vừa phải)</option>
+                            <option value="0">0% (Không đường)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label>Mức đá</label>
+                        <select id="posIce"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <option value="100">100% (Bình thường)</option>
+                            <option value="50">50% (Ít đá)</option>
+                            <option value="0">0% (Không đá)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label>Số lượng</label>
+                        <input type="number" id="posQty" value="1" min="1"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    </div>
+
+
+                    <div style="margin-bottom: 1rem;">
+                        <label>Topping</label>
+                        <div id="posToppings"
+                            style="max-height: 220px; overflow-y: auto; padding-right: 6px; border: 1px solid var(--border-color); border-radius: 8px; background: #fff;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="closeModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
+                        <button onclick="addItemPOS()" class="btn-highlight" style="flex: 1;">Thêm vào đơn</button>
+                    </div>
+
+
                 </div>
-
-                <div style="margin-bottom: 1rem;">
-                    <label>Mức đường</label>
-                    <select id="posSugar" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <option value="100">100% (Bình thường)</option>
-                        <option value="70">70% (Ít đường)</option>
-                        <option value="50">50% (Vừa phải)</option>
-                        <option value="0">0% (Không đường)</option>
-                    </select>
-                </div>
-
-                <div style="margin-bottom: 1rem;">
-                    <label>Mức đá</label>
-                    <select id="posIce" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <option value="100">100% (Bình thường)</option>
-                        <option value="50">50% (Ít đá)</option>
-                        <option value="0">0% (Không đá)</option>
-                    </select>
-                </div>
-
-                <div style="margin-bottom: 1rem;">
-                    <label>Số lượng</label>
-                    <input type="number" id="posQty" value="1" min="1" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                </div>
-
-                <!-- chọn topping-->
-                <div style="margin-bottom: 1rem;">
-                    <label>Topping</label>
-                    <div id="posToppings"></div>
-                </div>
-
-                <div style="display: flex; gap: 1rem;">
-                    <button onclick="closeModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
-                    <button onclick="addItemPOS()" class="btn-highlight" style="flex: 1;">Thêm vào đơn</button>
-                </div>
-                
-                
             </div>
         </div>
-    </div>
 
-    <div id="paymentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-        <div class="section-card" style="width:320px;">
-            <h3>Thanh toán</h3>
+        <!-- Customize Modal -->
 
-            <div style="margin-bottom: 10px;">
-                <button onclick="selectPayment('TIEN_MAT')" style="width:100%; margin-bottom:5px;">
-                    Tiền mặt
+        <div id="paymentModal"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+            <div class="section-card" style="width:320px;">
+                <h3>Thanh toán</h3>
+
+                <div style="margin-bottom: 10px;">
+                    <button onclick="selectPayment('TIEN_MAT')" style="width:100%; margin-bottom:5px;">
+                        Tiền mặt
+                    </button>
+
+                    <button onclick="selectPayment('MOMO')" style="width:100%;">
+                        MoMo
+                    </button>
+                </div>
+
+                <hr>
+
+                <button onclick="confirmPayment()" class="btn-highlight" style="width:100%; margin-top:10px;">
+                    Xác nhận thanh toán
                 </button>
 
-                <button onclick="selectPayment('MOMO')" style="width:100%;">
-                    MoMo
+                <button onclick="closePaymentModal()" style="width:100%; margin-top:5px;">
+                    Hủy
                 </button>
             </div>
+        </div>
 
-            <hr>
+        <div id="invoiceModal"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+            <div class="section-card" style="width:350px; max-height:80vh; overflow:auto;">
+                <h3>Hóa đơn</h3>
 
-            <button onclick="confirmPayment()" class="btn-highlight"
-                    style="width:100%; margin-top:10px;">
-                Xác nhận thanh toán
-            </button>
+                <div id="invoiceContent"></div>
 
-            <button onclick="closePaymentModal()" 
-                    style="width:100%; margin-top:5px;">
-                Hủy
-            </button>
+                <button onclick="closeInvoice()" style="width:100%; margin-top:10px;">
+                    Đóng
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="message"
+            style="display: none; position: fixed; top: 100px; right: 20px; background: var(--phuclong-green); color: white; padding: 1rem; border-radius: 8px; z-index: 999;">
         </div>
     </div>
 
-    <div id="invoiceModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-        <div class="section-card" style="width:350px; max-height:80vh; overflow:auto;">
-            <h3>Hóa đơn</h3>
-
-            <div id="invoiceContent"></div>
-
-            <button onclick="closeInvoice()" style="width:100%; margin-top:10px;">
-                Đóng
-            </button>
+    <div
+        style="position:fixed; left:0; right:0; bottom:0; z-index:1100; background:#fff; border-top:1px solid var(--border-color); padding:10px 16px;">
+        <div
+            style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div style="font-weight:700;">Tổng tiền: <span id="posBottomTotal">0đ</span></div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-highlight" style="margin-top:0;" onclick="confirmOrder()">Thanh toán</button>
+                <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in phiếu pha chế')">In
+                    phiếu pha chế</button>
+                <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in hóa đơn')">In hóa
+                    đơn</button>
+            </div>
         </div>
     </div>
 
-    <!-- Messages -->
-    <div id="message" style="display: none; position: fixed; top: 100px; right: 20px; background: var(--phuclong-green); color: white; padding: 1rem; border-radius: 8px; z-index: 999;"></div>
-</div>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
 
-<div style="position:fixed; left:0; right:0; bottom:0; z-index:1100; background:#fff; border-top:1px solid var(--border-color); padding:10px 16px;">
-    <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-        <div style="font-weight:700;">Tổng tiền: <span id="posBottomTotal">0đ</span></div>
-        <div style="display:flex; gap:8px;">
-            <button class="btn-highlight" style="margin-top:0;" onclick="confirmOrder()">Thanh toán</button>
-            <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in phiếu pha chế')">In phiếu pha chế</button>
-            <button class="btn-secondary" style="margin-top:0;" onclick="showMessage('Đã in hóa đơn')">In hóa đơn</button>
-        </div>
-    </div>
-</div>
+    <script th:inline="javascript">
+        let posOrder = [];
+        let currentProduct = null;
+        let currentOrderId = null;
+        let toppings = [];
+        let toppingsLoaded = false;
+        let selectedPaymentMethod = null;
+        let currentPaymentId = null;
 
-<footer th:replace="~{fragments/layout :: footer}"></footer>
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentOrderId = localStorage.getItem("currentOrderId");
 
-<script th:inline="javascript">
-    let posOrder = [];
-    let currentProduct = null;
-    let currentOrderId = null;
-    let toppings = [];
-    let toppingsLoaded = false;
-    let selectedPaymentMethod = null;
-    let currentPaymentId = null;
+            if (!currentOrderId) {
+                showMessage("Không tìm thấy đơn hàng", "error");
+                setTimeout(() => {
+                    window.location.href = "/ui/pos/danh-sach-don-hang";
+                }, 1500);
+                return;
+            }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        currentOrderId = localStorage.getItem("currentOrderId");
+            loadProducts();
+            loadToppingsOnce();
+            loadOrder();
 
-        if (!currentOrderId) {
-            showMessage("Không tìm thấy đơn hàng", "error");
-            setTimeout(() => {
-                window.location.href = "/ui/pos/danh-sach-don-hang";
-            }, 1500);
-            return;
-        }
+            console.log("Đang xử lý đơn:", currentOrderId); // debug
+        });
 
-        loadProducts();
-        loadToppingsOnce();
-        loadOrder();
+        async function loadProducts() {
+            try {
+                const products = await api('GET', '/api/san-pham/nuoc-uong');
+                const container = document.getElementById('posProducts');
+                container.innerHTML = '';
 
-        console.log("Đang xử lý đơn:", currentOrderId); // debug
-    });
-
-    async function loadProducts() {
-        try {
-            const products = await api('GET', '/api/san-pham/nuoc-uong');
-            const container = document.getElementById('posProducts');
-            container.innerHTML = '';
-
-            products.forEach(prod => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.style.cursor = 'pointer';
-                card.style.padding = '1rem';
-                card.style.textAlign = 'center';
-                card.innerHTML = `
+                products.forEach(prod => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.cursor = 'pointer';
+                    card.style.padding = '1rem';
+                    card.style.textAlign = 'center';
+                    card.innerHTML = `
                     <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">${prod.ten}</h4>
                     <p style="color: var(--phuclong-green); font-weight: 700; margin: 0 0 0.5rem;">${formatCurrency(prod.gia)}</p>
-                    <button onclick="selectProduct('${prod.id}', '${prod.ten}', ${prod.gia})" 
-                            class="btn-highlight" style="width: 100%; padding: 8px; font-size: 0.85rem;">Chọn</button>
                 `;
-                container.appendChild(card);
-            });
-        } catch (e) {
-            showMessage('Lỗi tải sản phẩm: ' + e.message);
-        }
-    }
-
-    async function loadToppingsOnce() {
-        if (toppingsLoaded) return;
-
-        try {
-            const res = await api('GET', '/api/nguyen-lieu/topping');
-
-            // ⚠️ tùy backend bạn trả gì
-            toppings = Array.isArray(res) ? res : res.data;
-
-            toppingsLoaded = true;
-
-            console.log("✅ Loaded toppings:", toppings);
-        } catch (e) {
-            console.error("❌ Lỗi load topping:", e);
-            showMessage("Không tải được topping");
-        }
-    }
-
-    function renderToppings() {
-        const container = document.getElementById('posToppings');
-        container.innerHTML = '';
-
-        if (!toppings || toppings.length === 0) {
-            container.innerHTML = '<p class="muted">Không có topping</p>';
-            return;
+                    const chooseButton = document.createElement('button');
+                    chooseButton.className = 'btn-highlight';
+                    chooseButton.style.width = '100%';
+                    chooseButton.style.padding = '8px';
+                    chooseButton.style.fontSize = '0.85rem';
+                    chooseButton.textContent = 'Chọn';
+                    chooseButton.addEventListener('click', () => selectProduct(prod.id, prod.ten, prod.gia));
+                    card.appendChild(chooseButton);
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                showMessage('Lỗi tải sản phẩm: ' + e.message);
+            }
         }
 
-        toppings.forEach(t => {
-            const price = Number(t.giaDonVi || 0);
+        async function loadToppingsOnce() {
+            if (toppingsLoaded) return;
 
-            const el = document.createElement('label');
-            el.style.display = 'flex';
-            el.style.justifyContent = 'space-between';
-            el.style.alignItems = 'center';
-            el.style.border = '1px solid var(--border-color)';
-            el.style.padding = '6px 10px';
-            el.style.borderRadius = '6px';
-            el.style.cursor = 'pointer';
-            el.style.marginBottom = '6px';
+            try {
+                const res = await api('GET', '/api/nguyen-lieu/topping');
 
-            el.innerHTML = `
-                <div>
-                    <input type="checkbox" value="${t.id}" data-price="${price}">
-                    <span style="margin-left: 6px;">${t.ten}</span>
-                </div>
-                <div style="font-size: 0.85rem; color: var(--phuclong-green); font-weight: 600;">
-                    +${formatCurrency(price)} / ${t.donVi}
+                // ⚠️ tùy backend bạn trả gì
+                toppings = Array.isArray(res) ? res : res.data;
+
+                toppingsLoaded = true;
+
+                console.log("✅ Loaded toppings:", toppings);
+            } catch (e) {
+                console.error("❌ Lỗi load topping:", e);
+                showMessage("Không tải được topping");
+            }
+        }
+
+        function renderToppings() {
+            const container = document.getElementById('posToppings');
+            container.innerHTML = '';
+
+            if (!toppings || toppings.length === 0) {
+                container.innerHTML = '<p class="muted">Không có topping</p>';
+                return;
+            }
+
+            toppings.forEach(t => {
+                const price = Number(t.giaDonVi || 0);
+                const unitRaw = (t.donVi || '').trim().toLowerCase();
+                const needsMultiplier = unitRaw === 'g' || unitRaw === 'ml' || unitRaw.includes('g/ml') || unitRaw.includes('ml/g');
+                const qtyPlaceholder = needsMultiplier ? '10' : '1';
+                const qtyLabel = needsMultiplier ? `Mỗi 10 ${t.donVi}` : 'Số lượng';
+
+                const el = document.createElement('div');
+                el.style.display = 'grid';
+                el.style.gridTemplateColumns = 'auto auto';
+                el.style.gap = '10px';
+                el.style.alignItems = 'center';
+                el.style.border = '1px solid var(--border-color)';
+                el.style.padding = '8px 10px';
+                el.style.borderRadius = '6px';
+                el.style.marginBottom = '6px';
+                el.style.background = '#fff';
+
+                el.innerHTML = `
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" value="${t.id}" data-price="${price}" data-unit="${unitRaw}" data-label="${t.ten}">
+                    <div>
+                        <div style="font-weight:600;">${t.ten}</div>
+                        <div style="font-size:0.82rem; color:#555;">+${formatCurrency(price)} / ${t.donVi}</div>
+                    </div>
+                </label>
+                <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end;">
+                    <input id="toppingQty-${t.id}" type="number" min="1" value="1" style="width: 64px; padding: 6px; border: 1px solid var(--border-color); border-radius: 6px; text-align: center;">
+                    <span style="font-size:0.85rem; color:#555;">${qtyLabel}</span>
                 </div>
             `;
 
-            container.appendChild(el);
-        });
-    }
-
-    function selectProduct(id, name, price) {
-        currentProduct = { id, name, price };
-
-        document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + name;
-        document.getElementById('posModalProdId').value = id;
-        document.getElementById('posSugar').value = '100';
-        document.getElementById('posIce').value = '100';
-        document.getElementById('posQty').value = '1';
-
-        renderToppings(); // 🔥 chỉ render thôi
-
-        document.getElementById('posModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('posModal').style.display = 'none';
-    }
-
-    async function addItemPOS() {
-        const qty = parseInt(document.getElementById('posQty').value);
-        const size = document.getElementById('posSize').value;
-        const sugar = parseInt(document.getElementById('posSugar').value);
-        const ice = parseInt(document.getElementById('posIce').value);
-
-        // ✅ LẤY CHECKBOX
-        const toppingInputs = document.querySelectorAll('#posToppings input:checked');
-
-        // ✅ MAP CHUẨN + FILTER NULL
-        const selectedToppings = Array.from(toppingInputs)
-            .map(input => {
-                const id = input.value;
-
-                if (!id) {
-                    console.error("❌ toppingId bị null");
-                    return null;
-                }
-
-                return {
-                    nguyenLieuId: id, // UUID dạng string OK
-                    soLuong: 1
-                };
-            })
-            .filter(t => t !== null); // ✅ tránh null gây crash backend
-
-        console.log("📦 Payload toppings:", selectedToppings); // 🔥 debug
-
-        try {
-            const order = await api(
-                'POST',
-                `/api/don-hang/pos/${currentOrderId}/them-san-pham`,
-                {
-                    nuocUongId: currentProduct?.id, // ✅ safe access
-                    soLuong: qty,
-                    tuyChinh: {
-                        kichCo: size,
-                        mucDuong: sugar,
-                        mucDa: ice
-                    },
-                    toppings: selectedToppings // ✅ dùng biến mới
-                }
-            );
-
-            showMessage('Đã thêm ' + qty + ' ' + currentProduct.name);
-
-            closeModal();
-
-            mapOrderToUI(order);
-
-        } catch (e) {
-            showMessage('Lỗi thêm sản phẩm: ' + e.message, 'error');
-            console.error("❌ API ERROR:", e);
-        }
-    }
-
-    function mapOrderToUI(order) {
-        posOrder = (order.chiTietDonHang || []).map(item => ({
-            id: item.idChiTietDonHang,
-            name: item.tenSanPham,
-            price: item.giaTien,
-            qty: item.soLuong,
-            size: item.kichCo,
-            sugar: item.mucDuong,
-            ice: item.mucDa,
-            total: item.thanhTien,
-
-            toppings: (item.toppings || []).map(t => ({
-                name: t.ten,
-                qty: t.soLuong,
-                price: t.giaTien
-            }))
-        }));
-
-        renderOrder();
-
-        // 🔥 update tổng tiền từ backend
-        document.getElementById('posSubtotal').textContent = formatCurrency(order.tongTien);
-        document.getElementById('posTotal').textContent = formatCurrency(order.tongTien);
-    }
-
-    async function loadOrder() {
-        try {
-            const order = await api('GET', `/api/don-hang/pos/${currentOrderId}`);
-
-            mapOrderToUI(order);
-
-        } catch (e) {
-            showMessage('Lỗi tải đơn: ' + e.message, 'error');
-            console.error(e);
-        }
-    }
-
-    function renderOrder() {
-        const container = document.getElementById('posOrder');
-
-        if (posOrder.length === 0) {
-            container.innerHTML = '<p class="muted" style="text-align: center;">Chưa có item nào</p>';
-            updateTotal();
-            return;
+                container.appendChild(el);
+            });
         }
 
-        container.innerHTML = '';
+        async function selectProduct(id, name, price) {
+            currentProduct = { id, name, price };
 
-        posOrder.forEach((item, idx) => {
-            const html = `
+            document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + name;
+            document.getElementById('posModalProdId').value = id;
+            document.getElementById('posSize').value = 'M';
+            document.getElementById('posSugar').value = '100';
+            document.getElementById('posIce').value = '100';
+            document.getElementById('posQty').value = '1';
+
+            await loadToppingsOnce();
+            renderToppings();
+
+            document.getElementById('posModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('posModal').style.display = 'none';
+        }
+
+        async function addItemPOS() {
+            if (!currentProduct || !currentProduct.id) {
+                showMessage('Vui lòng chọn sản phẩm để thêm vào đơn', 'error');
+                return;
+            }
+
+            const qty = parseInt(document.getElementById('posQty').value, 10) || 1;
+            const size = document.getElementById('posSize').value;
+            const sugar = parseInt(document.getElementById('posSugar').value, 10) || 100;
+            const ice = parseInt(document.getElementById('posIce').value, 10) || 100;
+
+            // ✅ LẤY CHECKBOX
+            const toppingInputs = document.querySelectorAll('#posToppings input:checked');
+
+            // ✅ MAP CHUẨN + FILTER NULL
+            const selectedToppings = Array.from(toppingInputs)
+                .map(input => {
+                    const id = input.value;
+                    const unit = (input.dataset.unit || '').trim().toLowerCase();
+                    const qtyInput = document.getElementById(`toppingQty-${id}`);
+                    const rawQty = qtyInput ? parseInt(qtyInput.value, 10) : 1;
+                    const validatedQty = Number.isInteger(rawQty) && rawQty > 0 ? rawQty : 1;
+                    const needsMultiplier = unit === 'g' || unit === 'ml' || unit.includes('g/ml') || unit.includes('ml/g');
+                    const adjustedQty = needsMultiplier ? validatedQty * 10 : validatedQty;
+
+                    if (!id) {
+                        console.error("❌ toppingId bị null");
+                        return null;
+                    }
+
+                    return {
+                        nguyenLieuId: id, // UUID dạng string OK
+                        soLuong: adjustedQty
+                    };
+                })
+                .filter(t => t !== null);
+
+            console.log("📦 Payload toppings:", selectedToppings); // 🔥 debug
+
+            try {
+                const order = await api(
+                    'POST',
+                    `/api/don-hang/pos/${currentOrderId}/them-san-pham`,
+                    {
+                        nuocUongId: currentProduct?.id, // ✅ safe access
+                        soLuong: qty,
+                        tuyChinh: {
+                            kichCo: size,
+                            mucDuong: sugar,
+                            mucDa: ice
+                        },
+                        toppings: selectedToppings // ✅ dùng biến mới
+                    }
+                );
+
+                showMessage('Đã thêm ' + qty + ' ' + currentProduct.name);
+                closeModal();
+                mapOrderToUI(order);
+            } catch (e) {
+                showMessage('Lỗi thêm sản phẩm: ' + e.message, 'error');
+                console.error("❌ API ERROR:", e);
+            }
+        }
+
+        function mapOrderToUI(order) {
+            posOrder = (order.chiTietDonHang || []).map(item => ({
+                id: item.idChiTietDonHang,
+                name: item.tenSanPham,
+                price: item.giaTien,
+                qty: item.soLuong,
+                size: item.kichCo,
+                sugar: item.mucDuong,
+                ice: item.mucDa,
+                total: item.thanhTien,
+
+                toppings: (item.toppings || []).map(t => ({
+                    name: t.ten,
+                    qty: t.soLuong,
+                    price: t.giaTien
+                }))
+            }));
+
+            renderOrder();
+
+            // 🔥 update tổng tiền từ backend
+            document.getElementById('posSubtotal').textContent = formatCurrency(order.tongTien);
+            document.getElementById('posTotal').textContent = formatCurrency(order.tongTien);
+        }
+
+        async function loadOrder() {
+            try {
+                const order = await api('GET', `/api/don-hang/pos/${currentOrderId}`);
+
+                mapOrderToUI(order);
+
+            } catch (e) {
+                showMessage('Lỗi tải đơn: ' + e.message, 'error');
+                console.error(e);
+            }
+        }
+
+        function renderOrder() {
+            const container = document.getElementById('posOrder');
+
+            if (posOrder.length === 0) {
+                container.innerHTML = '<p class="muted" style="text-align: center;">Chưa có item nào</p>';
+                updateTotal();
+                return;
+            }
+
+            container.innerHTML = '';
+
+            posOrder.forEach((item, idx) => {
+                const html = `
                 <div style="padding: 0.6rem; background: var(--bg-subtle); border-radius: 6px; margin-bottom: 0.6rem;">
                     
                     <div style="display: flex; justify-content: space-between;">
@@ -441,213 +494,216 @@
                         <button onclick="increaseQty('${item.id}')" class="btn-secondary" style="margin-top:0; padding:4px 8px;">+</button>
                     </div>
 
-                    ${
-                        item.toppings.length > 0
-                            ? `<div style="font-size: 0.8rem; color: gray; margin-top: 4px;">
+                    ${item.toppings.length > 0
+                        ? `<div style="font-size: 0.8rem; color: gray; margin-top: 4px;">
                                 + ${item.toppings.map(t => `${t.name} x${t.qty}`).join(', ')}
                             </div>`
-                            : ''
+                        : ''
                     }
 
                 </div>
             `;
 
-            container.innerHTML += html;
-        });
-
-        updateTotal();
-    }
-
-    async function removeItem(chiTietId) {
-        try {
-            await api('PATCH', `/api/don-hang/pos/chi-tiet/${chiTietId}/xoa`);
-            await loadOrder();
-        } catch (e) {
-            showMessage('Lỗi xóa sản phẩm: ' + e.message, 'error');
-        }
-    }
-
-    async function increaseQty(chiTietId) {
-        try {
-            await api('PATCH', `/api/don-hang/pos/chi-tiet/${chiTietId}/tang`);
-            await loadOrder();
-        } catch (e) {
-            showMessage('Lỗi tăng số lượng: ' + e.message, 'error');
-        }
-    }
-
-    async function decreaseQty(chiTietId) {
-        try {
-            await api('PATCH', `/api/don-hang/pos/chi-tiet/${chiTietId}/giam`);
-            await loadOrder();
-        } catch (e) {
-            showMessage('Lỗi giảm số lượng: ' + e.message, 'error');
-        }
-    }
-
-    function updateTotal() {
-        const subtotal = posOrder.reduce((sum, item) => sum + item.total, 0);
-        document.getElementById('posSubtotal').textContent = formatCurrency(subtotal);
-        document.getElementById('posTotal').textContent = formatCurrency(subtotal);
-        document.getElementById('posBottomTotal').textContent = formatCurrency(subtotal);
-    }
-
-    async function clearOrder() {
-        if (confirm('Xóa toàn bộ đơn hàng?')) {
-            try {
-                for (const item of posOrder) {
-                    await api('PATCH', `/api/don-hang/pos/chi-tiet/${item.id}/xoa`);
-                }
-                await loadOrder();
-            } catch (e) {
-                showMessage('Lỗi xóa toàn bộ đơn: ' + e.message, 'error');
-            }
-        }
-    }
-
-    function saveDraftOrder() {
-        if (posOrder.length === 0) {
-            showMessage('Vui lòng thêm sản phẩm vào đơn');
-            return;
-        }
-        
-        localStorage.setItem('posDraft', JSON.stringify(posOrder));
-        showMessage('Lưu nháp thành công!');
-    }
-
-    async function confirmOrder() {
-        if (posOrder.length === 0) {
-            showMessage('Vui lòng thêm sản phẩm vào đơn');
-            return;
-        }
-
-
-        try {
-            // 🔥 XÁC NHẬN ĐƠN
-            await api('PATCH', `/api/don-hang/pos/${currentOrderId}/xac-nhan`);
-
-            showMessage('Đơn hàng đã xác nhận');
-
-            // 🔥 HIỆN CHỌN THANH TOÁN
-            showPaymentOptions();
-
-        } catch (e) {
-            showMessage('Lỗi xác nhận đơn: ' + e.message, 'error');
-            console.error(e);
-        }
-    }
-
-    async function selectPayment(method) {
-        try {
-            selectedPaymentMethod = method;
-
-            const payment = await api('POST', `/api/thanh-toan/tao-thanh-toan`, {
-                donHangId: currentOrderId,
-                phuongThuc: method
+                container.innerHTML += html;
             });
 
-            // 🔥 LƯU paymentId
-            currentPaymentId = payment.id;
-
-            showMessage('Đã chọn: ' + (method === 'TIEN_MAT' ? 'Tiền mặt' : 'MoMo'));
-
-        } catch (e) {
-            showMessage('Lỗi tạo thanh toán: ' + e.message, 'error');
-            console.error(e);
-        }
-    }
-
-    function showPaymentOptions() {
-        document.getElementById('paymentModal').style.display = 'flex';
-    }
-
-    function closePaymentModal() {
-        document.getElementById('paymentModal').style.display = 'none';
-    }
-    async function confirmPayment() {
-        if (!currentPaymentId) {
-            showMessage('Chưa tạo thanh toán', 'error');
-            return;
+            updateTotal();
         }
 
-        try {
-            await api(
-                'PATCH',
-                `/api/thanh-toan/${currentPaymentId}/xac-nhan-thanh-toan`
-            );
-
-            showMessage('Thanh toán thành công!');
-
-            closePaymentModal();
-
-            // 🔥 lấy order mới nhất
-            const order = await api('GET', `/api/don-hang/pos/${currentOrderId}`);
-
-            showInvoice(order);
-
-        } catch (e) {
-            showMessage('Lỗi thanh toán: ' + e.message, 'error');
-            console.error(e);
+        async function removeItem(chiTietId) {
+            try {
+                await api('PATCH', `/api/don-hang/pos/chi-tiet/${chiTietId}/xoa`);
+                await loadOrder();
+            } catch (e) {
+                showMessage('Lỗi xóa sản phẩm: ' + e.message, 'error');
+            }
         }
-    }
 
-    function showInvoice(order) {
-        const container = document.getElementById('invoiceContent');
+        async function increaseQty(chiTietId) {
+            try {
+                await api('PATCH', `/api/don-hang/pos/chi-tiet/${chiTietId}/tang`);
+                await loadOrder();
+            } catch (e) {
+                showMessage('Lỗi tăng số lượng: ' + e.message, 'error');
+            }
+        }
 
-        let html = '';
+        async function decreaseQty(chiTietId) {
+            try {
+                await api('PATCH', `/api/don-hang/pos/chi-tiet/${chiTietId}/giam`);
+                await loadOrder();
+            } catch (e) {
+                showMessage('Lỗi giảm số lượng: ' + e.message, 'error');
+            }
+        }
 
-        order.chiTietDonHang.forEach(item => {
-            html += `
+        function updateTotal() {
+            const subtotal = posOrder.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('posSubtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('posTotal').textContent = formatCurrency(subtotal);
+            document.getElementById('posBottomTotal').textContent = formatCurrency(subtotal);
+        }
+
+        async function clearOrder() {
+            if (confirm('Xóa toàn bộ đơn hàng?')) {
+                try {
+                    for (const item of posOrder) {
+                        await api('PATCH', `/api/don-hang/pos/chi-tiet/${item.id}/xoa`);
+                    }
+                    await loadOrder();
+                } catch (e) {
+                    showMessage('Lỗi xóa toàn bộ đơn: ' + e.message, 'error');
+                }
+            }
+        }
+
+        function saveDraftOrder() {
+            if (posOrder.length === 0) {
+                showMessage('Vui lòng thêm sản phẩm vào đơn');
+                return;
+            }
+
+            localStorage.setItem('posDraft', JSON.stringify(posOrder));
+            showMessage('Lưu nháp thành công!');
+        }
+
+        async function confirmOrder() {
+            if (posOrder.length === 0) {
+                showMessage('Vui lòng thêm sản phẩm vào đơn');
+                return;
+            }
+
+
+            try {
+                // 🔥 XÁC NHẬN ĐƠN
+                await api('PATCH', `/api/don-hang/pos/${currentOrderId}/xac-nhan`);
+
+                showMessage('Đơn hàng đã xác nhận');
+
+                // 🔥 HIỆN CHỌN THANH TOÁN
+                showPaymentOptions();
+
+            } catch (e) {
+                showMessage('Lỗi xác nhận đơn: ' + e.message, 'error');
+                console.error(e);
+            }
+        }
+
+        async function selectPayment(method) {
+            try {
+                selectedPaymentMethod = method;
+
+                const payment = await api('POST', `/api/thanh-toan/tao-thanh-toan`, {
+                    donHangId: currentOrderId,
+                    phuongThuc: method
+                });
+
+                // 🔥 LƯU paymentId
+                currentPaymentId = payment.id;
+
+                showMessage('Đã chọn: ' + (method === 'TIEN_MAT' ? 'Tiền mặt' : 'MoMo'));
+
+            } catch (e) {
+                showMessage('Lỗi tạo thanh toán: ' + e.message, 'error');
+                console.error(e);
+            }
+        }
+
+        function showPaymentOptions() {
+            document.getElementById('paymentModal').style.display = 'flex';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+        }
+        async function confirmPayment() {
+            if (!currentPaymentId) {
+                showMessage('Chưa tạo thanh toán', 'error');
+                return;
+            }
+
+            try {
+                await api(
+                    'PATCH',
+                    `/api/thanh-toan/${currentPaymentId}/xac-nhan-thanh-toan`
+                );
+
+                showMessage('Thanh toán thành công!');
+
+                closePaymentModal();
+
+                // 🔥 lấy order mới nhất
+                const order = await api('GET', `/api/don-hang/pos/${currentOrderId}`);
+
+                showInvoice(order);
+
+            } catch (e) {
+                showMessage('Lỗi thanh toán: ' + e.message, 'error');
+                console.error(e);
+            }
+        }
+
+        function showInvoice(order) {
+            const container = document.getElementById('invoiceContent');
+
+            let html = '';
+
+            order.chiTietDonHang.forEach(item => {
+                html += `
                 <div style="margin-bottom:10px;">
                     <strong>${item.tenSanPham} (${item.kichCo})</strong><br>
                     ${item.soLuong} x ${formatCurrency(item.giaTien)}<br>
                     Đường: ${item.mucDuong}% | Đá: ${item.mucDa}%<br>
                     
-                    ${
-                        item.toppings?.length > 0
+                    ${item.toppings?.length > 0
                         ? `<small>+ ${item.toppings.map(t => t.ten).join(', ')}</small>`
                         : ''
                     }
                 </div>
             `;
-        });
+            });
 
-        html += `<hr><strong>Tổng: ${formatCurrency(order.tongTien)}</strong>`;
+            html += `<hr><strong>Tổng: ${formatCurrency(order.tongTien)}</strong>`;
 
-        container.innerHTML = html;
+            container.innerHTML = html;
 
-        document.getElementById('invoiceModal').style.display = 'flex';
-    }
+            document.getElementById('invoiceModal').style.display = 'flex';
+        }
 
-    function closeInvoice() {
-        document.getElementById('invoiceModal').style.display = 'none';
+        function closeInvoice() {
+            document.getElementById('invoiceModal').style.display = 'none';
 
-        // reset POS
-        posOrder = [];
-        renderOrder();
-        localStorage.removeItem("currentOrderId");
+            // reset POS
+            posOrder = [];
+            renderOrder();
+            localStorage.removeItem("currentOrderId");
 
-        // 👉 có thể redirect tạo đơn mới
-    }
+            // 👉 có thể redirect tạo đơn mới
+        }
 
-    function applyCouponPOS() {
-        const code = document.getElementById('posCoupon').value;
-        if (!code) return;
-        showMessage('Kiểm tra mã: ' + code);
-    }
+        function applyCouponPOS() {
+            const code = document.getElementById('posCoupon').value;
+            if (!code) return;
+            showMessage('Kiểm tra mã: ' + code);
+        }
 
-    function showMessage(msg, type = 'success') {
-        const el = document.getElementById('message');
-        el.textContent = msg;
-        el.style.background = type === 'error' ? '#e74c3c' : 'var(--phuclong-green)';
-        el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 2000);
-    }
+        function showMessage(msg, type = 'success') {
+            const el = document.getElementById('message');
+            el.textContent = msg;
+            el.style.background = type === 'error' ? '#e74c3c' : 'var(--phuclong-green)';
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 2000);
+        }
 
-    function formatCurrency(value) {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
-    }
-</script>
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+        }
+
+
+
+
+    </script>
 
 </body>
+
 </html>

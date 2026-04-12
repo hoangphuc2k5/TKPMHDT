@@ -26,5 +26,9 @@ public interface DonHangRepository extends JpaRepository<DonHang, UUID> {
     // Lấy tất cả đơn hàng OFFLINE
     Page<DonHang> findByKhachHangIsNull(Pageable pageable);
 
+    // Lấy tất cả đơn hàng có khách hàng
+    
+    List<DonHang> findByKhachHangIsNotNull();
+
 }
 

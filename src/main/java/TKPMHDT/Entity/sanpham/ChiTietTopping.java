@@ -1,5 +1,6 @@
 package TKPMHDT.Entity.sanpham;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -27,6 +28,7 @@ public class ChiTietTopping {
 
     private BigDecimal donGia;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "chi_tiet_don_hang_id")
     private ChiTietDonHang chiTietDonHang;
