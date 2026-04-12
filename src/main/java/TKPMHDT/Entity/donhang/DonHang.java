@@ -96,11 +96,6 @@ public class DonHang {
     @JsonManagedReference
     @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private HoaDon hoaDon;
-
-    @JsonManagedReference
-    @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private PhieuGiao phieuGiao;
-
     @PrePersist
     @PreUpdate
     private void preSave() {
