@@ -1,11 +1,14 @@
 package TKPMHDT.Service.sanpham;
 
+import TKPMHDT.DTO.response.NuocUongHienThiKhachHang;
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.enums.LoaiNguyenLieu;
 import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
+import TKPMHDT.Service.khuyenmai.KhuyenMaiGiaSanPhamService;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,18 +26,34 @@ public class SanPhamService {
 
     private final NuocUongSanRepository nuocUongSanRepository;
     private final NguyenLieuRepository nguyenLieuRepository;
+    private final KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService;
 
     public SanPhamService(
             NuocUongSanRepository nuocUongSanRepository,
-            NguyenLieuRepository nguyenLieuRepository
+            NguyenLieuRepository nguyenLieuRepository,
+            KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService
     ) {
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.nguyenLieuRepository = nguyenLieuRepository;
+        this.khuyenMaiGiaSanPhamService = khuyenMaiGiaSanPhamService;
     }
 
     @Transactional(readOnly = true)
     public List<NuocUongSan> layDanhSachNuocUong() {
         return nuocUongSanRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<NuocUongHienThiKhachHang> layDanhSachNuocUongChoKhachHang() {
+        LocalDateTime luc = LocalDateTime.now();
+        return layDanhSachNuocUong().stream()
+                .map(p -> khuyenMaiGiaSanPhamService.toHienThi(p, luc))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<NuocUongHienThiKhachHang> layMotNuocChoKhachHang(UUID id) {
+        return layNuocUongTheoId(id).map(p -> khuyenMaiGiaSanPhamService.toHienThi(p, LocalDateTime.now()));
     }
 
     @Transactional(readOnly = true)
@@ -164,6 +183,12 @@ public class SanPhamService {
             });
         }
         data.put("nguyenLieu", ingredientList);
+
+        NuocUongHienThiKhachHang km = khuyenMaiGiaSanPhamService.toHienThi(sp, LocalDateTime.now());
+        data.put("giaSauKhuyenMai", km.getGiaSauKhuyenMai());
+        data.put("giaGocKhuyenMai", km.getGia());
+        data.put("nhanKhuyenMaiGia", km.getNhanKhuyenMai());
+        data.put("coKhuyenMaiGia", km.isDangKhuyenMai());
 
         return data;
     }

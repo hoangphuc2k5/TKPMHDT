@@ -6,6 +6,7 @@ import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
 import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
+import TKPMHDT.Service.khuyenmai.KhuyenMaiGiaSanPhamService;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
@@ -23,13 +24,16 @@ public class TuyChinhSanPhamService {
 
     private final NuocUongSanRepository nuocUongSanRepository;
     private final NguyenLieuRepository nguyenLieuRepository;
+    private final KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService;
 
     public TuyChinhSanPhamService(
             NuocUongSanRepository nuocUongSanRepository,
-            NguyenLieuRepository nguyenLieuRepository
+            NguyenLieuRepository nguyenLieuRepository,
+            KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService
     ) {
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.nguyenLieuRepository = nguyenLieuRepository;
+        this.khuyenMaiGiaSanPhamService = khuyenMaiGiaSanPhamService;
     }
 
     /**
@@ -103,7 +107,7 @@ public class TuyChinhSanPhamService {
         NuocUongSan sanPham = nuocUongSanRepository.findById(sanPhamId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
-        BigDecimal giaCoBan = sanPham.getGia() != null ? sanPham.getGia() : BigDecimal.ZERO;
+        BigDecimal giaCoBan = khuyenMaiGiaSanPhamService.donGiaCoSoSauKhuyenMai(sanPham);
 
         // Tính chi phí nguyên liệu thêm (có thể mở rộng)
         BigDecimal chiPhiThem = BigDecimal.ZERO;

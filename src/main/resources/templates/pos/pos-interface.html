@@ -302,11 +302,21 @@
                 card.className = 'card pos-product-card';
                 card.style.cursor = 'pointer';
                 const imgSrc = posProductImageUrl(prod);
+                const goc = Number(prod.gia || 0);
+                const sau = prod.giaSauKhuyenMai != null ? Number(prod.giaSauKhuyenMai) : goc;
+                const km = prod.dangKhuyenMai && sau < goc;
+                const priceLine = km
+                    ? `<p style="margin: 0 0 0.5rem; font-size: 0.88rem;">
+                            <span style="text-decoration: line-through; color: #888;">${formatCurrency(goc)}</span>
+                            <span style="color: var(--phuclong-green); font-weight: 700; margin-left: 8px;">${formatCurrency(sau)}</span>
+                            <span style="display: inline-block; margin-left: 6px; font-size: 0.72rem; padding: 2px 6px; border-radius: 6px; background: #0C713D; color: #fff;">KM</span>
+                       </p>`
+                    : `<p style="color: var(--phuclong-green); font-weight: 700; margin: 0 0 0.5rem;">${formatCurrency(goc)}</p>`;
                 card.innerHTML = `
                     <img class="pos-product-img" alt="">
                     <div class="pos-product-body">
                     <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">${escapeHtml(prod.ten)}</h4>
-                    <p style="color: var(--phuclong-green); font-weight: 700; margin: 0 0 0.5rem;">${formatCurrency(prod.gia)}</p>
+                    ${priceLine}
                     </div>`;
                 const imgEl = card.querySelector('.pos-product-img');
                 imgEl.src = imgSrc;
@@ -399,7 +409,10 @@
 
         async function selectProduct(prod) {
             if (!prod || !prod.id) return;
-            currentProduct = { id: prod.id, name: prod.ten, price: prod.gia };
+            const gocP = Number(prod.gia || 0);
+            const sauP = prod.giaSauKhuyenMai != null ? Number(prod.giaSauKhuyenMai) : gocP;
+            const unitP = prod.dangKhuyenMai && sauP < gocP ? sauP : gocP;
+            currentProduct = { id: prod.id, name: prod.ten, price: unitP };
 
             document.getElementById('posModalTitle').textContent = 'Tùy chỉnh: ' + (prod.ten || '');
             document.getElementById('posModalProdId').value = prod.id;
@@ -498,10 +511,36 @@
             }));
 
             renderOrder();
+            refreshPosTotalsFromOrder(order);
+            const couponInp = document.getElementById('posCoupon');
+            if (couponInp) {
+                couponInp.value = order.maGiamGia || '';
+            }
+        }
 
-            // 🔥 update tổng tiền từ backend
-            document.getElementById('posSubtotal').textContent = formatCurrency(order.tongTien);
-            document.getElementById('posTotal').textContent = formatCurrency(order.tongTien);
+        /** Cập nhật tạm tính / giảm voucher / tổng từ response đơn POS. */
+        function refreshPosTotalsFromOrder(order) {
+            let tamTinh = 0;
+            let giam = 0;
+            let tong = 0;
+            if (order && order.chiTietDonHang && order.chiTietDonHang.length > 0) {
+                tamTinh = order.tamTinhHang != null
+                    ? Number(order.tamTinhHang)
+                    : (order.chiTietDonHang || []).reduce((s, x) => s + Number(x.thanhTien || 0), 0);
+                giam = Number(order.tienGiamApDung || 0);
+                tong = Number(order.tongTien != null ? order.tongTien : (tamTinh - giam));
+            } else if (order) {
+                tamTinh = Number(order.tamTinhHang || 0);
+                giam = Number(order.tienGiamApDung || 0);
+                tong = Number(order.tongTien != null ? order.tongTien : 0);
+            } else {
+                tamTinh = posOrder.reduce((sum, item) => sum + Number(item.total || 0), 0);
+                giam = 0;
+                tong = tamTinh;
+            }
+            document.getElementById('posSubtotal').textContent = formatCurrency(tamTinh);
+            document.getElementById('posDiscount').textContent = '-' + formatCurrency(giam);
+            document.getElementById('posTotal').textContent = formatCurrency(tong);
         }
 
         async function loadOrder() {
@@ -521,7 +560,7 @@
 
             if (posOrder.length === 0) {
                 container.innerHTML = '<p class="muted" style="text-align: center;">Chưa có item nào</p>';
-                updateTotal();
+                refreshPosTotalsFromOrder(null);
                 return;
             }
 
@@ -564,8 +603,6 @@
 
                 container.innerHTML += html;
             });
-
-            updateTotal();
         }
 
         async function removeItem(chiTietId) {
@@ -593,12 +630,6 @@
             } catch (e) {
                 showMessage('Lỗi giảm số lượng: ' + e.message, 'error');
             }
-        }
-
-        function updateTotal() {
-            const subtotal = posOrder.reduce((sum, item) => sum + item.total, 0);
-            document.getElementById('posSubtotal').textContent = formatCurrency(subtotal);
-            document.getElementById('posTotal').textContent = formatCurrency(subtotal);
         }
 
         async function clearOrder() {
@@ -720,7 +751,16 @@
             `;
             });
 
-            html += `<hr><strong>Tổng: ${formatCurrency(order.tongTien)}</strong>`;
+            const tamTinh = order.tamTinhHang != null
+                ? Number(order.tamTinhHang)
+                : (order.chiTietDonHang || []).reduce((s, x) => s + Number(x.thanhTien || 0), 0);
+            const giam = Number(order.tienGiamApDung || 0);
+            html += '<hr>';
+            if (giam > 0.5) {
+                html += `<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>Tạm tính</span><span>${formatCurrency(tamTinh)}</span></div>`;
+                html += `<div style="display:flex;justify-content:space-between;margin-bottom:6px;color:#e74c3c;"><span>Giảm giá${order.maGiamGia ? ' (' + escapeHtml(order.maGiamGia) + ')' : ''}</span><span>-${formatCurrency(giam)}</span></div>`;
+            }
+            html += `<strong>Tổng: ${formatCurrency(order.tongTien)}</strong>`;
 
             container.innerHTML = html;
 
@@ -733,15 +773,26 @@
             // reset POS
             posOrder = [];
             renderOrder();
+            refreshPosTotalsFromOrder(null);
             localStorage.removeItem("currentOrderId");
 
             // 👉 có thể redirect tạo đơn mới
         }
 
-        function applyCouponPOS() {
-            const code = document.getElementById('posCoupon').value;
-            if (!code) return;
-            showMessage('Kiểm tra mã: ' + code);
+        async function applyCouponPOS() {
+            const raw = document.getElementById('posCoupon').value;
+            const code = raw != null ? raw.trim() : '';
+            if (!currentOrderId) {
+                showMessage('Chưa có đơn hàng', 'error');
+                return;
+            }
+            try {
+                const order = await api('PATCH', `/api/don-hang/pos/${currentOrderId}/ma-giam-gia`, { ma: code });
+                mapOrderToUI(order);
+                showMessage(code ? 'Đã áp dụng mã giảm giá' : 'Đã gỡ mã giảm giá');
+            } catch (e) {
+                showMessage(e.message || 'Không áp dụng được mã', 'error');
+            }
         }
 
         function showMessage(msg, type = 'success') {

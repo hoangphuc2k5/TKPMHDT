@@ -343,7 +343,10 @@
             try {
                 const product = await api("GET", "/api/san-pham/nuoc-uong/" + directBuyInfo.productId);
                 directBuyInfo.product = product;
-                const total = product.gia * directBuyInfo.quantity;
+                const gocDb = Number(product.gia || 0);
+                const sauDb = product.giaSauKhuyenMai != null ? Number(product.giaSauKhuyenMai) : gocDb;
+                const unitDb = product.dangKhuyenMai && sauDb < gocDb ? sauDb : gocDb;
+                const total = unitDb * directBuyInfo.quantity;
 
                 itemsList.innerHTML = `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">

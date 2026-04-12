@@ -264,6 +264,18 @@
         }
     }
 
+    /** Giá “niêm yết” dòng = (giá gốc đồ uống + topping/đơn vị) × số lượng — để so với thanhTien đã áp KM giá. */
+    function lineListPriceBeforePromo(item) {
+        const sp = item.nuocUong || {};
+        const toppingUnit = (item.toppings || []).reduce((s, t) => {
+            const dg = Number(t.donGia != null ? t.donGia : 0);
+            const q = t.soLuong != null ? Number(t.soLuong) : 1;
+            return s + dg * q;
+        }, 0);
+        const sl = Number(item.soLuong || 1);
+        return (Number(sp.gia || 0) + toppingUnit) * sl;
+    }
+
     function renderCart() {
         const list = document.getElementById("cart-items-list");
         const isEmpty = !currentCart || !currentCart.cacMatHang || currentCart.cacMatHang.length === 0;
@@ -282,6 +294,17 @@
                 ? item.toppings.map(t => t.ten || t.nguyenLieu?.ten || 'Topping').join(', ')
                 : '';
             
+            const listP = lineListPriceBeforePromo(item);
+            const pay = Number(item.thanhTien || 0);
+            const showKmGia = listP - pay > 0.5;
+            const priceCell = showKmGia
+                ? `<div style="text-align: right;">
+                        <div style="text-decoration: line-through; color: #888; font-weight: 500; font-size: 0.9rem;">${formatPrice(listP)}</div>
+                        <div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(pay)}</div>
+                        <div style="font-size: 0.72rem; color: #b01030; margin-top: 2px;">Khuyến mãi giá</div>
+                   </div>`
+                : `<div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(pay)}</div>`;
+
             const itemHtml = `
                 <div class="card" style="margin-bottom: 1rem;" ondblclick="editCartItem('${item.id}')">
                     <div class="card-content" style="display: flex; gap: 0.9rem; align-items: flex-start;">
@@ -306,7 +329,7 @@
                                 <div style="display: flex; align-items: center; gap: 1rem;">
                                     <span class="muted">Số lượng: <b>${item.soLuong}</b></span>
                                 </div>
-                                <div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(item.thanhTien)}</div>
+                                ${priceCell}
                             </div>
                         </div>
                     </div>

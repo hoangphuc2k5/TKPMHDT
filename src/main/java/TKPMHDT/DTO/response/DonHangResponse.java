@@ -20,6 +20,10 @@ public class DonHangResponse {
     private String phuongThucThanhToan;
     private String trangThaiThanhToan;
     private String tenKhachHang;
+    /** Tổng thành tiền các dòng (trước mã voucher). */
+    private BigDecimal tamTinhHang;
+    private BigDecimal tienGiamApDung;
+    private String maGiamGia;
     private BigDecimal tongTien;
     private List<ChiTietDonHangResponse> chiTietDonHang;
 }

@@ -389,6 +389,47 @@
                             <thead><tr><th>Mã</th><th>Loại</th><th>Giá trị</th><th>Thời gian</th><th>Phạm vi</th><th>Tác vụ</th></tr></thead>
                             <tbody id="promotionBody"></tbody>
                         </table>
+
+                        <h3 style="margin-top:2rem;">Khuyến mãi giá sản phẩm</h3>
+                        <p class="muted" style="font-size:0.9rem;margin-bottom:0.75rem;">Giảm giá trực tiếp hiển thị trên giá bán (khác mã voucher). Có thời điểm bắt đầu/kết thúc; hết hạn sẽ không còn áp dụng.</p>
+                        <input type="hidden" id="kmGiaId">
+                        <div class="admin-toolbar" style="flex-wrap:wrap;">
+                            <input id="kmGiaTen" placeholder="Tên / mô tả nội bộ" style="min-width:180px;">
+                            <select id="kmGiaPhamVi" onchange="toggleKmGiaPhamVi()">
+                                <option value="MOT_SAN_PHAM">Một sản phẩm</option>
+                                <option value="NHIEU_SAN_PHAM">Nhiều sản phẩm</option>
+                                <option value="DANH_MUC">Cả danh mục</option>
+                            </select>
+                            <select id="kmGiaLoai"><option value="PHAN_TRAM">% giảm</option><option value="SO_TIEN_CO_DINH">Số tiền cố định</option></select>
+                            <input id="kmGiaTri" type="number" min="0" step="0.01" placeholder="Giá trị">
+                            <label class="muted" style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="kmGiaKichHoat" checked> Kích hoạt</label>
+                        </div>
+                        <div class="admin-toolbar" style="flex-wrap:wrap;margin-top:0.5rem;">
+                            <label class="muted" style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">Bắt đầu
+                                <input id="kmGiaTu" type="datetime-local">
+                            </label>
+                            <label class="muted" style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">Kết thúc
+                                <input id="kmGiaDen" type="datetime-local">
+                            </label>
+                            <button class="btn-highlight" style="align-self:flex-end;" onclick="saveKmGiaPromotion()">Lưu khuyến mãi giá</button>
+                        </div>
+                        <div id="kmGiaScopeMot" style="margin-top:0.75rem;">
+                            <label class="muted">Sản phẩm</label>
+                            <select id="kmGiaSanPhamDon" style="width:100%;max-width:420px;margin-top:4px;"></select>
+                        </div>
+                        <div id="kmGiaScopeNhieu" style="display:none;margin-top:0.75rem;">
+                            <div class="muted">Chọn sản phẩm áp dụng</div>
+                            <div id="kmGiaProductList" class="admin-check-grid"></div>
+                        </div>
+                        <div id="kmGiaScopeDanhMuc" style="display:none;margin-top:0.75rem;">
+                            <label class="muted">Tên danh mục (khớp trường danh mục đồ uống)</label>
+                            <input id="kmGiaDanhMuc" list="kmGiaDanhMucList" placeholder="Ví dụ: Trà sữa" style="width:100%;max-width:420px;margin-top:4px;">
+                            <datalist id="kmGiaDanhMucList"></datalist>
+                        </div>
+                        <table class="admin-table" style="margin-top:1.25rem;">
+                            <thead><tr><th>Tên</th><th>Phạm vi</th><th>Loại</th><th>Giá trị</th><th>Thời gian</th><th>Trạng thái</th><th>Tác vụ</th></tr></thead>
+                            <tbody id="kmGiaPromotionBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -454,6 +495,7 @@
     let currentRecipeData = null;
     let allProducts = [];
     let promotionMap = {};
+    let kmGiaMap = {};
     /** Các ngày yyyy-MM-dd đang chọn cho voucher (whitelist). */
     let promoSelectedDates = [];
     let recipeIngredientMap = {};
@@ -485,7 +527,7 @@
         document.getElementById('reportFrom').value = past;
         document.getElementById('reportTo').value = today;
         applyInitialSectionFromUrl();
-        await Promise.all([loadKpi(), loadProducts(), loadInventory(), loadOrders(), loadCustomers(), loadInvoices(), loadStaff(), loadPromotions(), loadReports(), loadSystemData(), populateCustomerAddressSelect()]);
+        await Promise.all([loadKpi(), loadProducts(), loadInventory(), loadOrders(), loadCustomers(), loadInvoices(), loadStaff(), loadPromotions(), loadKmGiaPromotions(), loadReports(), loadSystemData(), populateCustomerAddressSelect()]);
     });
 
     function bindSidebar() {
@@ -567,6 +609,9 @@
             </tr>`);
         });
         renderPromotionProducts();
+        populateKmGiaSingleSelect();
+        renderKmGiaProductCheckboxes();
+        fillKmGiaDanhMucDatalist();
         populatePromoCategorySelect();
     }
 
@@ -1425,6 +1470,163 @@
     async function deletePromotion(id) {
         await api('DELETE', '/api/admin/khuyen-mai/' + id);
         await loadPromotions();
+    }
+
+    function kmGiaPhamViLabel(v) {
+        if (v === 'MOT_SAN_PHAM') return 'Một SP';
+        if (v === 'NHIEU_SAN_PHAM') return 'Nhiều SP';
+        if (v === 'DANH_MUC') return 'Danh mục';
+        return v || '';
+    }
+
+    function kmGiaScopeSummary(p) {
+        if (p.phamVi === 'MOT_SAN_PHAM' && p.sanPhamDonId) {
+            const sp = allProducts.find(x => x.id === p.sanPhamDonId);
+            return sp ? sp.ten : p.sanPhamDonId;
+        }
+        if (p.phamVi === 'NHIEU_SAN_PHAM' && (p.sanPhamIds || []).length) {
+            return (p.sanPhamIds || []).length + ' sản phẩm';
+        }
+        if (p.phamVi === 'DANH_MUC' && p.danhMuc) {
+            return 'DM: ' + p.danhMuc;
+        }
+        return '—';
+    }
+
+    function formatKmGiaDateTime(iso) {
+        if (!iso) return '';
+        const s = String(iso);
+        return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s;
+    }
+
+    function toDatetimeLocalValue(iso) {
+        if (!iso) return '';
+        const s = String(iso);
+        if (s.length >= 16) return s.slice(0, 16);
+        return s;
+    }
+
+    function fillKmGiaDanhMucDatalist() {
+        const dl = document.getElementById('kmGiaDanhMucList');
+        if (!dl) return;
+        dl.innerHTML = '';
+        getUniqueDanhMucFromProducts().forEach(d => {
+            const o = document.createElement('option');
+            o.value = d;
+            dl.appendChild(o);
+        });
+    }
+
+    function populateKmGiaSingleSelect(selectedId) {
+        const sel = document.getElementById('kmGiaSanPhamDon');
+        if (!sel) return;
+        const cur = selectedId || sel.value;
+        sel.innerHTML = '<option value="">— Chọn sản phẩm —</option>' +
+            allProducts.map(p => `<option value="${p.id}">${escapeAdminHtml(p.ten || p.id)}</option>`).join('');
+        if (cur) sel.value = cur;
+    }
+
+    function renderKmGiaProductCheckboxes(selectedIds) {
+        const chosen = new Set(selectedIds || []);
+        const el = document.getElementById('kmGiaProductList');
+        if (!el) return;
+        el.innerHTML = allProducts.map(p => `<label><input type="checkbox" value="${p.id}" ${chosen.has(p.id) ? 'checked' : ''}> ${escapeAdminHtml(p.ten || '')}</label>`).join('');
+    }
+
+    function toggleKmGiaPhamVi() {
+        const v = document.getElementById('kmGiaPhamVi').value;
+        document.getElementById('kmGiaScopeMot').style.display = v === 'MOT_SAN_PHAM' ? 'block' : 'none';
+        document.getElementById('kmGiaScopeNhieu').style.display = v === 'NHIEU_SAN_PHAM' ? 'block' : 'none';
+        document.getElementById('kmGiaScopeDanhMuc').style.display = v === 'DANH_MUC' ? 'block' : 'none';
+    }
+
+    async function loadKmGiaPromotions() {
+        const data = await api('GET', '/api/admin/khuyen-mai-gia-san-pham');
+        kmGiaMap = {};
+        const body = document.getElementById('kmGiaPromotionBody');
+        if (!body) return;
+        body.innerHTML = (data || []).map(p => {
+            const hieuLuc = p.kichHoat !== false;
+            const now = new Date();
+            let hetHan = false;
+            if (p.thoiGianKetThuc) {
+                const end = new Date(p.thoiGianKetThuc);
+                if (!isNaN(end.getTime()) && end < now) hetHan = true;
+            }
+            const tt = !hieuLuc ? 'Tắt' : (hetHan ? 'Hết hạn' : 'Đang hiệu lực');
+            return `<tr>
+                <td>${escapeAdminHtml(p.ten || '')}</td>
+                <td>${kmGiaPhamViLabel(p.phamVi)} · ${escapeAdminHtml(kmGiaScopeSummary(p))}</td>
+                <td>${p.loaiGiam || ''}</td>
+                <td>${p.giaTri != null ? p.giaTri : ''}</td>
+                <td>${formatKmGiaDateTime(p.thoiGianBatDau)} → ${formatKmGiaDateTime(p.thoiGianKetThuc)}</td>
+                <td>${tt}</td>
+                <td><button type="button" class="btn-secondary" onclick="editKmGiaById('${p.id}')">Sửa</button>
+                    <button type="button" class="btn-secondary" onclick="deleteKmGiaPromotion('${p.id}')">Xóa</button></td>
+            </tr>`;
+        }).join('');
+        (data || []).forEach(p => { kmGiaMap[p.id] = p; });
+    }
+
+    function editKmGiaById(id) {
+        const p = kmGiaMap[id];
+        if (!p) return;
+        document.getElementById('kmGiaId').value = p.id;
+        document.getElementById('kmGiaTen').value = p.ten || '';
+        document.getElementById('kmGiaPhamVi').value = p.phamVi || 'MOT_SAN_PHAM';
+        document.getElementById('kmGiaLoai').value = p.loaiGiam === 'SO_TIEN_CO_DINH' ? 'SO_TIEN_CO_DINH' : 'PHAN_TRAM';
+        document.getElementById('kmGiaTri').value = p.giaTri != null ? p.giaTri : '';
+        document.getElementById('kmGiaKichHoat').checked = p.kichHoat !== false;
+        document.getElementById('kmGiaTu').value = toDatetimeLocalValue(p.thoiGianBatDau);
+        document.getElementById('kmGiaDen').value = toDatetimeLocalValue(p.thoiGianKetThuc);
+        toggleKmGiaPhamVi();
+        populateKmGiaSingleSelect(p.sanPhamDonId || '');
+        document.getElementById('kmGiaDanhMuc').value = p.danhMuc || '';
+        renderKmGiaProductCheckboxes(p.sanPhamIds || []);
+    }
+
+    function resetKmGiaForm() {
+        document.getElementById('kmGiaId').value = '';
+        document.getElementById('kmGiaTen').value = '';
+        document.getElementById('kmGiaPhamVi').value = 'MOT_SAN_PHAM';
+        document.getElementById('kmGiaLoai').value = 'PHAN_TRAM';
+        document.getElementById('kmGiaTri').value = '';
+        document.getElementById('kmGiaKichHoat').checked = true;
+        document.getElementById('kmGiaTu').value = '';
+        document.getElementById('kmGiaDen').value = '';
+        document.getElementById('kmGiaDanhMuc').value = '';
+        populateKmGiaSingleSelect('');
+        renderKmGiaProductCheckboxes([]);
+        toggleKmGiaPhamVi();
+    }
+
+    async function saveKmGiaPromotion() {
+        const id = document.getElementById('kmGiaId').value;
+        const phamVi = document.getElementById('kmGiaPhamVi').value;
+        const sanPhamIds = Array.from(document.querySelectorAll('#kmGiaProductList input[type="checkbox"]:checked')).map(x => x.value);
+        const payload = {
+            ten: document.getElementById('kmGiaTen').value.trim() || null,
+            phamVi,
+            loaiGiam: document.getElementById('kmGiaLoai').value,
+            giaTri: Number(document.getElementById('kmGiaTri').value || 0),
+            thoiGianBatDau: document.getElementById('kmGiaTu').value ? document.getElementById('kmGiaTu').value : null,
+            thoiGianKetThuc: document.getElementById('kmGiaDen').value ? document.getElementById('kmGiaDen').value : null,
+            kichHoat: document.getElementById('kmGiaKichHoat').checked,
+            sanPhamDonId: phamVi === 'MOT_SAN_PHAM' ? (document.getElementById('kmGiaSanPhamDon').value || null) : null,
+            sanPhamIds: phamVi === 'NHIEU_SAN_PHAM' ? sanPhamIds : null,
+            danhMuc: phamVi === 'DANH_MUC' ? (document.getElementById('kmGiaDanhMuc').value.trim() || null) : null
+        };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/api/admin/khuyen-mai-gia-san-pham/' + id : '/api/admin/khuyen-mai-gia-san-pham';
+        await api(method, url, payload);
+        resetKmGiaForm();
+        await loadKmGiaPromotions();
+    }
+
+    async function deleteKmGiaPromotion(id) {
+        if (!confirm('Xóa khuyến mãi giá sản phẩm này?')) return;
+        await api('DELETE', '/api/admin/khuyen-mai-gia-san-pham/' + id);
+        await loadKmGiaPromotions();
     }
 
     async function loadReports() {

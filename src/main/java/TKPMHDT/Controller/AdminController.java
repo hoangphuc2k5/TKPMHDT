@@ -11,8 +11,11 @@ import TKPMHDT.Entity.donhang.trangthai.TrangThaiDangGiao;
 import TKPMHDT.Entity.hethong.CauHinhHeThong;
 import TKPMHDT.Entity.hethong.NhatKyHeThong;
 import TKPMHDT.Entity.hethong.VaiTroQuyen;
+import TKPMHDT.Entity.khuyenmai.KhuyenMaiGiaSanPham;
 import TKPMHDT.Entity.khuyenmai.MaGiamGia;
 import TKPMHDT.Entity.khuyenmai.enums.LoaiGiamGiaEnum;
+import TKPMHDT.Entity.khuyenmai.enums.PhamViKhuyenMaiGia;
+import TKPMHDT.Entity.sanpham.SanPham;
 import TKPMHDT.Entity.nguoidung.DiaChi;
 import TKPMHDT.Entity.nguoidung.KhachHang;
 import TKPMHDT.Entity.nguoidung.NguoiDung;
@@ -35,6 +38,7 @@ import TKPMHDT.Repository.sanpham.LichSuKhoRepository;
 import TKPMHDT.Repository.sanpham.LuongNguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
 import TKPMHDT.Service.FileStorageService;
+import TKPMHDT.Service.khuyenmai.KhuyenMaiGiaSanPhamService;
 import TKPMHDT.Service.nguoidung.NguoiDungService;
 import TKPMHDT.Service.sanpham.SanPhamService;
 import java.math.BigDecimal;
@@ -46,6 +50,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -91,6 +96,7 @@ public class AdminController {
     private final LuongNguyenLieuRepository luongNguyenLieuRepository;
     private final NuocUongSanRepository nuocUongSanRepository;
     private final FileStorageService fileStorageService;
+    private final KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService;
 
     public AdminController(
             NguoiDungService nguoiDungService,
@@ -104,7 +110,8 @@ public class AdminController {
             CongThucRepository congThucRepository,
             LuongNguyenLieuRepository luongNguyenLieuRepository,
             NuocUongSanRepository nuocUongSanRepository,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService) {
         this.nguoiDungService = nguoiDungService;
         this.sanPhamService = sanPhamService;
         this.donHangRepository = donHangRepository;
@@ -117,6 +124,7 @@ public class AdminController {
         this.luongNguyenLieuRepository = luongNguyenLieuRepository;
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.fileStorageService = fileStorageService;
+        this.khuyenMaiGiaSanPhamService = khuyenMaiGiaSanPhamService;
     }
 
     @GetMapping("/san-pham")
@@ -885,6 +893,72 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
+    @GetMapping("/khuyen-mai-gia-san-pham")
+    public ResponseEntity<List<Map<String, Object>>> layDanhSachKhuyenMaiGiaSanPham() {
+        return ResponseEntity.ok(
+                khuyenMaiGiaSanPhamService.tatCaDayDu().stream().map(this::toKhuyenMaiGiaPayload).toList());
+    }
+
+    @PostMapping("/khuyen-mai-gia-san-pham")
+    public ResponseEntity<Map<String, Object>> taoKhuyenMaiGiaSanPham(@RequestBody KhuyenMaiGiaSanPhamRequest request) {
+        KhuyenMaiGiaSanPham entity = KhuyenMaiGiaSanPham.builder()
+                .ten(request.ten())
+                .phamVi(request.phamVi())
+                .loaiGiam(request.loaiGiam() == null ? LoaiGiamGiaEnum.PHAN_TRAM : request.loaiGiam())
+                .giaTri(request.giaTri())
+                .thoiGianBatDau(request.thoiGianBatDau())
+                .thoiGianKetThuc(request.thoiGianKetThuc())
+                .kichHoat(request.kichHoat() == null || request.kichHoat())
+                .build();
+        ganPhamViKhuyenMaiGia(entity, request);
+        KhuyenMaiGiaSanPham saved = khuyenMaiGiaSanPhamService.luu(entity);
+        ghiLog("KHUYEN_MAI_GIA", "TAO", saved.getId().toString());
+        return ResponseEntity.ok(toKhuyenMaiGiaPayload(saved));
+    }
+
+    @PutMapping("/khuyen-mai-gia-san-pham/{id}")
+    public ResponseEntity<Map<String, Object>> capNhatKhuyenMaiGiaSanPham(
+            @PathVariable UUID id,
+            @RequestBody KhuyenMaiGiaSanPhamRequest request) {
+        return khuyenMaiGiaSanPhamService
+                .timTheoIdDayDu(id)
+                .map(entity -> {
+                    if (request.ten() != null) {
+                        entity.setTen(request.ten());
+                    }
+                    if (request.phamVi() != null) {
+                        entity.setPhamVi(request.phamVi());
+                    }
+                    if (request.loaiGiam() != null) {
+                        entity.setLoaiGiam(request.loaiGiam());
+                    }
+                    if (request.giaTri() != null) {
+                        entity.setGiaTri(request.giaTri());
+                    }
+                    if (request.thoiGianBatDau() != null) {
+                        entity.setThoiGianBatDau(request.thoiGianBatDau());
+                    }
+                    if (request.thoiGianKetThuc() != null) {
+                        entity.setThoiGianKetThuc(request.thoiGianKetThuc());
+                    }
+                    if (request.kichHoat() != null) {
+                        entity.setKichHoat(request.kichHoat());
+                    }
+                    ganPhamViKhuyenMaiGia(entity, request);
+                    KhuyenMaiGiaSanPham updated = khuyenMaiGiaSanPhamService.luu(entity);
+                    ghiLog("KHUYEN_MAI_GIA", "CAP_NHAT", updated.getId().toString());
+                    return ResponseEntity.ok(toKhuyenMaiGiaPayload(updated));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/khuyen-mai-gia-san-pham/{id}")
+    public ResponseEntity<Map<String, Object>> xoaKhuyenMaiGiaSanPham(@PathVariable UUID id) {
+        khuyenMaiGiaSanPhamService.xoa(id);
+        ghiLog("KHUYEN_MAI_GIA", "XOA", id.toString());
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
     @GetMapping("/bao-cao/tong-quan")
     public ResponseEntity<Map<String, Object>> baoCaoTongQuan(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
@@ -1392,6 +1466,66 @@ public class AdminController {
         return payload;
     }
 
+    private void ganPhamViKhuyenMaiGia(KhuyenMaiGiaSanPham entity, KhuyenMaiGiaSanPhamRequest request) {
+        PhamViKhuyenMaiGia pv = request.phamVi() != null ? request.phamVi() : entity.getPhamVi();
+        if (pv == null) {
+            throw new IllegalArgumentException("Thiếu phạm vi áp dụng");
+        }
+        entity.setPhamVi(pv);
+        entity.setSanPhamDon(null);
+        entity.setDanhMuc(null);
+        if (entity.getSanPhams() == null) {
+            entity.setSanPhams(new HashSet<>());
+        } else {
+            entity.getSanPhams().clear();
+        }
+        switch (pv) {
+            case MOT_SAN_PHAM -> {
+                UUID sid = request.sanPhamDonId();
+                if (sid == null) {
+                    throw new IllegalArgumentException("Chọn một sản phẩm");
+                }
+                entity.setSanPhamDon(nuocUongSanRepository
+                        .findById(sid)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm")));
+            }
+            case NHIEU_SAN_PHAM -> {
+                List<UUID> ids = request.sanPhamIds();
+                if (ids == null || ids.isEmpty()) {
+                    throw new IllegalArgumentException("Chọn ít nhất một sản phẩm");
+                }
+                entity.getSanPhams().addAll(new HashSet<>(nuocUongSanRepository.findAllById(ids)));
+            }
+            case DANH_MUC -> {
+                String dm = request.danhMuc();
+                if (dm == null || dm.isBlank()) {
+                    throw new IllegalArgumentException("Nhập tên danh mục áp dụng");
+                }
+                entity.setDanhMuc(dm.trim());
+            }
+        }
+    }
+
+    private Map<String, Object> toKhuyenMaiGiaPayload(KhuyenMaiGiaSanPham e) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", e.getId());
+        m.put("ten", e.getTen());
+        m.put("phamVi", e.getPhamVi());
+        m.put("loaiGiam", e.getLoaiGiam());
+        m.put("giaTri", e.getGiaTri());
+        m.put("thoiGianBatDau", e.getThoiGianBatDau());
+        m.put("thoiGianKetThuc", e.getThoiGianKetThuc());
+        m.put("kichHoat", e.isKichHoat());
+        m.put("sanPhamDonId", e.getSanPhamDon() != null ? e.getSanPhamDon().getId() : null);
+        m.put(
+                "sanPhamIds",
+                e.getSanPhams() == null
+                        ? List.of()
+                        : e.getSanPhams().stream().map(SanPham::getId).toList());
+        m.put("danhMuc", e.getDanhMuc());
+        return m;
+    }
+
     private List<String> parseCsv(String csv, List<String> defaults) {
         if (csv == null || csv.isBlank()) {
             return defaults;
@@ -1504,6 +1638,19 @@ public class AdminController {
             List<UUID> sanPhamIds,
             List<LocalDate> cacNgayApDung,
             List<String> danhMucApDung
+    ) {}
+
+    public record KhuyenMaiGiaSanPhamRequest(
+            String ten,
+            PhamViKhuyenMaiGia phamVi,
+            LoaiGiamGiaEnum loaiGiam,
+            BigDecimal giaTri,
+            LocalDateTime thoiGianBatDau,
+            LocalDateTime thoiGianKetThuc,
+            Boolean kichHoat,
+            UUID sanPhamDonId,
+            List<UUID> sanPhamIds,
+            String danhMuc
     ) {}
 
     public record CauHinhRequest(

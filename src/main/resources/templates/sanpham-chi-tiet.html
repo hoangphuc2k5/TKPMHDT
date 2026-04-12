@@ -239,12 +239,21 @@
 				document.getElementById("sanPhamMoTa").textContent =
 					sp.moTa || "Không có mô tả";
 
-				basePrice = Number(sp.gia || 0);
-				document.getElementById("sanPhamGia").textContent =
-					new Intl.NumberFormat("vi-VN", {
-						style: "currency",
-						currency: "VND"
-					}).format(basePrice);
+				const gocKm = Number(data.giaGocKhuyenMai != null ? data.giaGocKhuyenMai : sp.gia || 0);
+				const sauKm = data.giaSauKhuyenMai != null ? Number(data.giaSauKhuyenMai) : gocKm;
+				const coKm = data.coKhuyenMaiGia === true && sauKm < gocKm;
+				basePrice = coKm ? sauKm : gocKm;
+				const nhanKm = data.nhanKhuyenMaiGia || "Khuyến mãi";
+				const fmtVnd = (v) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(v || 0);
+				const giaEl = document.getElementById("sanPhamGia");
+				if (coKm) {
+					giaEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:1rem; margin-right:10px;">${fmtVnd(gocKm)}</span>`
+						+ `<span style="color:var(--phuclong-green);">${fmtVnd(sauKm)}</span>`
+						+ ` <span class="chip pending" style="margin-left:10px; font-size:0.85rem; vertical-align:middle;">${escapeHtmlProduct(nhanKm)}</span>`
+						+ ` <span class="chip pending" style="font-size:0.85rem; vertical-align:middle; background:#0C713D; color:#fff; border-color:#0C713D;">Giảm giá</span>`;
+				} else {
+					giaEl.textContent = fmtVnd(basePrice);
+				}
 
 				// ảnh chính
 				productImages = sp.hinhAnh || [];

@@ -30,7 +30,7 @@ public class GioHangController {
 
     @GetMapping("/{khachHangId}")
     public ResponseEntity<GioHang> layHoacTaoGioHang(@PathVariable UUID khachHangId) {
-        return ResponseEntity.ok(gioHangService.layHoacTaoGioHang(khachHangId));
+        return ResponseEntity.ok(gioHangService.layVaDongBoGiaTheoKhuyenMai(khachHangId));
     }
 
     @PostMapping("/them-mat-hang")

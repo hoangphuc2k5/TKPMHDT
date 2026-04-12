@@ -1,12 +1,12 @@
 package TKPMHDT.Controller;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import TKPMHDT.Service.sanpham.SanPhamService;
-import org.springframework.web.bind.annotation.RequestParam;
-
 
 @Controller
 public class PageController {
@@ -18,9 +18,20 @@ public class PageController {
     }
 
     @GetMapping("/")
-    public String index(Model model) {
-        // Lấy danh sách nước uống từ database để hiển thị trên trang chủ
-        model.addAttribute("products", sanPhamService.layDanhSachNuocUong());
+    public String index(Model model, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            for (GrantedAuthority a : authentication.getAuthorities()) {
+                if ("ROLE_QUAN_TRI_VIEN".equals(a.getAuthority())) {
+                    return "redirect:/ui/admin/dashboard";
+                }
+            }
+            for (GrantedAuthority a : authentication.getAuthorities()) {
+                if ("ROLE_NHAN_VIEN_BAN_HANG".equals(a.getAuthority())) {
+                    return "redirect:/ui/don-hang";
+                }
+            }
+        }
+        model.addAttribute("products", sanPhamService.layDanhSachNuocUongChoKhachHang());
         return "index";
     }
 

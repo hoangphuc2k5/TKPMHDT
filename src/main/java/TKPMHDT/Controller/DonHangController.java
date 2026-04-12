@@ -3,6 +3,7 @@ package TKPMHDT.Controller;
 import java.security.Principal;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -199,6 +200,19 @@ public class DonHangController {
         DonHangResponse donHang = posFacade.themSanPham(donHangId, request);
 
         return ResponseFactory.success(donHang, "Thêm sản phẩm thành công");
+    }
+
+    /** Áp dụng hoặc gỡ mã voucher (body {@code { "ma": "CODE" }} hoặc {@code ma} rỗng để gỡ). */
+    @PreAuthorize("hasAuthority('pos:create')")
+    @PatchMapping("/pos/{donHangId}/ma-giam-gia")
+    public ResponseEntity<ApiResponse<DonHangResponse>> apDungMaGiamGiaPos(
+            @PathVariable UUID donHangId,
+            @RequestBody(required = false) Map<String, String> body) {
+        String raw = body != null ? body.get("ma") : null;
+        String ma = raw != null ? raw.trim() : "";
+        DonHangResponse dh = posFacade.apDungMaGiamGiaDonTaiQuay(donHangId, ma.isEmpty() ? null : ma);
+        String msg = ma.isEmpty() ? "Đã gỡ mã giảm giá" : "Áp dụng mã giảm giá thành công";
+        return ResponseFactory.success(dh, msg);
     }
 
     // Xác nhận đơn hàng tại quầy

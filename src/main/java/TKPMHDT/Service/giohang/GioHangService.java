@@ -13,6 +13,7 @@ import TKPMHDT.Repository.giohang.GioHangRepository;
 import TKPMHDT.Repository.nguoidung.KhachHangRepository;
 import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
+import TKPMHDT.Service.khuyenmai.KhuyenMaiGiaSanPhamService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,17 +30,20 @@ public class GioHangService {
     private final KhachHangRepository khachHangRepository;
     private final NuocUongSanRepository nuocUongSanRepository;
     private final NguyenLieuRepository nguyenLieuRepository;
+    private final KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService;
 
     public GioHangService(
             GioHangRepository gioHangRepository,
             KhachHangRepository khachHangRepository,
             NuocUongSanRepository nuocUongSanRepository,
-            NguyenLieuRepository nguyenLieuRepository
+            NguyenLieuRepository nguyenLieuRepository,
+            KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService
     ) {
         this.gioHangRepository = gioHangRepository;
         this.khachHangRepository = khachHangRepository;
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.nguyenLieuRepository = nguyenLieuRepository;
+        this.khuyenMaiGiaSanPhamService = khuyenMaiGiaSanPhamService;
     }
 
     @Transactional
@@ -56,6 +60,31 @@ public class GioHangService {
                 });
     }
 
+    /**
+     * Tải giỏ và cập nhật {@code thanhTien} từng dòng theo khuyến mãi giá hiện tại (và topping),
+     * để món thêm trước khi có KM hoặc khi KM thay đổi vẫn hiển thị đúng trên UI giỏ hàng.
+     */
+    @Transactional
+    public GioHang layVaDongBoGiaTheoKhuyenMai(UUID khachHangId) {
+        GioHang gioHang = layHoacTaoGioHang(khachHangId);
+        if (gioHang.getCacMatHang() == null || gioHang.getCacMatHang().isEmpty()) {
+            return gioHang;
+        }
+        boolean dirty = false;
+        for (ChiTietGioHang item : gioHang.getCacMatHang()) {
+            BigDecimal moi = tinhThanhTienDong(item);
+            if (item.getThanhTien() == null || item.getThanhTien().compareTo(moi) != 0) {
+                item.setThanhTien(moi);
+                dirty = true;
+            }
+        }
+        if (dirty) {
+            capNhatTongTien(gioHang);
+            return gioHangRepository.save(gioHang);
+        }
+        return gioHang;
+    }
+
     @Transactional
     public GioHang themMatHang(UUID khachHangId, UUID nuocUongId, int soLuong, Integer mucDa, String ghiChu, List<ToppingRequest> toppings) {
         if (soLuong <= 0) {
@@ -67,11 +96,7 @@ public class GioHangService {
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay nuoc uong"));
 
         List<ChiTietTopping> toppingEntities = buildToppingEntities(toppings);
-        BigDecimal unitPrice = nuocUong.getGia();
-        BigDecimal toppingTotal = toppingEntities.stream()
-                .map(t -> t.getDonGia().multiply(BigDecimal.valueOf(t.getSoLuong() == null ? 1 : t.getSoLuong())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal finalUnitPrice = unitPrice.add(toppingTotal);
+        BigDecimal finalUnitPrice = tinhDonGiaDonViSauKmVaTopping(nuocUong, toppingEntities);
 
         TuyChinhKhachHang tuyChinhMoi = TuyChinhKhachHang.builder()
                 .mucDa(mucDa)
@@ -132,11 +157,7 @@ public class GioHangService {
 
         NuocUongSan nuocUong = item.getNuocUong();
         List<ChiTietTopping> toppingEntities = buildToppingEntities(toppings);
-        BigDecimal unitPrice = nuocUong.getGia();
-        BigDecimal toppingTotal = toppingEntities.stream()
-                .map(t -> t.getDonGia().multiply(BigDecimal.valueOf(t.getSoLuong() == null ? 1 : t.getSoLuong())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal finalUnitPrice = unitPrice.add(toppingTotal);
+        BigDecimal finalUnitPrice = tinhDonGiaDonViSauKmVaTopping(nuocUong, toppingEntities);
 
         item.setSoLuong(soLuong);
         item.setTuyChinh(TuyChinhKhachHang.builder()
@@ -239,6 +260,23 @@ public class GioHangService {
                 .map(ChiTietGioHang::getThanhTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         gioHang.setTongTien(tong);
+    }
+
+    private BigDecimal tinhDonGiaDonViSauKmVaTopping(NuocUongSan nuocUong, List<ChiTietTopping> toppingEntities) {
+        BigDecimal unitPrice = khuyenMaiGiaSanPhamService.donGiaCoSoSauKhuyenMai(nuocUong);
+        List<ChiTietTopping> tops = toppingEntities != null ? toppingEntities : List.of();
+        BigDecimal toppingTotal = tops.stream()
+                .map(t -> (t.getDonGia() != null ? t.getDonGia() : BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(t.getSoLuong() == null ? 1 : t.getSoLuong())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return unitPrice.add(toppingTotal);
+    }
+
+    private BigDecimal tinhThanhTienDong(ChiTietGioHang item) {
+        int sl = item.getSoLuong() == null || item.getSoLuong() <= 0 ? 1 : item.getSoLuong();
+        List<ChiTietTopping> tops = item.getToppings() != null ? item.getToppings() : List.of();
+        return tinhDonGiaDonViSauKmVaTopping(item.getNuocUong(), tops)
+                .multiply(BigDecimal.valueOf(sl));
     }
 
     private static TuyChinhKhachHang cloneTuyChinh(TuyChinhKhachHang src) {

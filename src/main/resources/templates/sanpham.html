@@ -85,6 +85,13 @@ async function timNuocUong() {
     renderProducts(filterProducts(allProducts));
 }
 
+function escapeProductHtml(s) {
+    if (s == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+}
+
 function renderProducts(products) {
     const grid = document.getElementById("products-grid");
     grid.innerHTML = "";
@@ -98,21 +105,34 @@ function renderProducts(products) {
         const img = (p.hinhAnh && p.hinhAnh.length > 0)
             ? p.hinhAnh[0]
             : "/uploads/default-drink.jpg";
-        const categoryChip = p.danhMuc ? `<span class="chip progress" style="font-size:0.72rem; padding:4px 8px;">${p.danhMuc}</span>` : '';
+        const categoryChip = p.danhMuc ? `<span class="chip progress" style="font-size:0.72rem; padding:4px 8px;">${escapeProductHtml(p.danhMuc)}</span>` : '';
+        const goc = Number(p.gia || 0);
+        const sau = p.giaSauKhuyenMai != null ? Number(p.giaSauKhuyenMai) : goc;
+        const showKm = p.dangKhuyenMai && sau < goc;
+        const nhan = escapeProductHtml(p.nhanKhuyenMai || 'Khuyến mãi');
+        const kmChip = showKm ? `<span class="chip pending" style="font-size:0.72rem; padding:4px 8px; background:#fff0f0; color:#b01030; border-color:#f5c2c7;">${nhan}</span>` : '';
+        const priceBlock = showKm
+            ? `<div style="margin-top:12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                    <span style="text-decoration:line-through; color:#888; font-weight:500; font-size:0.95rem;">${formatPrice(goc)}</span>
+                    <span style="color:var(--phuclong-green); font-weight:700;">${formatPrice(sau)}</span>
+               </div>`
+            : `<div style="margin-top:12px; color:var(--phuclong-green); font-weight:700;">${formatPrice(goc)}</div>`;
 
         grid.innerHTML += `
-            <div class="mobile-product-card" onclick="goToDetail('${p.id}')" style="cursor:pointer;">
-                <img src="${img}">
+            <div class="mobile-product-card" onclick="goToDetail('${p.id}')" style="cursor:pointer; position:relative;">
+                ${showKm ? `<div style="position:absolute; top:10px; left:10px; z-index:1;"><span class="chip pending" style="font-size:0.72rem; padding:5px 10px; background:#0C713D; color:#fff; border:none;">Giảm giá</span></div>` : ''}
+                <img src="${img}" style="${showKm ? 'opacity:0.97;' : ''}">
                 <div style="padding:14px 12px 16px;">
                     <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
-                        <strong style="font-size:1rem; line-height:1.3;">${p.ten}</strong>
+                        <strong style="font-size:1rem; line-height:1.3;">${escapeProductHtml(p.ten)}</strong>
                         <span style="color:#cc3154; font-size:1.1rem;">♡</span>
                     </div>
                     <div style="margin:10px 0 8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                         ${categoryChip}
-                        <span class="muted" style="font-size:0.78rem;">${(p.moTa || '').slice(0, 60)}${(p.moTa || '').length > 60 ? '...' : ''}</span>
+                        ${kmChip}
+                        <span class="muted" style="font-size:0.78rem;">${escapeProductHtml((p.moTa || '').slice(0, 60))}${(p.moTa || '').length > 60 ? '...' : ''}</span>
                     </div>
-                    <div style="margin-top:12px; color:var(--phuclong-green); font-weight:700;">${formatPrice(p.gia)}</div>
+                    ${priceBlock}
                 </div>
             </div>`;
     });

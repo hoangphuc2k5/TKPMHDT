@@ -34,6 +34,10 @@ public class PosFacade {
         return donHangService.themChiTietVaoDonHangTaiQuay(donHangId, request);
     }
 
+    public DonHangResponse apDungMaGiamGiaDonTaiQuay(UUID donHangId, String ma) {
+        return donHangService.apDungMaGiamGiaChoDonTaiQuay(donHangId, ma);
+    }
+
     public void xacNhanDonHangVaTruKho(UUID donHangId) {
 
         donHangService.xacNhanDonHang(donHangId);

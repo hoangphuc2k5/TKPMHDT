@@ -1,5 +1,6 @@
 package TKPMHDT.Controller;
 
+import TKPMHDT.DTO.response.NuocUongHienThiKhachHang;
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
@@ -52,8 +53,8 @@ public class SanPhamController {
      * UC05: Lấy danh sách sản phẩm (Duyệt sản phẩm)
      */
     @GetMapping("/nuoc-uong")
-    public ResponseEntity<List<NuocUongSan>> layDanhSachNuocUong() {
-        return ResponseEntity.ok(sanPhamService.layDanhSachNuocUong());
+    public ResponseEntity<List<NuocUongHienThiKhachHang>> layDanhSachNuocUong() {
+        return ResponseEntity.ok(sanPhamService.layDanhSachNuocUongChoKhachHang());
     }
 
     /**
@@ -68,8 +69,8 @@ public class SanPhamController {
      * UC06: Xem chi tiết sản phẩm
      */
     @GetMapping("/nuoc-uong/{id}")
-    public ResponseEntity<NuocUongSan> layNuocUongTheoId(@PathVariable UUID id) {
-        return sanPhamService.layNuocUongTheoId(id)
+    public ResponseEntity<NuocUongHienThiKhachHang> layNuocUongTheoId(@PathVariable UUID id) {
+        return sanPhamService.layMotNuocChoKhachHang(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
