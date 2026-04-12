@@ -57,5 +57,6 @@ public class NguyenLieu {
     @Builder.Default
     private LoaiNguyenLieu loaiNguyenLieu = LoaiNguyenLieu.INGREDIENT;
     
+    
 }
 

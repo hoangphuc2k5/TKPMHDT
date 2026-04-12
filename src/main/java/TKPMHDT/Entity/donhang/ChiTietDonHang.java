@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import TKPMHDT.Entity.sanpham.ChiTietTopping;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
@@ -58,6 +59,7 @@ public class ChiTietDonHang {
     @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "chiTietDonHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietTopping> toppings;
     

@@ -6,11 +6,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.UUID;import java.util.Objects;import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +18,11 @@ import TKPMHDT.DTO.request.SanPhamOrderRequest;
 import TKPMHDT.DTO.request.TaoThanhToanRequest;
 import TKPMHDT.DTO.request.ToppingRequest;
 import TKPMHDT.DTO.response.ChiTietDonHangResponse;
+import TKPMHDT.DTO.response.CongThucResponse;
 import TKPMHDT.DTO.response.DonHangResponse;
+import TKPMHDT.DTO.response.NguyenLieuTrongCongThucResponse;
 import TKPMHDT.DTO.response.ToppingResponse;
+import TKPMHDT.DTO.response.XemDonHangResponse;
 import TKPMHDT.Entity.donhang.ChiTietDonHang;
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.trangthai.TrangThaiChoXacNhan;
@@ -263,6 +266,83 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
+    // lấy đơn hàng trả về XemDonHangResponse để hiển thị cho khách hàng
+    public XemDonHangResponse layChiTietDonHang(UUID donHangId) {
+        
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        // Xây chi tiết đơn hàng response
+        XemDonHangResponse response = mapToXemDonHangResponse(donHang);
+        return response;
+    }
+
+    private XemDonHangResponse mapToXemDonHangResponse(DonHang donHang) {
+        List<ChiTietDonHangResponse> chiTietResponses = donHang.getChiTietDonHangs()
+            .stream()
+            .map(ct -> {
+                // map toppings
+                List<ToppingResponse> toppingRes = ct.getToppings().stream()
+                        .map(t -> ToppingResponse.builder()
+                                .ten(t.getNguyenLieu().getTen())
+                                .soLuong(t.getSoLuong())
+                                .giaTien(t.getDonGia())
+                                .build())
+                        .toList();
+
+                // map chi tiết
+                return ChiTietDonHangResponse.builder()
+                        .idChiTietDonHang(ct.getId())
+                        .tenSanPham(ct.getNuocUong().getTen())
+                        .giaTien(ct.getNuocUong().getGia())
+                        .kichCo(ct.getTuyChinh().getKichCo())
+                        .mucDa(ct.getTuyChinh().getMucDa())
+                        .ghiChu(ct.getTuyChinh().getGhiChu())
+                        .soLuong(ct.getSoLuong())
+                        .thanhTien(ct.getThanhTien())
+                        .toppings(toppingRes)
+                        .congThuc(mapToCongThucResponse(ct.getNuocUong()))
+                        .build();
+            })
+            .toList();
+        
+        XemDonHangResponse response = XemDonHangResponse.builder()
+                .idDonHang(donHang.getId())
+                .trangThai(donHang.getTrangThaiCode())
+                .ngayDat(donHang.getNgayDat())
+                .tenKhachHang(donHang.getKhachHang() != null ? (donHang.getKhachHang().getHoTen() != null ? donHang.getKhachHang().getTenDangNhap() : donHang.getKhachHang().getHoTen()) : "Khách vãng lai")
+                .chiTietDonHang(chiTietResponses)
+                .diaChiGiaoHang(donHang.getDiaChiGiaoHang())
+                .phuongThucThanhToan(donHang.getThanhToan() != null ? donHang.getThanhToan().getPhuongThuc().name() : "Chưa xác định")
+                .trangThaiThanhToan(donHang.getThanhToan() != null ? donHang.getThanhToan().getTrangThai().name() : "Chưa xác định")      
+                .tongTien(donHang.getTongTien())      
+                .build();
+        return response;
+    }
+
+    private CongThucResponse mapToCongThucResponse(NuocUongSan sanPham) {
+        if (sanPham == null || sanPham.getCongThucCoBan() == null) {
+            return null;
+        }
+
+        List<NguyenLieuTrongCongThucResponse> nguyenLieuResponses = sanPham.getCongThucCoBan().getLuongNguyenLieus()
+                .stream()
+                .map(ll -> NguyenLieuTrongCongThucResponse.builder()
+                        .tenNguyenLieu(ll.getNguyenLieu().getTen())
+                        .soLuong(ll.getSoLuong())
+                        .donVi(ll.getDonVi())
+                        .build())
+                .toList();
+
+        return CongThucResponse.builder()
+                .tenCongThuc(sanPham.getCongThucCoBan().getTen())
+                .giaCoBan(sanPham.getCongThucCoBan().getGiaCoBan())
+                .moTa(sanPham.getCongThucCoBan().getMoTa())
+                .nguyenLieus(nguyenLieuResponses)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public List<DonHang> layDonHangCuaToi(String tenDangNhap) {
         NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhap(tenDangNhap)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay tai khoan"));
@@ -317,6 +397,7 @@ public class DonHangService {
         // Xây tùy chỉnh 
         TuyChinhKhachHang tuyChinh = TuyChinhKhachHang.builder()
                 .kichCo(sanPhamRequest.getTuyChinh().getKichCo()) // Mặc định cỡ M, có thể mở rộng sau                
+                .mucDuong(sanPhamRequest.getTuyChinh().getMucDuong())
                 .mucDa(sanPhamRequest.getTuyChinh().getMucDa()) // Mặc định 1 đá, có thể mở rộng sau
                 .ghiChu(sanPhamRequest.getTuyChinh().getGhiChu()) // Mặc định không ghi chú, có thể mở rộng sau
                 .build();
@@ -336,6 +417,7 @@ public class DonHangService {
             
             chiTietToppings.add(chiTietTopping);
         }
+
 
         // Tính lại giá cuối cùng sau khi có tùy chỉnh và topping
         BigDecimal giaCoBan = nuocUongSan.getGia();
@@ -491,6 +573,7 @@ public class DonHangService {
                         .soLuong(ct.getSoLuong())
                         .thanhTien(ct.getThanhTien())
                         .toppings(toppingRes)
+                        .congThuc(mapToCongThucResponse(ct.getNuocUong()))
                         .build();
             })
             .toList();
@@ -499,11 +582,16 @@ public class DonHangService {
                 .id(donHang.getId())
                 .ngayDat(donHang.getNgayDat())
                 .trangThai(donHang.getTrangThaiCode())
+                .phuongThucThanhToan(donHang.getThanhToan() != null ? donHang.getThanhToan().getPhuongThuc().name() : null)
+                .trangThaiThanhToan(donHang.getThanhToan() != null ? donHang.getThanhToan().getTrangThai().name() : null)
+                .tenKhachHang(donHang.getKhachHang() != null ? (donHang.getKhachHang().getHoTen() != null ? donHang.getKhachHang().getTenDangNhap() : donHang.getKhachHang().getHoTen()) : "Khách vãng lai")
                 .tongTien(donHang.getTongTien())
                 .chiTietDonHang(chiTietResponses)
                 .build();
         return response;
     }
+
+    
 
     // CHeck if add same ChiTietDonHang again, if yes then update quantity and price instead of adding new item
 
@@ -546,8 +634,9 @@ public class DonHangService {
 
 
         // So sánh các thuộc tính tùy chỉnh
-        return tc1.getKichCo().equals(tc2.getKichCo()) &&
-                tc1.getMucDa() == tc2.getMucDa() &&
+        return Objects.equals(tc1.getKichCo(), tc2.getKichCo()) &&
+                Objects.equals(tc1.getMucDa(), tc2.getMucDa()) &&
+                Objects.equals(tc1.getMucDuong(), tc2.getMucDuong()) &&
                ((tc1.getGhiChu() == null && tc2.getGhiChu() == null) ||
                 (tc1.getGhiChu() != null && tc1.getGhiChu().equals(tc2.getGhiChu())));
     }

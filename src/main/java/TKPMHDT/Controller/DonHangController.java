@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.enums.TrangThaiDonHangEnum;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
@@ -32,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 import TKPMHDT.DTO.ApiResponse;
 import TKPMHDT.DTO.request.SanPhamOrderRequest;
 import TKPMHDT.DTO.response.DonHangResponse;
+import TKPMHDT.DTO.response.XemDonHangResponse;
+
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RequiredArgsConstructor
@@ -79,18 +82,19 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.layDonHangCuaToi(principal.getName()));
     }
 
-    @PreAuthorize("hasAuthority('order:view')")
+    //@PreAuthorize("hasAuthority('order:view')")
     @GetMapping("/all")
     public ResponseEntity<List<DonHang>> layTatCaDonHang() {
         return ResponseEntity.ok(donHangService.layTatCaDonHang());
     }
 
-    @PreAuthorize("hasAnyAuthority('order:track','order:view')")
+    //@PreAuthorize("hasAnyAuthority('order:track','order:view')")
     @GetMapping("/{donHangId}")
-    public ResponseEntity<DonHang> layChiTietDonHang(@PathVariable UUID donHangId) {
-        return donHangService.layTheoId(donHangId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<XemDonHangResponse>> layChiTietDonHang(@PathVariable UUID donHangId) {
+
+        XemDonHangResponse response = donHangService.layChiTietDonHang(donHangId);
+
+        return ResponseFactory.success(response, "Lấy chi tiết đơn hàng thành công");
     }
 
     @PreAuthorize("hasAnyAuthority('order:track','order:view')")
@@ -115,6 +119,13 @@ public class DonHangController {
     @PostMapping("/{donHangId}/hoan-thanh")
     public ResponseEntity<DonHang> hoanThanh(@PathVariable UUID donHangId) {
         return ResponseEntity.ok(donHangService.hoanThanhDonHang(donHangId));
+    }
+
+    @PreAuthorize("hasAuthority('order:update')")
+    @PatchMapping("/{donHangId}/hoan-thanh-online")
+    public ResponseEntity<ApiResponse<Object>> hoanThanhDonHangOnline(@PathVariable UUID donHangId) {
+        posFacade.hoanThanhDonHangOnline(donHangId);
+        return ResponseFactory.success(null, "Hoàn thành đơn hàng online thành công");
     }
 
     @PreAuthorize("hasAnyAuthority('order:track','order:update')")
@@ -162,7 +173,7 @@ public class DonHangController {
     }
 
     // Xem đơn hàng tại quầy
-    @PreAuthorize("hasAuthority('pos:create')")
+    //@PreAuthorize("hasAuthority('pos:create')")
     @GetMapping("/pos/{donHangId}")
     public ResponseEntity<ApiResponse<DonHangResponse>> layDonHangTaiQuay(@PathVariable UUID donHangId) {
         DonHangResponse donHang = donHangService.layDonHangTaiQuay(donHangId);
@@ -196,7 +207,7 @@ public class DonHangController {
     @PreAuthorize("hasAuthority('order:update')")
     @PatchMapping("/pos/{donHangId}/xac-nhan")
     public ResponseEntity<ApiResponse<UUID>> xacNhanDonHang(@PathVariable UUID donHangId) {
-        posFacade.xacNhanDonHang(donHangId);
+        posFacade.xacNhanDonHangVaTruKho(donHangId);
         return ResponseFactory.success(donHangId, "Xác nhận đơn hàng thành công");
     }
 
@@ -231,5 +242,7 @@ public class DonHangController {
         posFacade.giamSoLuong(chiTietDonHangId);
         return ResponseFactory.success(null,"Giảm số lượng thành công");
     }
+
+    
 }
 
