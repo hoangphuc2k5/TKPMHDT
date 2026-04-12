@@ -80,6 +80,57 @@
     <div id="loading" style="text-align: center; padding: 5rem 0;">
         <div class="brand-font" style="font-size: 1.5rem;">Đang tải giỏ hàng...</div>
     </div>
+
+    <div id="edit-cart-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeEditCartModal()"></div>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="editCartTitle" class="brand-font" style="margin: 0;">Sửa sản phẩm</h3>
+                <button class="modal-close" onclick="closeEditCartModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+                    <img id="editCartImage" src="/uploads/default-drink.jpg" alt="Sản phẩm" style="width:112px; height:112px; object-fit:cover; border-radius:16px; border:1px solid var(--border-color);">
+                    <div style="flex:1; min-width:220px;">
+                        <div id="editCartProductName" style="font-weight:700; color:var(--phuclong-green); margin-bottom:8px;"></div>
+                        <div id="editCartProductDesc" class="muted" style="font-size:0.95rem;"></div>
+                    </div>
+                </div>
+                <div style="margin-top:18px;">
+                    <label for="editCartQuantity">Số lượng</label>
+                    <input id="editCartQuantity" type="number" min="1" value="1">
+                </div>
+                <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div>
+                        <label for="editCartIce">Đá (%)</label>
+                        <input id="editCartIce" type="range" min="0" max="100" value="100" oninput="document.getElementById('editCartIceValue').textContent = this.value + '%';">
+                        <div class="muted" style="margin-top:6px;" id="editCartIceValue">100%</div>
+                    </div>
+                    <div>
+                        <label for="editCartSugar">Đường (%)</label>
+                        <input id="editCartSugar" type="range" min="0" max="100" value="100" oninput="document.getElementById('editCartSugarValue').textContent = this.value + '%';">
+                        <div class="muted" style="margin-top:6px;" id="editCartSugarValue">100%</div>
+                    </div>
+                </div>
+                <div style="margin-top:12px;">
+                    <label for="editCartNote">Ghi chú</label>
+                    <textarea id="editCartNote" rows="3" style="width:100%; min-height:70px;" placeholder="Ví dụ: ít đá, không đường, thêm kem cheese..."></textarea>
+                </div>
+                <div style="margin-top:12px;">
+                    <label>Danh sách topping hiện tại</label>
+                    <div id="editCartToppings" class="muted" style="min-height:34px; padding:10px; border:1px solid var(--border-color); border-radius:var(--radius-sm); background:#fafbfc;"></div>
+                </div>
+                <div style="margin-top:16px;">
+                    <label>Chọn topping</label>
+                    <div id="editCartToppingOptions" class="topping-options" style="margin-top:10px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:12px; margin-top:18px;">
+                <button class="btn-secondary" type="button" onclick="closeEditCartModal()">Hủy</button>
+                <button class="btn-highlight" type="button" onclick="saveCartEdit()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
@@ -87,6 +138,8 @@
 <script>
     let currentCart = null;
     let currentUser = null;
+    let editCartItemData = null;
+    let editCartOptions = [];
 
     document.addEventListener('DOMContentLoaded', initCart);
 
@@ -155,9 +208,12 @@
             const sp = item.nuocUong;
             const img = (sp.hinhAnh && sp.hinhAnh.length > 0) ? sp.hinhAnh[0] : '/uploads/default-drink.jpg';
             const tc = item.tuyChinh || {};
+            const toppingSummary = Array.isArray(item.toppings) && item.toppings.length
+                ? item.toppings.map(t => t.ten || t.nguyenLieu?.ten || 'Topping').join(', ')
+                : '';
             
             const itemHtml = `
-                <div class="card" style="margin-bottom: 1rem;">
+                <div class="card" style="margin-bottom: 1rem;" ondblclick="editCartItem('${item.id}')">
                     <div class="card-content" style="display: flex; gap: 0.9rem; align-items: flex-start;">
                         <div style="flex: 0 0 24px; display: flex; justify-content: center; align-items: flex-start; margin-top: 0.2rem;">
                             <input type="checkbox" ${item.duocChonThanhToan ? 'checked' : ''} onchange="toggleSelectItem('${item.id}', this.checked)" style="transform: scale(0.65);">
@@ -166,12 +222,16 @@
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <h3 style="margin: 0; color: var(--phuclong-green);">${sp.ten}</h3>
-                                <button onclick="removeItem('${item.id}')" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                                <div style="display:flex; gap:0.5rem; align-items:center;">
+                                    <button type="button" class="btn-secondary" onclick="editCartItem('${item.id}')">Sửa</button>
+                                    <button onclick="removeItem('${item.id}')" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                                </div>
                             </div>
                             <div style="font-size: 0.85rem; margin-top: 0.5rem;">
-                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px; margin-right: 5px;">Đường: ${tc.mucDuong}%</span>
-                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa}%</span>
+                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px; margin-right: 5px;">Đường: ${tc.mucDuong || 100}%</span>
+                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa || 100}%</span>
                                 ${tc.ghiChu ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Ghi chú: ${tc.ghiChu}</i></p>` : ''}
+                                ${toppingSummary ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Topping: ${toppingSummary}</i></p>` : ''}
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 1rem;">
                                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -202,6 +262,143 @@
             await loadCart();
         } catch (e) {
             alert("Lỗi khi xóa: " + e.message);
+        }
+    }
+
+    async function editCartItem(itemId) {
+        const item = currentCart?.cacMatHang?.find(i => i.id === itemId);
+        if (!item) {
+            alert('Không tìm thấy sản phẩm cần chỉnh sửa.');
+            return;
+        }
+
+        editCartItemData = item;
+        const sp = item.nuocUong || {};
+
+        document.getElementById('editCartTitle').textContent = `Sửa: ${sp.ten || 'Sản phẩm'}`;
+        document.getElementById('editCartImage').src = (sp.hinhAnh && sp.hinhAnh.length > 0) ? sp.hinhAnh[0] : '/uploads/default-drink.jpg';
+        document.getElementById('editCartProductName').textContent = sp.ten || 'Sản phẩm không xác định';
+        document.getElementById('editCartProductDesc').textContent = sp.moTa || 'Không có mô tả';
+        document.getElementById('editCartQuantity').value = item.soLuong || 1;
+        document.getElementById('editCartIce').value = item.tuyChinh?.mucDa || 100;
+        document.getElementById('editCartIceValue').textContent = `${item.tuyChinh?.mucDa || 100}%`;
+        document.getElementById('editCartSugar').value = item.tuyChinh?.mucDuong || 100;
+        document.getElementById('editCartSugarValue').textContent = `${item.tuyChinh?.mucDuong || 100}%`;
+        document.getElementById('editCartNote').value = item.tuyChinh?.ghiChu || '';
+        document.getElementById('editCartToppings').textContent = Array.isArray(item.toppings) && item.toppings.length
+            ? item.toppings.map(t => t.ten || t.nguyenLieu?.ten || 'Topping').join(', ')
+            : 'Không có topping.';
+
+        const selectedToppingIds = new Set();
+        if (Array.isArray(item.toppings)) {
+            item.toppings.forEach(t => {
+                if (t.toppingId) {
+                    selectedToppingIds.add(t.toppingId);
+                } else if (t.nguyenLieu?.id) {
+                    selectedToppingIds.add(t.nguyenLieu.id);
+                }
+            });
+        }
+
+        const toppingOptionsEl = document.getElementById('editCartToppingOptions');
+        if (toppingOptionsEl) {
+            toppingOptionsEl.innerHTML = '<span class="muted">Đang tải topping...</span>';
+        }
+        editCartOptions = [];
+
+        try {
+            const response = await fetch(`/api/san-pham/nuoc-uong/${sp.id}/detail`);
+            if (response.ok) {
+                const detailData = await response.json();
+                editCartOptions = Array.isArray(detailData.topping) ? detailData.topping : [];
+                renderEditCartToppingOptions(editCartOptions, selectedToppingIds);
+            } else {
+                renderEditCartToppingOptions([], selectedToppingIds);
+            }
+        } catch (e) {
+            console.error('Không tải được topping:', e);
+            renderEditCartToppingOptions([], selectedToppingIds);
+        }
+
+        document.getElementById('edit-cart-modal').classList.remove('hidden');
+    }
+
+    function renderEditCartToppingOptions(options, selectedIds) {
+        const toppingOptionsEl = document.getElementById('editCartToppingOptions');
+        if (!toppingOptionsEl) return;
+
+        if (!Array.isArray(options) || options.length === 0) {
+            toppingOptionsEl.innerHTML = '<div class="muted">Không có topping để chọn.</div>';
+            return;
+        }
+
+        toppingOptionsEl.innerHTML = options.map(option => {
+            const checked = selectedIds.has(option.id) ? 'checked' : '';
+            const priceLabel = option.giaThem || option.gia || 0;
+            return `
+                <label style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+                    <input type="checkbox" value="${option.id}" ${checked}>
+                    <span>${option.ten || 'Topping'} (+${formatPrice(priceLabel)})</span>
+                </label>
+            `;
+        }).join('');
+    }
+
+    function closeEditCartModal() {
+        document.getElementById('edit-cart-modal').classList.add('hidden');
+        editCartItemData = null;
+    }
+
+    async function saveCartEdit() {
+        if (!editCartItemData || !currentUser) {
+            alert('Không thể lưu thay đổi. Vui lòng thử lại.');
+            return;
+        }
+
+        const selectedToppings = Array.from(document.querySelectorAll('#editCartToppingOptions input[type="checkbox"]'))
+            .filter(input => input.checked)
+            .map(input => {
+                const option = editCartOptions.find(o => o.id === input.value);
+                return {
+                    toppingId: option?.id || null,
+                    nguyenLieuId: null,
+                    soLuong: 1,
+                    ten: option?.ten || null,
+                    giaThem: option?.giaThem || option?.gia || 0
+                };
+            });
+
+        const preservedToppingIds = new Set(editCartOptions.map(o => o.id));
+        const preservedToppings = Array.isArray(editCartItemData.toppings)
+            ? editCartItemData.toppings.filter(t => {
+                const matchId = t.toppingId || t.nguyenLieu?.id || t.nguyenLieuId;
+                return !matchId || !preservedToppingIds.has(matchId);
+            }).map(t => ({
+                toppingId: t.toppingId || null,
+                nguyenLieuId: t.nguyenLieu?.id || t.nguyenLieuId || null,
+                soLuong: t.soLuong || 1,
+                ten: t.ten || t.nguyenLieu?.ten || null,
+                giaThem: t.giaThem || t.donGia || null
+            }))
+            : [];
+
+        const payload = {
+            soLuong: Number(document.getElementById('editCartQuantity').value || 1),
+            tuyChinh: {
+                mucDa: Number(document.getElementById('editCartIce').value || 100),
+                mucDuong: Number(document.getElementById('editCartSugar').value || 100),
+                ghiChu: document.getElementById('editCartNote').value || null
+            },
+            toppings: [...selectedToppings, ...preservedToppings]
+        };
+
+        try {
+            await api('PATCH', `/api/gio-hang/${currentUser.id}/mat-hang/${editCartItemData.id}`, payload);
+            await loadCart();
+            closeEditCartModal();
+        } catch (e) {
+            alert('Lỗi lưu thay đổi: ' + e.message);
+            console.error(e);
         }
     }
 
@@ -262,10 +459,57 @@
         display: inline-block;
         border: 1px solid var(--border-color);
     }
-    input {
+    input, textarea {
         padding: 10px;
         border: 1px solid var(--border-color);
         border-radius: var(--radius-md);
+    }
+    .modal.hidden {
+        display: none;
+    }
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+    }
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        backdrop-filter: blur(1px);
+    }
+    .modal-card {
+        position: relative;
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-card);
+        width: min(760px, 100%);
+        max-height: min(90vh, 760px);
+        overflow-y: auto;
+        z-index: 1;
+        padding: 1.5rem;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 1rem;
+    }
+    .modal-close {
+        border: none;
+        background: transparent;
+        color: var(--text-main);
+        font-size: 1.6rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .modal-footer button {
+        min-width: 120px;
     }
 </style>
 </body>

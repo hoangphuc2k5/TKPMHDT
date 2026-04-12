@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import TKPMHDT.DTO.request.SanPhamOrderRequest;
 import TKPMHDT.DTO.request.TaoThanhToanRequest;
 import TKPMHDT.DTO.request.ToppingRequest;
+import TKPMHDT.DTO.request.TuyChinhRequest;
 import TKPMHDT.DTO.response.ChiTietDonHangResponse;
 import TKPMHDT.DTO.response.DonHangResponse;
 import TKPMHDT.DTO.response.ToppingResponse;
@@ -33,9 +35,11 @@ import TKPMHDT.Entity.sanpham.ChiTietTopping;
 import TKPMHDT.Entity.sanpham.NguyenLieu;
 import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
+import TKPMHDT.Entity.sanpham.TuyChonTuyChinh;
 import TKPMHDT.Repository.donhang.ChiTietDonHangRepository;
 import TKPMHDT.Repository.donhang.DonHangRepository;
 import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
+import TKPMHDT.Repository.sanpham.TuyChonTuyChinhRepository;
 import TKPMHDT.Repository.giohang.GioHangRepository;
 import TKPMHDT.Repository.nguoidung.DiaChiRepository;
 import TKPMHDT.Repository.nguoidung.KhachHangRepository;
@@ -58,6 +62,7 @@ public class DonHangService {
     private final ThanhToanService thanhToanService;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final NguyenLieuRepository nguyenLieuRepository;
+    private final TuyChonTuyChinhRepository tuyChonTuyChinhRepository;
     private final DonHangRealtimeService donHangRealtimeService;
 
     public DonHangService(
@@ -71,6 +76,7 @@ public class DonHangService {
             ThanhToanService thanhToanService,
             ChiTietDonHangRepository chiTietDonHangRepository,
             NguyenLieuRepository nguyenLieuRepository,
+            TuyChonTuyChinhRepository tuyChonTuyChinhRepository,
             DonHangRealtimeService donHangRealtimeService
     ) {
         this.donHangRepository = donHangRepository;
@@ -83,6 +89,7 @@ public class DonHangService {
         this.thanhToanService = thanhToanService;
         this.chiTietDonHangRepository = chiTietDonHangRepository;
         this.nguyenLieuRepository = nguyenLieuRepository;
+        this.tuyChonTuyChinhRepository = tuyChonTuyChinhRepository;
         this.donHangRealtimeService = donHangRealtimeService;
     }
 
@@ -315,25 +322,59 @@ public class DonHangService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
         
         // Xây tùy chỉnh 
+        TuyChinhRequest tuyChinhReq = sanPhamRequest.getTuyChinh();
         TuyChinhKhachHang tuyChinh = TuyChinhKhachHang.builder()
-                .kichCo(sanPhamRequest.getTuyChinh().getKichCo()) // Mặc định cỡ M, có thể mở rộng sau                
-                .mucDa(sanPhamRequest.getTuyChinh().getMucDa()) // Mặc định 1 đá, có thể mở rộng sau
-                .ghiChu(sanPhamRequest.getTuyChinh().getGhiChu()) // Mặc định không ghi chú, có thể mở rộng sau
+                .kichCo(tuyChinhReq != null ? tuyChinhReq.getKichCo() : "M")
+                .mucDa(tuyChinhReq != null ? tuyChinhReq.getMucDa() : 100)
+                .ghiChu(tuyChinhReq != null ? tuyChinhReq.getGhiChu() : null)
                 .build();
 
         // Xây topping
         List<ChiTietTopping> chiTietToppings = new ArrayList<>();
-        for(ToppingRequest toppingReq : sanPhamRequest.getToppings()) {
-            NguyenLieu nguyenLieu = nguyenLieuRepository.findById(toppingReq.getNguyenLieuId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nguyên liệu topping với ID: " + toppingReq.getNguyenLieuId()));
-            
-            BigDecimal giaToppingTaiThoiDiemBan = nguyenLieu.getGiaDonVi();
+        List<ToppingRequest> toppingRequests = sanPhamRequest.getToppings() != null ? sanPhamRequest.getToppings() : new ArrayList<>();
+        for (ToppingRequest toppingReq : toppingRequests) {
+            if (toppingReq == null) {
+                continue;
+            }
+            if (toppingReq.getNguyenLieuId() == null && toppingReq.getToppingId() == null && toppingReq.getGiaThem() == null) {
+                continue;
+            }
+
+            NguyenLieu nguyenLieu = null;
+            BigDecimal price = toppingReq.getGiaThem();
+            BigDecimal defaultPrice = price;
+            String ten = null;
+            int quantity = toppingReq.getSoLuong() == null || toppingReq.getSoLuong() <= 0 ? 1 : toppingReq.getSoLuong();
+
+            if (toppingReq.getNguyenLieuId() != null) {
+                nguyenLieu = nguyenLieuRepository.findById(toppingReq.getNguyenLieuId())
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nguyên liệu topping với ID: " + toppingReq.getNguyenLieuId()));
+                price = nguyenLieu.getGiaDonVi() != null ? nguyenLieu.getGiaDonVi() : price;
+                ten = nguyenLieu.getTen();
+            } else if (toppingReq.getToppingId() != null) {
+                TuyChonTuyChinh option = tuyChonTuyChinhRepository.findById(toppingReq.getToppingId())
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy topping option với ID: " + toppingReq.getToppingId()));
+                price = option.getGiaThem() != null ? option.getGiaThem() : defaultPrice;
+                ten = option.getTen();
+            } else if (toppingReq.getGiaThem() != null) {
+                price = toppingReq.getGiaThem();
+                ten = toppingReq.getTen();
+            }
+
+            if (price == null) {
+                price = BigDecimal.ZERO;
+            }
+            if (ten == null) {
+                ten = "Topping";
+            }
+
             ChiTietTopping chiTietTopping = ChiTietTopping.builder()
                     .nguyenLieu(nguyenLieu)
-                    .soLuong(toppingReq.getSoLuong())
-                    .donGia(giaToppingTaiThoiDiemBan)
+                    .soLuong(quantity)
+                    .donGia(price)
+                    .ten(ten)
                     .build();
-            
+
             chiTietToppings.add(chiTietTopping);
         }
 
@@ -408,8 +449,11 @@ public class DonHangService {
     private void recalcThanhTien(ChiTietDonHang chiTiet) {
         BigDecimal giaCoBan = chiTiet.getNuocUong().getGia();
         BigDecimal giaCuoiCung = chiTiet.getTuyChinh().tinhGiaCuoiCung(giaCoBan);
-        for (ChiTietTopping topping : chiTiet.getToppings()) {
-            giaCuoiCung = giaCuoiCung.add(topping.getDonGia().multiply(BigDecimal.valueOf(topping.getSoLuong())));
+        List<ChiTietTopping> chiTietToppings = chiTiet.getToppings() != null ? chiTiet.getToppings() : new ArrayList<>();
+        for (ChiTietTopping topping : chiTietToppings) {
+            BigDecimal toppingPrice = topping.getDonGia() != null ? topping.getDonGia() : BigDecimal.ZERO;
+            int quantity = topping.getSoLuong() != null ? topping.getSoLuong() : 1;
+            giaCuoiCung = giaCuoiCung.add(toppingPrice.multiply(BigDecimal.valueOf(quantity)));
         }
         chiTiet.setThanhTien(giaCuoiCung.multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
     }
@@ -472,9 +516,10 @@ public class DonHangService {
             .stream()
             .map(ct -> {
                 // map toppings
-                List<ToppingResponse> toppingRes = ct.getToppings().stream()
+                List<ChiTietTopping> chiTietToppings = ct.getToppings() != null ? ct.getToppings() : new ArrayList<>();
+                List<ToppingResponse> toppingRes = chiTietToppings.stream()
                         .map(t -> ToppingResponse.builder()
-                                .ten(t.getNguyenLieu().getTen())
+                                .ten(t.getTen() != null ? t.getTen() : (t.getNguyenLieu() != null ? t.getNguyenLieu().getTen() : "Topping"))
                                 .soLuong(t.getSoLuong())
                                 .giaTien(t.getDonGia())
                                 .build())
@@ -532,9 +577,25 @@ public class DonHangService {
         for (ChiTietTopping t1 : toppings1) {
             boolean foundMatch = false;
             for (ChiTietTopping t2 : toppings2) {
-                if (t1.getNguyenLieu().getId().equals(t2.getNguyenLieu().getId()) &&
-                    t1.getSoLuong() == t2.getSoLuong() &&
-                    t1.getDonGia().compareTo(t2.getDonGia()) == 0) {
+                boolean sameIngredientId;
+                if (t1.getNguyenLieu() != null && t2.getNguyenLieu() != null) {
+                    sameIngredientId = Objects.equals(t1.getNguyenLieu().getId(), t2.getNguyenLieu().getId());
+                } else if (t1.getNguyenLieu() == null && t2.getNguyenLieu() == null) {
+                    sameIngredientId = Objects.equals(
+                            t1.getTen() != null ? t1.getTen() : "",
+                            t2.getTen() != null ? t2.getTen() : "");
+                } else {
+                    sameIngredientId = false;
+                }
+
+                BigDecimal donGia1 = t1.getDonGia() != null ? t1.getDonGia() : BigDecimal.ZERO;
+                BigDecimal donGia2 = t2.getDonGia() != null ? t2.getDonGia() : BigDecimal.ZERO;
+                int soLuong1 = t1.getSoLuong() != null ? t1.getSoLuong() : 1;
+                int soLuong2 = t2.getSoLuong() != null ? t2.getSoLuong() : 1;
+
+                if (sameIngredientId &&
+                    soLuong1 == soLuong2 &&
+                    donGia1.compareTo(donGia2) == 0) {
                     foundMatch = true;
                     break;
                 }

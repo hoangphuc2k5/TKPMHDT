@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 import TKPMHDT.Entity.donhang.ChiTietDonHang;
+import TKPMHDT.Entity.giohang.ChiTietGioHang;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.*;
 
 @Getter
@@ -27,7 +29,15 @@ public class ChiTietTopping {
 
     private BigDecimal donGia;
 
+    @Column(name = "ten", length = 120)
+    private String ten;
+
     @ManyToOne
     @JoinColumn(name = "chi_tiet_don_hang_id")
     private ChiTietDonHang chiTietDonHang;
+
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "chi_tiet_gio_hang_id")
+    private ChiTietGioHang chiTietGioHang;
 }
