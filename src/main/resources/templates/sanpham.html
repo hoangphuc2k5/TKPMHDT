@@ -5,13 +5,18 @@
 <header th:replace="~{fragments/layout :: header('products')}"></header>
 
 <div class="container" style="padding-top:18px; padding-bottom:84px; max-width:760px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:1.3rem;">🥤</span>
-            <span class="brand-font" style="font-size:1.4rem;">DrinkHub</span>
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
+        <div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.6rem;">🥤</span>
+                <span class="brand-font" style="font-size:1.8rem;">DrinkHub</span>
+            </div>
+            <p class="muted" style="margin:10px 0 0; max-width:560px;">Thực đơn đồ uống tươi ngon, topping phong phú và đặt hàng nhanh chóng. Chọn sản phẩm và xem chi tiết ngay.</p>
         </div>
-        <button class="btn-secondary" style="margin-top:0; padding:8px 12px;" onclick="timNuocUong()">Lọc</button>
+        <button class="btn-secondary" style="margin-top:0; padding:10px 14px;" onclick="timNuocUong()">Lọc</button>
     </div>
+
+    <div id="productCount" class="muted" style="margin-bottom:16px;">0 sản phẩm</div>
 
     <div class="input-with-action" style="margin-bottom:10px;">
         <input id="search-input" type="text" placeholder="Tìm kiếm đồ uống..." style="padding-right:70px;">
@@ -66,20 +71,28 @@ function renderProducts(products) {
         const img = (p.hinhAnh && p.hinhAnh.length > 0)
             ? p.hinhAnh[0]
             : "/uploads/default-drink.jpg";
+        const categoryChip = p.danhMuc ? `<span class="chip progress" style="font-size:0.72rem; padding:4px 8px;">${p.danhMuc}</span>` : '';
 
         grid.innerHTML += `
             <div class="mobile-product-card" onclick="goToDetail('${p.id}')" style="cursor:pointer;">
                 <img src="${img}">
-                <div style="padding:10px;">
-                    <div style="display:flex; justify-content:space-between; gap:8px;">
-                        <strong style="font-size:0.95rem;">${p.ten}</strong>
-                        <span style="color:#cc3154;">♡</span>
+                <div style="padding:14px 12px 16px;">
+                    <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+                        <strong style="font-size:1rem; line-height:1.3;">${p.ten}</strong>
+                        <span style="color:#cc3154; font-size:1.1rem;">♡</span>
                     </div>
-                    <div class="muted" style="font-size:0.8rem; min-height:34px;">${p.moTa || ''}</div>
-                    <div style="margin-top:6px; color:var(--phuclong-green); font-weight:700;">${formatPrice(p.gia)}</div>
+                    <div style="margin:10px 0 8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        ${categoryChip}
+                        <span class="muted" style="font-size:0.78rem;">${(p.moTa || '').slice(0, 60)}${(p.moTa || '').length > 60 ? '...' : ''}</span>
+                    </div>
+                    <div style="margin-top:12px; color:var(--phuclong-green); font-weight:700;">${formatPrice(p.gia)}</div>
                 </div>
             </div>`;
     });
+    const countNode = document.getElementById("productCount");
+    if (countNode) {
+        countNode.textContent = `${products.length} sản phẩm`;
+    }
 }
 
 function renderCategories() {

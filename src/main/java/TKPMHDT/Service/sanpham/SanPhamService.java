@@ -7,6 +7,7 @@ import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
 import TKPMHDT.Repository.sanpham.TuyChonTuyChinhRepository;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import TKPMHDT.Entity.sanpham.TuyChonTuyChinh;
 
 @Service
 public class SanPhamService {
@@ -87,6 +89,38 @@ public class SanPhamService {
     public List<NguyenLieu> layNguyenLieuCanhBao() {
         return nguyenLieuRepository.findNguyenLieuCanhBao();
     }
+
+    private List<TuyChonTuyChinh> loadToppingOptions(NuocUongSan sp) {
+        return tuyChonRepository.findByNhomIgnoreCase("TOPPING");
+    }
+
+    private List<UUID> parseUuidCsv(String csv) {
+        if (csv == null || csv.isBlank()) {
+            return List.of();
+        }
+
+        String normalized = csv.trim();
+        if (normalized.startsWith("[") && normalized.endsWith("]")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        normalized = normalized.replace("\"", "").replace("'", "");
+
+        return Arrays.stream(normalized.split("[,;]"))
+                .map(String::trim)
+                .filter(v -> !v.isBlank())
+                .map(this::safeParseUuid)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+    }
+
+    private Optional<UUID> safeParseUuid(String value) {
+        try {
+            return Optional.of(UUID.fromString(value));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
     
     // Them api cho nay
     @Transactional(readOnly = true)
@@ -101,7 +135,7 @@ public class SanPhamService {
         data.put("size", tuyChonRepository.findByNhomIgnoreCase("SIZE"));
         data.put("duong", tuyChonRepository.findByNhomIgnoreCase("DUONG"));
         data.put("da", tuyChonRepository.findByNhomIgnoreCase("DA"));
-        data.put("topping", tuyChonRepository.findByNhomIgnoreCase("TOPPING"));
+        data.put("topping", loadToppingOptions(sp));
         data.put("coTheTuyChinh", sp.isCoTheTuyChinh());
         data.put("congThuc", sp.getCongThucCoBan());
 

@@ -2,6 +2,7 @@ package TKPMHDT.Controller;
 
 import TKPMHDT.Entity.giohang.GioHang;
 import TKPMHDT.Service.giohang.GioHangService;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import TKPMHDT.DTO.request.ToppingRequest;
 
 @RestController
 @RequestMapping("/api/gio-hang")
@@ -38,9 +41,27 @@ public class GioHangController {
                 request.soLuong(),
                 request.mucDuong(),
                 request.mucDa(),
-                request.ghiChu()
+                request.ghiChu(),
+                request.toppings()
         );
         return ResponseEntity.ok(gioHang);
+    }
+
+    @PatchMapping("/{khachHangId}/mat-hang/{chiTietGioHangId}")
+    public ResponseEntity<GioHang> capNhatMatHang(
+            @PathVariable UUID khachHangId,
+            @PathVariable UUID chiTietGioHangId,
+            @RequestBody CapNhatMatHangRequest request
+    ) {
+        return ResponseEntity.ok(gioHangService.capNhatMatHang(
+                khachHangId,
+                chiTietGioHangId,
+                request.soLuong(),
+                request.mucDuong(),
+                request.mucDa(),
+                request.ghiChu(),
+                request.toppings()
+        ));
     }
 
     @DeleteMapping("/{khachHangId}/mat-hang/{chiTietGioHangId}")
@@ -76,7 +97,17 @@ public class GioHangController {
             int soLuong,
             Integer mucDuong,
             Integer mucDa,
-            String ghiChu
+            String ghiChu,
+            List<ToppingRequest> toppings
+    ) {
+    }
+
+    public record CapNhatMatHangRequest(
+            int soLuong,
+            Integer mucDuong,
+            Integer mucDa,
+            String ghiChu,
+            List<ToppingRequest> toppings
     ) {
     }
 
