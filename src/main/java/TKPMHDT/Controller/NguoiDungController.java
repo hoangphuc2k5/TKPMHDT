@@ -1,4 +1,4 @@
-package TKPMHDT.Controller.customer;
+package TKPMHDT.Controller;
 
 import TKPMHDT.Entity.nguoidung.KhachHang;
 import TKPMHDT.Entity.nguoidung.NguoiDung;

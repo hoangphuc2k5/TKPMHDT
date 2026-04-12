@@ -1,4 +1,4 @@
-package TKPMHDT.Controller.customer;
+package TKPMHDT.Controller;
 
 import TKPMHDT.DTO.ApiResponse;
 import TKPMHDT.DTO.request.TaoThanhToanRequest;
