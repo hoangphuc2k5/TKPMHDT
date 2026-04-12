@@ -14,6 +14,7 @@ import lombok.*;
 public class ChiTietDonHangResponse {
     private UUID idChiTietDonHang;
     private String tenSanPham;
+    
     private BigDecimal giaTien;
     private String kichCo;
     private Integer mucDuong;
@@ -22,4 +23,6 @@ public class ChiTietDonHangResponse {
     private Integer soLuong;
     private BigDecimal thanhTien;
     private List<ToppingResponse> toppings;
+
+    private CongThucResponse congThuc;
 }

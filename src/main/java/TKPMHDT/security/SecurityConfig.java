@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/uploads/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
                         .requestMatchers("/", "/ui/san-pham/**", "/ui/khuyen-mai").permitAll()
                         .requestMatchers("/ui/admin/**").hasRole("QUAN_TRI_VIEN")
+                        // .requestMatchers("/ui/don-hang").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN")
                         .requestMatchers("/ui/pos/**").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN")
                         .requestMatchers("/api/nguoi-dung/dang-ky-khach-hang").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
@@ -37,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/khuyen-mai/ma/**", "/api/khuyen-mai/tinh-tien-giam").permitAll()
                         .requestMatchers("/api/nguoi-dung/me").authenticated()
                         .requestMatchers("/api/gio-hang/**").hasAuthority("cart:manage")
+                        .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers
@@ -78,7 +80,7 @@ public class SecurityConfig {
             }
 
             if (isPosUser) {
-                response.sendRedirect("/ui/pos");
+                response.sendRedirect("/ui/don-hang");
                 return;
             }
 

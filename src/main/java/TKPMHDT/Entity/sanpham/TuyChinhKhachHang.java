@@ -26,6 +26,9 @@ public class TuyChinhKhachHang {
     @Column(name = "muc_da")
     private Integer mucDa;
 
+    @Column(name = "muc_duong")
+    private Integer mucDuong;
+
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 

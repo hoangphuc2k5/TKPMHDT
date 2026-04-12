@@ -8,10 +8,12 @@ import TKPMHDT.DTO.request.SanPhamOrderRequest;
 import TKPMHDT.DTO.request.TaoThanhToanRequest;
 import TKPMHDT.DTO.response.DonHangResponse;
 import TKPMHDT.DTO.response.ThanhToanResponse;
+import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.donhang.HoaDon;
 import TKPMHDT.Entity.thanhtoan.ThanhToan;
 import TKPMHDT.Service.donhang.DonHangService;
 import TKPMHDT.Service.donhang.HoaDonService;
+import TKPMHDT.Service.nguyenlieu.NguyeLieuService;
 import TKPMHDT.Service.thanhtoan.ThanhToanService;
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,7 @@ public class PosFacade {
     private final DonHangService donHangService;
     private final ThanhToanService thanhToanService;
     private final HoaDonService hoaDonService;
+    private final NguyeLieuService nguyenLieuService;
 
     public UUID taoDonHangTaiQuay() {
         return donHangService.taoDonHangTaiQuay();
@@ -31,9 +34,11 @@ public class PosFacade {
         return donHangService.themChiTietVaoDonHangTaiQuay(donHangId, request);
     }
 
-    public void xacNhanDonHang(UUID donHangId) {
+    public void xacNhanDonHangVaTruKho(UUID donHangId) {
+
         donHangService.xacNhanDonHang(donHangId);
-        
+
+        nguyenLieuService.truNguyenLieu(donHangId);
     }
 
     public ThanhToanResponse taoThanhToan(TaoThanhToanRequest request) {
@@ -69,5 +74,19 @@ public class PosFacade {
 
     public void xoaChiTietDonHang(UUID chiTietDonHangId) {
         donHangService.xoaChiTietDonHang(chiTietDonHangId);
+    }
+
+    public void hoanThanhDonHangOnline(UUID donHangId) {
+        
+        DonHang donHang = donHangService.layTheoId(donHangId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+        
+        ThanhToan thanhToan = donHang.getThanhToan();
+
+        if(thanhToan == null || thanhToan.getTrangThai() != TKPMHDT.Entity.thanhtoan.enums.TrangThaiThanhToanEnum.THANH_CONG) {
+            thanhToanService.xacNhanThanhToanThanhCong(thanhToan.getId());
+        }
+
+        donHangService.hoanThanhDonHang(donHangId);
     }
 }

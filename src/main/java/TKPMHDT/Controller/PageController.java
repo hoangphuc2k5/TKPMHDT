@@ -43,11 +43,6 @@ public class PageController {
         return "giohang";
     }
 
-    @GetMapping("/ui/don-hang")
-    public String donHangPage() {
-        return "donhang";
-    }
-
     @GetMapping("/ui/thanh-toan")
     public String thanhToanPage() {
         return "thanhtoan";
@@ -97,21 +92,21 @@ public class PageController {
     public String taiKhoanPage() {
         return "tai-khoan";
     }
+        
+    @GetMapping("/ui/don-hang")
+    public String donHangPage() {
+        return "donhang";
+    }
 
-    @GetMapping("/ui/pos")
+    @GetMapping({"/ui/pos/tao-don", "/ui/pos/tao-don/"})
     public String posPage() {
         return "pos/pos-interface";
     }
 
 
-    @GetMapping("/ui/pos/danh-sach-don-hang")
+    @GetMapping({"/ui/pos", "/ui/pos/danh-sach-don-hang"})
     public String posDanhSachDonHang() {
         return "pos/danh-sach-don-hang";
-    }
-
-    @GetMapping("/ui/pos/QB")
-    public String posQB() {
-        return "pos/posQB";
     }
     
 }

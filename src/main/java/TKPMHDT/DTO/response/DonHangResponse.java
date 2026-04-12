@@ -17,6 +17,9 @@ public class DonHangResponse {
     private UUID id;
     private LocalDateTime ngayDat;
     private String trangThai;
+    private String phuongThucThanhToan;
+    private String trangThaiThanhToan;
+    private String tenKhachHang;
     private BigDecimal tongTien;
     private List<ChiTietDonHangResponse> chiTietDonHang;
 }
