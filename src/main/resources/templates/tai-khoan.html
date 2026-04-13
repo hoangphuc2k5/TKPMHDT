@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Tài khoản cá nhân - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Tài khoản cá nhân - 4it2run')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('account')}"></header>
 
@@ -9,7 +9,7 @@
 
     <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem;">
         <!-- Menu phụ -->
-        <nav style="background: #f5f5f5; padding: 1.5rem; border-radius: 12px; height: fit-content;">
+        <nav class="account-settings-nav" style="background: #f5f5f5; padding: 1.5rem; border-radius: 12px; height: fit-content;">
             <h3 style="margin-top: 0; margin-bottom: 1rem;">Cài đặt</h3>
             <ul style="list-style: none; padding: 0; margin: 0;">
                 <li style="margin-bottom: 0.5rem;">
@@ -33,7 +33,12 @@
                     </button>
                 </li>
                 <li style="margin-bottom: 0.5rem;">
-                    <form action="/logout" method="post" style="margin: 0;">
+                    <button class="tab-btn" data-tab="xoa-tai-khoan" style="width: 100%; text-align: left; padding: 0.7rem; background: transparent; border: none; cursor: pointer; color: #f44336;">
+                        Xóa tài khoản
+                    </button>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <form th:action="@{/logout}" method="post" style="margin: 0;">
                         <button type="submit" style="width: 100%; text-align: left; padding: 0.7rem; color: #f44336; background: transparent; border: none; cursor: pointer;">
                             Đăng xuất
                         </button>
@@ -97,18 +102,27 @@
                 <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; max-width: 500px;">
                     <div style="margin-bottom: 1.5rem;">
                         <label for="matKhauCu">Mật khẩu hiện tại</label>
-                        <input type="password" id="matKhauCu" placeholder="Nhập mật khẩu hiện tại..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="password-field-wrap">
+                            <input type="password" id="matKhauCu" placeholder="Nhập mật khẩu hiện tại..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;" autocomplete="current-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('matKhauCu', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
                         <label for="matKhauMoi">Mật khẩu mới</label>
-                        <input type="password" id="matKhauMoi" placeholder="Nhập mật khẩu mới..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
-                        <small class="muted">Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số</small>
+                        <div class="password-field-wrap">
+                            <input type="password" id="matKhauMoi" placeholder="Nhập mật khẩu mới..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('matKhauMoi', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                        </div>
+                        <small class="muted">Ít nhất 6 ký tự; có chữ hoa, chữ thường và số. Không bắt buộc ký tự đặc biệt.</small>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
                         <label for="xacNhanMatKhau">Xác nhận mật khẩu</label>
-                        <input type="password" id="xacNhanMatKhau" placeholder="Nhập lại mật khẩu mới..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="password-field-wrap">
+                            <input type="password" id="xacNhanMatKhau" placeholder="Nhập lại mật khẩu mới..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('xacNhanMatKhau', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                        </div>
                     </div>
 
                     <button id="changePasswordBtn" class="btn-primary" style="padding: 0.7rem 2rem;">
@@ -129,21 +143,38 @@
 
                 <!-- Form thêm/sửa địa chỉ -->
                 <div id="formDiaChi" style="display: none; background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; margin-top: 2rem; max-width: 600px;">
-                    <h3 style="margin-top: 0;">Thêm Địa Chỉ Mới</h3>
+                    <h3 id="formDiaChiTitle" style="margin-top: 0;">Thêm địa chỉ mới</h3>
+                    <p class="muted" style="margin: 0 0 1rem; font-size: 0.9rem;">Giống form khi đặt hàng / thanh toán: điền đủ các phần địa chỉ.</p>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <label for="hoTenDiaChi">Tên người nhận</label>
-                        <input type="text" id="hoTenDiaChi" placeholder="Nhập tên..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <div style="margin-bottom: 0.8rem;">
+                        <label for="hoTenDiaChi">Họ tên người nhận</label>
+                        <input type="text" id="hoTenDiaChi" placeholder="Nguyễn Văn A" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
                     </div>
 
-                    <div style="margin-bottom: 1.5rem;">
+                    <div style="margin-bottom: 0.8rem;">
                         <label for="soDienThoaiDiaChi">Số điện thoại</label>
-                        <input type="tel" id="soDienThoaiDiaChi" placeholder="Nhập số điện thoại..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <input type="tel" id="soDienThoaiDiaChi" placeholder="0901234567" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
                     </div>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <label for="diaChiDayDu">Địa chỉ chi tiết</label>
-                        <textarea id="diaChiDayDu" placeholder="Nhập địa chỉ đầy đủ..." style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px; min-height: 100px;"></textarea>
+                    <div style="margin-bottom: 0.8rem;">
+                        <label for="diaChiSoNha">Số nhà, tên đường</label>
+                        <input type="text" id="diaChiSoNha" placeholder="Ví dụ: 123 Nguyễn Huệ" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.8rem;">
+                        <div>
+                            <label for="diaChiPhuong">Phường/Xã</label>
+                            <input type="text" id="diaChiPhuong" placeholder="Phường 1" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label for="diaChiQuan">Quận/Huyện</label>
+                            <input type="text" id="diaChiQuan" placeholder="Quận 1" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <label for="diaChiTinh">Tỉnh/Thành phố</label>
+                        <input type="text" id="diaChiTinh" placeholder="TP. Hồ Chí Minh" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px;">
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -164,6 +195,30 @@
                     <p class="muted">Đang tải...</p>
                 </div>
             </div>
+
+            <!-- Tab: Xóa tài khoản -->
+            <div class="tab-content" id="xoa-tai-khoan" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Xóa Tài Khoản</h2>
+                
+                <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; max-width: 600px;">
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1rem; margin-bottom: 2rem;">
+                        <h4 style="color: #856404; margin: 0 0 0.5rem 0;">⚠️ Cảnh báo quan trọng</h4>
+                        <p style="color: #856404; margin: 0; font-size: 0.9rem;">
+                            Khi xóa tài khoản, tất cả thông tin cá nhân, lịch sử đơn hàng và địa chỉ giao hàng sẽ bị xóa vĩnh viễn. 
+                            Hành động này không thể hoàn tác.
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="xacNhanXoa">Để xác nhận xóa tài khoản, hãy nhập "XÓA TÀI KHOẢN" vào ô bên dưới:</label>
+                        <input type="text" id="xacNhanXoa" placeholder="XÓA TÀI KHOẢN" style="width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 0.5rem;">
+                    </div>
+
+                    <button id="deleteAccountBtn" class="btn-danger" style="padding: 0.7rem 2rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        🗑️ Xóa tài khoản vĩnh viễn
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -174,7 +229,8 @@
     // Các tab
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const tabName = e.target.dataset.tab;
+            const el = e.currentTarget;
+            const tabName = el.dataset.tab;
             
             // Ẩn tất cả tab
             document.querySelectorAll('.tab-content').forEach(tab => {
@@ -184,13 +240,13 @@
             // Hiển thị tab được chọn
             document.getElementById(tabName).style.display = 'block';
 
-            // Cập nhật style button
+            // Cập nhật style button (bỏ inline color để CSS .tab-btn hiển thị chữ đọc được)
             document.querySelectorAll('.tab-btn').forEach(b => {
                 b.style.background = 'transparent';
-                b.style.color = 'inherit';
+                b.style.removeProperty('color');
             });
-            e.target.style.background = 'var(--phuclong-green)';
-            e.target.style.color = 'white';
+            el.style.background = 'var(--phuclong-green)';
+            el.style.color = 'white';
         });
     });
 
@@ -199,16 +255,27 @@
 
     async function loadUserInfo() {
         try {
-            const response = await fetch('/api/nguoi-dung/me');
+            const response = await fetch('/api/nguoi-dung/me', { credentials: 'same-origin' });
+            if (response.status === 401) {
+                window.location.href = '/login?redirect=' + encodeURIComponent('/ui/tai-khoan');
+                return;
+            }
+            if (!response.ok) {
+                console.error('Lỗi tải thông tin:', response.status);
+                return;
+            }
             const user = await response.json();
 
-            document.getElementById('tenDangNhap').value = user.tenDangNhap;
+            document.getElementById('tenDangNhap').value = user.tenDangNhap || '';
             document.getElementById('email').value = user.email || '';
             document.getElementById('hoTen').value = user.hoTen || '';
             document.getElementById('soDienThoai').value = user.soDienThoai || '';
-            
+
+            const preview = document.getElementById('avatarPreview');
             if (user.avatar) {
-                document.getElementById('avatarPreview').src = user.avatar;
+                preview.src = user.avatar;
+            } else {
+                preview.removeAttribute('src');
             }
         } catch (error) {
             console.error('Lỗi tải thông tin:', error);
@@ -226,6 +293,7 @@
         try {
             const response = await fetch('/api/nguoi-dung/me', {
                 method: 'PATCH',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
@@ -234,7 +302,8 @@
                 alert('Cập nhật thông tin thành công!');
                 loadUserInfo();
             } else {
-                alert('Lỗi cập nhật thông tin');
+                const err = await response.json().catch(() => ({}));
+                alert(err.message || 'Lỗi cập nhật thông tin');
             }
         } catch (error) {
             console.error('Lỗi:', error);
@@ -252,13 +321,17 @@
         try {
             const response = await fetch('/api/nguoi-dung/me/avatar', {
                 method: 'POST',
+                credentials: 'same-origin',
                 body: formData
             });
 
             if (response.ok) {
                 const data = await response.json();
-                document.getElementById('avatarPreview').src = data.avatarUrl;
+                document.getElementById('avatarPreview').src = data.avatarUrl || data.avatar;
                 alert('Upload avatar thành công!');
+            } else {
+                const err = await response.json().catch(() => ({}));
+                alert(err.message || 'Upload avatar thất bại');
             }
         } catch (error) {
             console.error('Lỗi upload avatar:', error);
@@ -266,22 +339,62 @@
     });
 
     // Địa chỉ
+    function clearDiaChiFormFields() {
+        document.getElementById('hoTenDiaChi').value = '';
+        document.getElementById('soDienThoaiDiaChi').value = '';
+        document.getElementById('diaChiSoNha').value = '';
+        document.getElementById('diaChiPhuong').value = '';
+        document.getElementById('diaChiQuan').value = '';
+        document.getElementById('diaChiTinh').value = '';
+    }
+
     document.getElementById('themDiaChiBtn').addEventListener('click', () => {
+        selectedDiaChiId = null;
+        document.getElementById('formDiaChiTitle').textContent = 'Thêm địa chỉ mới';
+        clearDiaChiFormFields();
         document.getElementById('formDiaChi').style.display = 'block';
     });
 
     function cancelDiaChi() {
         document.getElementById('formDiaChi').style.display = 'none';
+        selectedDiaChiId = null;
+        document.getElementById('formDiaChiTitle').textContent = 'Thêm địa chỉ mới';
+        clearDiaChiFormFields();
     }
 
     let currentUser = null;
     let selectedDiaChiId = null;
+    let loadedDiaChis = [];
+
+    function diaChiSegmentDisplay(v) {
+        if (v == null || v === '' || v === '—') return '';
+        return String(v);
+    }
+
+    function diaChiPayloadFromForm() {
+        return {
+            tenNguoiNhan: document.getElementById('hoTenDiaChi').value.trim(),
+            soDienThoai: document.getElementById('soDienThoaiDiaChi').value.trim(),
+            diaChiCuThe: document.getElementById('diaChiSoNha').value.trim(),
+            phuongXa: document.getElementById('diaChiPhuong').value.trim(),
+            quanHuyen: document.getElementById('diaChiQuan').value.trim(),
+            tinhThanhPho: document.getElementById('diaChiTinh').value.trim()
+        };
+    }
+
+    function formatDiaChiHienThi(dc) {
+        const tail = [dc.phuongXa, dc.quanHuyen, dc.tinhThanhPho]
+            .filter(x => x && x !== '—')
+            .join(', ');
+        const line = dc.diaChiCuThe || '';
+        return tail ? `${line} (${tail})` : line;
+    }
 
     async function ensureUser() {
         if (currentUser) return currentUser;
-        const res = await fetch('/api/nguoi-dung/me');
+        const res = await fetch('/api/nguoi-dung/me', { credentials: 'same-origin' });
         if (!res.ok) {
-            window.location.href = '/login';
+            window.location.href = '/login?redirect=' + encodeURIComponent('/ui/tai-khoan');
             return null;
         }
         currentUser = await res.json();
@@ -291,53 +404,76 @@
     async function loadDiaChi() {
         const user = await ensureUser();
         if (!user) return;
-        const res = await fetch(`/api/dia-chi/${user.id}`);
-        if (!res.ok) return;
-        const diaChis = await res.json();
-
         const container = document.getElementById('danhSachDiaChi');
+        if (user.vaiTro && user.vaiTro !== 'KHACH_HANG') {
+            container.innerHTML = `<p class="muted">Địa chỉ giao hàng chỉ dùng cho tài khoản khách hàng.</p>`;
+            return;
+        }
+        const res = await fetch(`/api/dia-chi/${user.id}`, { credentials: 'same-origin' });
+        if (res.status === 403) {
+            container.innerHTML = `<p class="muted">Bạn không có quyền quản lý địa chỉ.</p>`;
+            return;
+        }
+        if (!res.ok) {
+            container.innerHTML = `<p class="muted">Không tải được danh sách địa chỉ.</p>`;
+            return;
+        }
+        const diaChis = await res.json();
+        loadedDiaChis = diaChis || [];
         container.innerHTML = '';
 
-        if (!diaChis || diaChis.length === 0) {
+        if (!loadedDiaChis.length) {
             container.innerHTML = `<div style="background:#f5f5f5;padding:1rem;border-radius:12px;" class="muted">Bạn chưa có địa chỉ nào.</div>`;
             return;
         }
 
-        diaChis.forEach(dc => {
+        loadedDiaChis.forEach(dc => {
             const card = document.createElement('div');
             card.style.cssText = 'background:white;border:1px solid var(--border-color);border-radius:12px;padding:1rem;margin-bottom:0.75rem;';
+            const safeName = String(dc.tenNguoiNhan || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            const safePhone = String(dc.soDienThoai || '').replace(/</g, '&lt;');
+            const safeAddr = String(formatDiaChiHienThi(dc)).replace(/</g, '&lt;');
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;">
                     <div style="flex:1;">
-                        <div style="font-weight:600;">${dc.tenNguoiNhan || 'Người nhận'}</div>
-                        <div class="muted" style="font-size:0.9rem;">${dc.soDienThoai || ''}</div>
-                        <div style="margin-top:0.5rem;">${dc.diaChiDayDu || ''}</div>
+                        <div style="font-weight:600;">${safeName || 'Người nhận'}</div>
+                        <div class="muted" style="font-size:0.9rem;">${safePhone}</div>
+                        <div style="margin-top:0.5rem;">${safeAddr}</div>
                     </div>
                     <div style="display:flex;gap:0.5rem;align-items:center;">
-                        <button class="btn-secondary" style="padding:0.4rem 0.8rem;font-size:0.85rem;" onclick="editDiaChi('${dc.id}', ${JSON.stringify(dc).replace(/"/g,'&quot;')})">Sửa</button>
-                        <button class="btn-danger" style="padding:0.4rem 0.8rem;font-size:0.85rem;" onclick="deleteDiaChi('${dc.id}')">Xóa</button>
+                        <button type="button" class="btn-secondary" style="padding:0.4rem 0.8rem;font-size:0.85rem;margin-top:0;" data-dia-chi-edit="${dc.id}">Sửa</button>
+                        <button type="button" class="btn-danger" style="padding:0.4rem 0.8rem;font-size:0.85rem;margin-top:0;" data-dia-chi-del="${dc.id}">Xóa</button>
                     </div>
                 </div>
             `;
+            card.querySelector('[data-dia-chi-edit]').addEventListener('click', () => editDiaChi(dc.id));
+            card.querySelector('[data-dia-chi-del]').addEventListener('click', () => deleteDiaChi(dc.id));
             container.appendChild(card);
         });
     }
 
-    function editDiaChi(id, dc) {
+    function editDiaChi(id) {
+        const dc = loadedDiaChis.find(d => d.id === id);
+        if (!dc) return;
         selectedDiaChiId = id;
+        document.getElementById('formDiaChiTitle').textContent = 'Sửa địa chỉ';
         document.getElementById('formDiaChi').style.display = 'block';
         document.getElementById('hoTenDiaChi').value = dc.tenNguoiNhan || '';
         document.getElementById('soDienThoaiDiaChi').value = dc.soDienThoai || '';
-        document.getElementById('diaChiDayDu').value = dc.diaChiDayDu || '';
+        document.getElementById('diaChiSoNha').value = diaChiSegmentDisplay(dc.diaChiCuThe);
+        document.getElementById('diaChiPhuong').value = diaChiSegmentDisplay(dc.phuongXa);
+        document.getElementById('diaChiQuan').value = diaChiSegmentDisplay(dc.quanHuyen);
+        document.getElementById('diaChiTinh').value = diaChiSegmentDisplay(dc.tinhThanhPho);
     }
 
     async function deleteDiaChi(id) {
         if (!confirm('Xóa địa chỉ này?')) return;
-        const res = await fetch(`/api/dia-chi/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/dia-chi/${id}`, { method: 'DELETE', credentials: 'same-origin' });
         if (res.ok) {
             await loadDiaChi();
         } else {
-            alert('Không thể xóa địa chỉ');
+            const err = await res.json().catch(() => ({}));
+            alert(err.message || 'Không thể xóa địa chỉ');
         }
     }
 
@@ -345,16 +481,21 @@
         const user = await ensureUser();
         if (!user) return;
 
-        const payload = {
-            tenNguoiNhan: document.getElementById('hoTenDiaChi').value,
-            soDienThoai: document.getElementById('soDienThoaiDiaChi').value,
-            diaChiDayDu: document.getElementById('diaChiDayDu').value
-        };
+        const payload = diaChiPayloadFromForm();
+        if (!payload.tenNguoiNhan || !payload.soDienThoai || !payload.diaChiCuThe
+            || !payload.phuongXa || !payload.quanHuyen || !payload.tinhThanhPho) {
+            alert('Vui lòng điền đầy đủ thông tin địa chỉ (giống khi thanh toán).');
+            return;
+        }
 
-        // Backend hiện chỉ có endpoint tạo theo khachHangId (POST /api/dia-chi/{khachHangId})
-        // Nên "Sửa" sẽ tạo mới (đơn giản) và user có thể xóa cái cũ.
-        const res = await fetch(`/api/dia-chi/${user.id}`, {
-            method: 'POST',
+        const url = selectedDiaChiId
+            ? `/api/dia-chi/${user.id}/${selectedDiaChiId}`
+            : `/api/dia-chi/${user.id}`;
+        const method = selectedDiaChiId ? 'PATCH' : 'POST';
+
+        const res = await fetch(url, {
+            method,
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
@@ -365,7 +506,8 @@
             await loadDiaChi();
             alert('Lưu địa chỉ thành công!');
         } else {
-            alert('Lưu địa chỉ thất bại');
+            const err = await res.json().catch(() => ({}));
+            alert(err.message || 'Lưu địa chỉ thất bại');
         }
     }
 
@@ -374,9 +516,17 @@
         const matKhauCu = document.getElementById('matKhauCu').value;
         const matKhauMoi = document.getElementById('matKhauMoi').value;
         const xacNhanMatKhau = document.getElementById('xacNhanMatKhau').value;
+        const pwdOk = typeof isPasswordPolicyCompliant === 'function'
+            ? isPasswordPolicyCompliant(matKhauMoi)
+            : (matKhauMoi.length >= 6 && /[A-Z]/.test(matKhauMoi) && /[a-z]/.test(matKhauMoi) && /\d/.test(matKhauMoi));
+        if (!pwdOk) {
+            alert(typeof PASSWORD_POLICY_MESSAGE_VI !== 'undefined' ? PASSWORD_POLICY_MESSAGE_VI : 'Mật khẩu mới không đủ điều kiện');
+            return;
+        }
         try {
             const res = await fetch('/api/nguoi-dung/me/doi-mat-khau', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ matKhauCu, matKhauMoi, xacNhanMatKhau })
             });
@@ -395,9 +545,90 @@
         }
     });
 
-    // Auto load addresses when tab opened
+    function formatOrderMoney(n) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+    }
+
+    async function loadDonHangTab() {
+        const box = document.getElementById('danhSachDonHangTab');
+        const user = await ensureUser();
+        if (!user) return;
+        if (user.vaiTro !== 'KHACH_HANG') {
+            box.innerHTML = '<p class="muted">Lịch sử đơn hàng ở đây chỉ dành cho tài khoản khách hàng.</p>';
+            return;
+        }
+        box.innerHTML = '<p class="muted">Đang tải...</p>';
+        try {
+            const res = await fetch('/api/don-hang/me', { credentials: 'same-origin' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                box.innerHTML = `<p class="muted">${err.message || 'Không tải được đơn hàng.'}</p>`;
+                return;
+            }
+            const orders = await res.json();
+            if (!orders.length) {
+                box.innerHTML = '<p class="muted">Bạn chưa có đơn hàng nào.</p>';
+                return;
+            }
+            orders.sort((a, b) => new Date(b.ngayDat) - new Date(a.ngayDat));
+            box.innerHTML = orders.map(o => {
+                const date = o.ngayDat ? new Date(o.ngayDat).toLocaleString('vi-VN') : '';
+                const sid = String(o.id || '').replace(/</g, '');
+                return `<div style="border:1px solid var(--border-color);border-radius:12px;padding:1rem;margin-bottom:0.75rem;">
+                    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                        <div>
+                            <div style="font-weight:600;">Mã đơn: ${sid.substring(0, 8)}…</div>
+                            <div class="muted" style="font-size:0.9rem;">${date}</div>
+                            <div style="margin-top:0.35rem;"><span class="chip progress" style="font-size:0.78rem;">${String(o.trangThaiDb || '')}</span></div>
+                        </div>
+                        <div style="font-weight:700;color:var(--phuclong-green);">${formatOrderMoney(o.tongTien)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch (e) {
+            console.error(e);
+            box.innerHTML = '<p class="muted">Lỗi tải đơn hàng.</p>';
+        }
+    }
+
+    // Auto load addresses / orders when tab opened
     document.querySelector('[data-tab="dia-chi"]').addEventListener('click', () => {
         loadDiaChi();
+    });
+    document.querySelector('[data-tab="don-hang"]').addEventListener('click', () => {
+        loadDonHangTab();
+    });
+
+    // Xóa tài khoản
+    document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+        const confirmation = document.getElementById('xacNhanXoa').value.trim();
+        
+        if (confirmation !== 'XÓA TÀI KHOẢN') {
+            alert('Vui lòng nhập đúng cụm từ xác nhận để xóa tài khoản.');
+            return;
+        }
+
+        if (!confirm('Bạn có chắc chắn muốn xóa tài khoản vĩnh viễn? Hành động này không thể hoàn tác.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/nguoi-dung/me', {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                alert('Tài khoản đã được xóa thành công. Bạn sẽ được chuyển hướng về trang chủ.');
+                window.location.href = '/';
+            } else {
+                const error = await response.json().catch(() => ({}));
+                alert(error.message || 'Không thể xóa tài khoản. Vui lòng thử lại.');
+            }
+        } catch (error) {
+            console.error('Lỗi xóa tài khoản:', error);
+            alert('Có lỗi xảy ra khi xóa tài khoản. Vui lòng thử lại.');
+        }
     });
 </script>
 

@@ -1,6 +1,7 @@
 package TKPMHDT.Entity.sanpham;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -34,6 +35,7 @@ public class LuongNguyenLieu {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cong_thuc_id", nullable = false)
+    @JsonIgnore
     private CongThuc congThuc;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -45,5 +47,6 @@ public class LuongNguyenLieu {
 
     @Column(name = "don_vi", nullable = false, length = 50)
     private String donVi;
+    
 }
 

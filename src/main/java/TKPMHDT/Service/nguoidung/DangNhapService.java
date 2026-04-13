@@ -40,6 +40,19 @@ public class DangNhapService {
         return nguoiDung;
     }
 
+    @Transactional(readOnly = true)
+    public NguoiDung xacThucDangNhapBangDinhDanh(String dinhDanh, String matKhau) {
+        try {
+            return xacThucDangNhap(tenDangNhapFrom(dinhDanh), matKhau);
+        } catch (IllegalArgumentException ex) {
+            return xacThucDangNhapByEmail(dinhDanh, matKhau);
+        }
+    }
+
+    private String tenDangNhapFrom(String raw) {
+        return raw == null ? "" : raw.trim();
+    }
+
     /**
      * Xác thực người dùng bằng email và mật khẩu
      * @param email - Email

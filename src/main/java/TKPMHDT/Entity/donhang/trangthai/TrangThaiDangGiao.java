@@ -14,6 +14,7 @@ public class TrangThaiDangGiao implements TrangThaiDonHang {
         throw new IllegalStateException("Không thể quay lại các trạng thái trước đó.");
     }
 
+
     @Override
     public void dangGiao(DonHang donHang) {
         throw new IllegalStateException("Đơn hàng đã ở trạng thái đang giao.");

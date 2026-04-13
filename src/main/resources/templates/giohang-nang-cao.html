@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Giỏ hàng - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Giỏ hàng - 4it2run')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('giohang')}"></header>
 
@@ -127,7 +127,7 @@
                 row.style.borderBottom = '1px solid var(--border-color)';
                 
                 const moTa = item.tuyChinh ? 
-                    `<small class="muted">Đường: ${item.tuyChinh.mucDuong}% | Đá: ${item.tuyChinh.mucDa}%</small>` : 
+                    `<small class="muted">Đá: ${item.tuyChinh.mucDa ?? 100}%</small>` : 
                     '';
 
                 row.innerHTML = `

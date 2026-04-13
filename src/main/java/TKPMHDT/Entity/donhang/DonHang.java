@@ -39,6 +39,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import TKPMHDT.Entity.thanhtoan.ThanhToan;
 
 @Getter
 @Setter
@@ -64,9 +65,8 @@ public class DonHang {
     private String trangThaiDb;
 
     @Transient
-    @Builder.Default
     @JsonIgnore
-    private TrangThaiDonHang trangThai = new TrangThaiChoXacNhan();
+    private TrangThaiDonHang trangThai;
 
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
@@ -74,6 +74,11 @@ public class DonHang {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_giam_gia_id")
     private MaGiamGia maGiamGia;
+
+    /** Số tiền đã trừ thực tế khi áp mã (khác {@link MaGiamGia#getGiaTri()} khi loại là % hoặc giảm cố định trên nhóm SP). */
+    @Column(name = "tien_giam_ap_dung", precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal tienGiamApDung = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dia_chi_giao_hang_id")
@@ -86,18 +91,18 @@ public class DonHang {
 
     @JsonManagedReference
     @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private HoaDon hoaDon;
+    private ThanhToan thanhToan;
 
     @JsonManagedReference
     @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private PhieuGiao phieuGiao;
-
+    private HoaDon hoaDon;
     @PrePersist
     @PreUpdate
     private void preSave() {
-        if (trangThai != null) {
-            this.trangThaiDb = trangThai.getTenTrangThai();
+        if (trangThai == null) {
+            trangThai = new TrangThaiChoXacNhan();
         }
+        this.trangThaiDb = trangThai.getTenTrangThai();
     }
 
     @PostLoad
@@ -164,6 +169,11 @@ public class DonHang {
     @JsonProperty("trangThai")
     public String getTrangThaiCode() {
         return trangThaiDb != null ? trangThaiDb : (trangThai != null ? trangThai.getTenTrangThai() : null);
+    }
+
+    public void setTrangThai(TrangThaiDonHang trangThai) {
+        this.trangThai = trangThai;
+        this.trangThaiDb = trangThai.getTenTrangThai(); // 🔥 đồng bộ luôn
     }
 }
 

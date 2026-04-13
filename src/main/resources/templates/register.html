@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Đăng ký tài khoản - TKPMHDT')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: header('register')}"></header>
-
-<div class="container" style="max-width: 600px; padding-top: 60px; padding-bottom: 60px;">
-    <div class="card">
-        <div style="margin-bottom: 2rem; text-align: center;">
-            <h1 style="margin-bottom: 0.5rem;">Tạo Tài Khoản Mới</h1>
-            <p class="muted">Đăng ký để bắt đầu mua sắm tại TKPMHDT</p>
+<head th:replace="~{fragments/layout :: head('Đăng ký tài khoản - 4it2run')}"></head>
+<body class="auth-page auth-page-no-decor">
+<div class="auth-shell">
+    <a th:href="@{/}" class="auth-brand" style="text-decoration: none; color: inherit; display: inline-flex; flex-direction: column; align-items: center; gap: 10px;" title="4it2run">
+        <img th:src="@{/logo/TYPO_Logo-17.jpg}" alt="4it2run" class="auth-brand-logo" width="200" height="56" loading="eager" decoding="async">
+        <span class="visually-hidden">4it2run</span>
+    </a>
+    <div class="auth-tabs">
+        <a class="auth-tab" th:href="@{/login}">Đăng nhập</a>
+        <a class="auth-tab active" th:href="@{/register}">Đăng ký</a>
+    </div>
+    <div class="section-card">
+        <div style="margin-bottom: 1rem; text-align: center;">
+            <h2 style="margin-bottom: 0.3rem;">Tạo tài khoản mới</h2>
+            <p class="muted">Đăng ký để đặt món nhanh hơn.</p>
         </div>
 
         <form method="post" th:action="@{/api/nguoi-dung/dang-ky-khach-hang}" id="registerForm" style="display: none;">
@@ -43,22 +49,22 @@
             <!-- Mật khẩu -->
             <div>
                 <label for="password">Mật khẩu</label>
-                <input type="password" id="password" placeholder="Mật khẩu phải có ít nhất 8 ký tự" required>
+                <div class="password-field-wrap">
+                    <input type="password" id="password" placeholder="Tối thiểu 6 ký tự: chữ hoa, chữ thường, số" required autocomplete="new-password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword('password', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                </div>
                 <small class="muted" style="display: block; margin-top: 0.5rem;">
-                    ✓ Ít nhất 8 ký tự &nbsp; ✓ Bao gồm chữ hoa, chữ thường, số
+                    ✓ Ít nhất 6 ký tự &nbsp; ✓ Có chữ hoa, chữ thường và số &nbsp; ✓ Không bắt buộc ký tự đặc biệt
                 </small>
             </div>
 
             <!-- Xác nhận mật khẩu -->
             <div>
                 <label for="passwordConfirm">Xác nhận mật khẩu</label>
-                <input type="password" id="passwordConfirm" placeholder="Nhập lại mật khẩu..." required>
-            </div>
-
-            <!-- Địa chỉ -->
-            <div>
-                <label for="address">Địa chỉ giao hàng</label>
-                <input type="text" id="address" placeholder="123 Đường ABC, Quận X, TP. Hồ Chí Minh" required>
+                <div class="password-field-wrap">
+                    <input type="password" id="passwordConfirm" placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePassword('passwordConfirm', this)" aria-label="Hiện mật khẩu">Hiện</button>
+                </div>
             </div>
 
             <!-- Checkbox đồng ý -->
@@ -73,12 +79,11 @@
             </div>
         </div>
 
-        <button onclick="dkTaiKhoan()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 12px;">Đăng ký ngay</button>
+        <button onclick="dkTaiKhoan()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 12px;">Đăng ký</button>
 
-        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center;">
-            <p class="muted" style="font-size: 0.875rem;">
-                Đã có tài khoản? 
-                <a th:href="@{/login}" style="color: var(--phuclong-green); text-decoration: none; font-weight: 600;">Đăng nhập tại đây</a>
+        <div style="margin-top: 1.2rem; text-align: center;">
+            <p class="muted" style="font-size: 0.875rem;">Đã có tài khoản?
+                <a th:href="@{/login}" style="color: var(--phuclong-green); text-decoration: none; font-weight: 600;">Đăng nhập</a>
             </p>
         </div>
 
@@ -87,12 +92,13 @@
     </div>
 </div>
 
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-
 <script th:inline="javascript">
     // Validation
     function validatePassword(password) {
-        return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password);
+        if (typeof isPasswordPolicyCompliant === 'function') {
+            return isPasswordPolicyCompliant(password);
+        }
+        return password.length >= 6 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password);
     }
 
     function validateEmail(email) {
@@ -106,11 +112,10 @@
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
         const passwordConfirm = document.getElementById('passwordConfirm').value;
-        const address = document.getElementById('address').value.trim();
         const agreeTerms = document.getElementById('agreeTerms').checked;
 
         // Validate
-        if (!fullName || !email || !phone || !username || !password || !address) {
+        if (!fullName || !email || !phone || !username || !password) {
             showError('Vui lòng điền đầy đủ thông tin');
             return;
         }
@@ -121,7 +126,7 @@
         }
 
         if (!validatePassword(password)) {
-            showError('Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số');
+            showError(typeof PASSWORD_POLICY_MESSAGE_VI !== 'undefined' ? PASSWORD_POLICY_MESSAGE_VI : 'Mật khẩu không đủ điều kiện');
             return;
         }
 

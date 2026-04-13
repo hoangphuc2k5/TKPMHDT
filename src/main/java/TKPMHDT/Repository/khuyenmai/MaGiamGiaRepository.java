@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, UUID> {
     Optional<MaGiamGia> findByMa(String ma);
 
+    Optional<MaGiamGia> findByMaIgnoreCase(String ma);
+
     boolean existsByMa(String ma);
 }
 

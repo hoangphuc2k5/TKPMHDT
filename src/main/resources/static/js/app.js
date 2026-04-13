@@ -1,100 +1,171 @@
+/**
+ * Ngrok (bản miễn phí): thêm header để API không trả trang HTML cảnh báo thay vì JSON.
+ * Áp dụng cho mọi fetch() sau khi file này được load (layout đã gắn app.js).
+ */
+(function () {
+  if (typeof window === "undefined" || typeof window.fetch !== "function") return;
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = function (resource, init) {
+    const next = init ? { ...init } : {};
+    const headers = new Headers(next.headers);
+    if (!headers.has("ngrok-skip-browser-warning")) {
+      headers.set("ngrok-skip-browser-warning", "true");
+    }
+    next.headers = headers;
+    return nativeFetch(resource, next);
+  };
+})();
+
+/** Đồng bộ với TKPMHDT.security.PasswordPolicyValidator */
+function isPasswordPolicyCompliant(rawPassword) {
+  if (rawPassword == null || typeof rawPassword !== "string") {
+    return false;
+  }
+  return (
+    rawPassword.length >= 6 &&
+    /[A-Z]/.test(rawPassword) &&
+    /[a-z]/.test(rawPassword) &&
+    /\d/.test(rawPassword)
+  );
+}
+
+const PASSWORD_POLICY_MESSAGE_VI =
+  "Mật khẩu cần ít nhất 6 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số. Không bắt buộc ký tự đặc biệt.";
+
+/** Hiện/ẩn mật khẩu (inputId hoặc phần tử input). */
+function togglePassword(inputId, btn) {
+  const input =
+    typeof inputId === "string" ? document.getElementById(inputId) : inputId;
+  if (!input) return;
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+  if (btn) {
+    btn.textContent = isPassword ? "Ẩn" : "Hiện";
+    btn.setAttribute("aria-label", isPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+    btn.setAttribute("aria-pressed", isPassword ? "true" : "false");
+  }
+}
+
 async function api(method, url, body) {
-    const options = {
-        method: method,
-        headers: { "Content-Type": "application/json" }
-    };
-    if (body !== undefined && body !== null) {
-        options.body = JSON.stringify(body);
+  const options = {
+    method: method,
+    headers: { "Content-Type": "application/json" },
+  };
+
+  if (body !== undefined && body !== null) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, options);
+  const text = await response.text();
+
+  let data = text;
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (e) {
+    // giữ nguyên text nếu không parse được
+  }
+
+  // ❗ xử lý lỗi
+  if (!response.ok) {
+    throw new Error(
+      typeof data === "string" ? data : data.message || JSON.stringify(data),
+    );
+  }
+
+  // 🔥 xử lý cả 2 kiểu response
+  if (data && typeof data === "object") {
+    // nếu là ApiResponse
+    if ("data" in data) {
+      return data.data;
     }
-    const response = await fetch(url, options);
-    const text = await response.text();
-    let data = text;
-    try {
-        data = text ? JSON.parse(text) : {};
-    } catch (e) {
-        // keep raw text
-    }
-    if (!response.ok) {
-        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
-    }
-    return data;
+  }
+
+  // nếu là raw (array, object, string...)
+  return data;
 }
 
 async function apiUpload(url, formData) {
-    const response = await fetch(url, {
-        method: "POST",
-        body: formData
-    });
-    const text = await response.text();
-    let data = text;
-    try {
-        data = text ? JSON.parse(text) : {};
-    } catch (e) {
-        // keep raw text
-    }
-    if (!response.ok) {
-        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
-    }
-    return data;
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+  const text = await response.text();
+  let data = text;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (e) {
+    // keep raw text
+  }
+  if (!response.ok) {
+    throw new Error(typeof data === "string" ? data : JSON.stringify(data));
+  }
+  return data;
 }
 
 function isUUID(str) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(str);
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
 }
 
 function showResult(elementId, data) {
-    const el = document.getElementById(elementId);
-    el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  const el = document.getElementById(elementId);
+  el.textContent =
+    typeof data === "string" ? data : JSON.stringify(data, null, 2);
 }
 
 // Utility functions
 function formatCurrency(value) {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(value || 0);
 }
 
 function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+  return new Date(dateString).toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function formatDateTime(dateString) {
-    return new Date(dateString).toLocaleString('vi-VN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+  return new Date(dateString).toLocaleString("vi-VN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function showMessage(message, type = 'success', duration = 3000) {
-    const messageEl = document.createElement('div');
-    messageEl.textContent = message;
-    messageEl.style.cssText = `
+function showMessage(message, type = "success", duration = 3000) {
+  const messageEl = document.createElement("div");
+  messageEl.textContent = message;
+  messageEl.style.cssText = `
         position: fixed;
         top: 100px;
         right: 20px;
         padding: 1rem 1.5rem;
         border-radius: 8px;
         color: white;
-        background: ${type === 'success' ? '#16a34a' : '#e74c3c'};
+        background: ${type === "success" ? "#16a34a" : "#e74c3c"};
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 9999;
         animation: slideIn 0.3s ease-in-out;
     `;
-    document.body.appendChild(messageEl);
-    setTimeout(() => {
-        messageEl.style.animation = 'slideOut 0.3s ease-in-out';
-        setTimeout(() => messageEl.remove(), 300);
-    }, duration);
+  document.body.appendChild(messageEl);
+  setTimeout(() => {
+    messageEl.style.animation = "slideOut 0.3s ease-in-out";
+    setTimeout(() => messageEl.remove(), 300);
+  }, duration);
 }
 
 // Add animation styles
-const style = document.createElement('style');
+const style = document.createElement("style");
 style.textContent = `
     @keyframes slideIn {
         from {
@@ -118,4 +189,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-

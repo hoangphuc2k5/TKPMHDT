@@ -1,8 +1,12 @@
 package TKPMHDT.Entity.sanpham;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import TKPMHDT.Entity.sanpham.enums.LoaiNguyenLieu;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -40,5 +44,19 @@ public class NguyenLieu {
 
     @Column(name = "gia_don_vi", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaDonVi;
+
+    @Column(name = "nguong_canh_bao", precision = 18, scale = 3)
+    @Builder.Default
+    private BigDecimal nguongCanhBao = BigDecimal.ZERO;
+    
+    @Column(name = "gia", precision = 18, scale = 2)
+    private BigDecimal gia;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "loai", nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'INGREDIENT'")
+    @Builder.Default
+    private LoaiNguyenLieu loaiNguyenLieu = LoaiNguyenLieu.INGREDIENT;
+    
+    
 }
 

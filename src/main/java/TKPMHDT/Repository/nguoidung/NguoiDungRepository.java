@@ -17,5 +17,7 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     boolean existsByEmail(String email);
 
     List<NguoiDung> findByVaiTro(VaiTro vaiTro);
+
+    List<NguoiDung> findByVaiTroIn(List<VaiTro> vaiTros);
 }
 

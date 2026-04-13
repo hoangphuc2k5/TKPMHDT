@@ -6,6 +6,7 @@ import TKPMHDT.Entity.sanpham.NuocUongSan;
 import TKPMHDT.Entity.sanpham.TuyChinhKhachHang;
 import TKPMHDT.Repository.sanpham.NguyenLieuRepository;
 import TKPMHDT.Repository.sanpham.NuocUongSanRepository;
+import TKPMHDT.Service.khuyenmai.KhuyenMaiGiaSanPhamService;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
@@ -16,20 +17,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * TuyChinhSanPhamService - UC07: Tùy chỉnh sản phẩm
- * Mục đích: Cho phép khách hàng tùy chỉnh thành phần, đường, đá của sản phẩm
+ * Mục đích: Cho phép khách hàng tùy chỉnh thành phần, đá của sản phẩm
  */
 @Service
 public class TuyChinhSanPhamService {
 
     private final NuocUongSanRepository nuocUongSanRepository;
     private final NguyenLieuRepository nguyenLieuRepository;
+    private final KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService;
 
     public TuyChinhSanPhamService(
             NuocUongSanRepository nuocUongSanRepository,
-            NguyenLieuRepository nguyenLieuRepository
+            NguyenLieuRepository nguyenLieuRepository,
+            KhuyenMaiGiaSanPhamService khuyenMaiGiaSanPhamService
     ) {
         this.nuocUongSanRepository = nuocUongSanRepository;
         this.nguyenLieuRepository = nguyenLieuRepository;
+        this.khuyenMaiGiaSanPhamService = khuyenMaiGiaSanPhamService;
     }
 
     /**
@@ -61,22 +65,16 @@ public class TuyChinhSanPhamService {
 
     /**
      * Tạo cấu hình tùy chỉnh sản phẩm
-     * @param mucDuong - Mức đường (0-100%, tương ứng với số lượng đường)
      * @param mucDa - Mức đá (0-100%, tương ứng với khối lượng đá)
      * @param ghiChu - Ghi chú thêm
      */
     @Transactional(readOnly = true)
-    public TuyChinhKhachHang taoTuyChinh(Integer mucDuong, Integer mucDa, String ghiChu) {
-        // Validate
-        if (mucDuong != null && (mucDuong < 0 || mucDuong > 100)) {
-            throw new IllegalArgumentException("Mức đường phải trong khoảng 0-100");
-        }
+    public TuyChinhKhachHang taoTuyChinh(Integer mucDa, String ghiChu) {
         if (mucDa != null && (mucDa < 0 || mucDa > 100)) {
             throw new IllegalArgumentException("Mức đá phải trong khoảng 0-100");
         }
 
         return TuyChinhKhachHang.builder()
-                .mucDuong(mucDuong)
                 .mucDa(mucDa)
                 .ghiChu(ghiChu)
                 .nguyenLieuThem(new java.util.ArrayList<>())
@@ -109,7 +107,7 @@ public class TuyChinhSanPhamService {
         NuocUongSan sanPham = nuocUongSanRepository.findById(sanPhamId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
-        BigDecimal giaCoBan = sanPham.getGia() != null ? sanPham.getGia() : BigDecimal.ZERO;
+        BigDecimal giaCoBan = khuyenMaiGiaSanPhamService.donGiaCoSoSauKhuyenMai(sanPham);
 
         // Tính chi phí nguyên liệu thêm (có thể mở rộng)
         BigDecimal chiPhiThem = BigDecimal.ZERO;

@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Dashboard - TKPMHDT')}"></head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Trang chủ - 4it2run')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('home')}"></header>
 
 <div class="container">
-    <!-- Hero Section (drink Style) -->
+    <!-- Chỉ khách / chưa đăng nhập (admin & nhân viên bị chuyển hướng từ PageController) -->
+    <div sec:authorize="hasRole('KHACH_HANG') or !isAuthenticated()">
+    <!-- Hero -->
     <div style="background: var(--phuclong-green); color: white; padding: 60px; border-radius: var(--radius-lg); margin-bottom: 50px; display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative;">
         <div style="max-width: 600px; z-index: 1;">
-            <h1 style="color: white; font-size: 3.5rem; margin-bottom: 1rem;">Khởi đầu ngày mới với tách cà phê đậm đà</h1>
-            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem;">Từ những búp trà xanh và hạt cà phê chất lượng nhất, chúng tôi mang đến cho bạn hương vị nguyên bản của drink.</p>
+            <h1 style="color: white; font-size: 3.5rem; margin-bottom: 1rem;">Uống vào, chạy ra</h1>
+            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem;">Từ những búp trà xanh và hạt cà 1phê chất lượng nhất, chúng tôi mang đến cho bạn hương vị nguyên bản của drink.</p>
             <div style="display: flex; gap: 15px;">
                 <a th:href="@{/ui/san-pham}"><button class="btn-highlight">Khám phá menu</button></a>
                 <span sec:authorize="!isAuthenticated()">
@@ -20,10 +22,7 @@
         <div style="font-size: 200px; opacity: 0.1; position: absolute; right: -50px; bottom: -50px; pointer-events: none;">🍃</div>
     </div>
 
-    <!-- Role-based Dashboards -->
-    
-    <!-- Customer View (Featured Products) -->
-    <div sec:authorize="hasRole('KHACH_HANG') or !isAuthenticated()">
+    <!-- Sản phẩm nổi bật -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h2>Sản phẩm nổi bật</h2>
             <a th:href="@{/ui/san-pham}" style="color: var(--phuclong-green); font-weight: 600;">Xem tất cả &rarr;</a>
@@ -31,20 +30,41 @@
         
         <!-- Hiển thị sản phẩm thực tế từ Database -->
         <div class="grid" th:if="${products != null and !products.empty}">
-            <div class="card" th:each="p : ${products}">
+            <div class="card" th:each="p : ${products}" th:data-id="${p.id}" ondblclick="viewProductDetail(this.dataset.id)"
+                 style="position: relative;">
+                <div th:if="${p.dangKhuyenMai}" style="position: absolute; top: 10px; left: 10px; z-index: 2;">
+                    <span class="badge" style="background: #0C713D; color: #fff; border: none; font-size: 0.72rem; padding: 5px 10px;">Giảm giá</span>
+                </div>
                 <!-- Lấy hình ảnh đầu tiên nếu có, nếu không dùng ảnh mặc định -->
                 <img th:src="${p.hinhAnh != null and !p.hinhAnh.empty ? p.hinhAnh[0] : 'https://images.unsplash.com/photo-1544787210-282725509ce8?auto=format&fit=crop&w=800&q=80'}" 
-                     class="product-img" th:alt="${p.ten}">
+                     class="product-img" th:alt="${p.ten}" th:style="${p.dangKhuyenMai ? 'opacity: 0.98;' : ''}">
                 <div class="card-content">
                     <h3 th:text="${p.ten}">Tên sản phẩm</h3>
                     <p class="muted" th:text="${p.moTa}">Mô tả sản phẩm</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                        <span style="font-weight: 700; color: var(--phuclong-green);" 
-                              th:text="${#numbers.formatDecimal(p.gia, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</span>
-                        <button class="btn-secondary" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
-                                th:data-id="${p.id}"
-                                th:data-name="${p.ten}"
-                                onclick="openCustomizeModal(this.dataset.id, this.dataset.name)">Thêm vào giỏ</button>
+                    <div th:if="${p.dangKhuyenMai and p.nhanKhuyenMai != null}" style="margin-top: 8px;">
+                        <span class="badge" style="background: #fff0f0; color: #b01030; border: 1px solid #f5c2c7; font-size: 0.75rem;" th:text="${p.nhanKhuyenMai}">-20%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; gap: 0.5rem; flex-wrap: wrap;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0;">
+                            <th:block th:if="${p.dangKhuyenMai}">
+                                <span class="muted" style="text-decoration: line-through; font-size: 0.9rem; font-weight: 500;"
+                                      th:text="${#numbers.formatDecimal(p.gia, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</span>
+                                <span style="font-weight: 700; color: var(--phuclong-green);"
+                                      th:text="${#numbers.formatDecimal(p.giaSauKhuyenMai, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</span>
+                            </th:block>
+                            <th:block th:unless="${p.dangKhuyenMai}">
+                                <span style="font-weight: 700; color: var(--phuclong-green);"
+                                      th:text="${#numbers.formatDecimal(p.gia, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</span>
+                            </th:block>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn-secondary" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
+                                    th:data-id="${p.id}"
+                                    onclick="viewProductDetail(this.dataset.id)">Thêm vào giỏ</button>
+                            <button class="btn-highlight" style="margin: 0; padding: 5px 15px; font-size: 0.8rem;"
+                                    th:attr="data-id=${p.id}"
+                                    onclick="buyNow(this.getAttribute('data-id'))">Mua ngay</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -55,148 +75,69 @@
             <p class="muted">Hiện chưa có sản phẩm nào trong cửa hàng. Vui lòng quay lại sau!</p>
         </div>
     </div>
-
-    <!-- Staff & Admin Dashboard -->
-    <div sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_LY_KHO', 'QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
-        <h2 style="border-bottom: 2px solid var(--phuclong-green); display: inline-block; padding-bottom: 5px;">Bảng điều khiển quản trị</h2>
-        <div class="grid">
-            <div class="card" sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
-                <div class="card-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <span style="font-size: 24px;">👤</span>
-                        <span class="badge badge-green">Quản trị</span>
-                    </div>
-                    <h3>Quản lý Người dùng</h3>
-                    <p class="muted">Quản lý hồ sơ khách hàng, phân quyền nhân viên và bảo mật hệ thống.</p>
-                    <a th:href="@{/ui/nguoi-dung}"><button style="width: 100%;">Truy cập ngay</button></a>
-                </div>
-            </div>
-            
-            <div class="card" sec:authorize="hasAnyRole('NHAN_VIEN_BAN_HANG', 'QUAN_TRI_VIEN')">
-                <div class="card-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <span style="font-size: 24px;">📦</span>
-                        <span class="badge badge-green">Vận hành</span>
-                    </div>
-                    <h3>Quản lý Đơn hàng</h3>
-                    <p class="muted">Xử lý quy trình đơn hàng, in hóa đơn và cập nhật trạng thái giao hàng.</p>
-                    <a th:href="@{/ui/don-hang}"><button style="width: 100%;">Truy cập ngay</button></a>
-                </div>
-            </div>
-
-            <div class="card" sec:authorize="hasAnyRole('QUAN_LY_KHO', 'QUAN_TRI_VIEN')">
-                <div class="card-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <span style="font-size: 24px;">🥤</span>
-                        <span class="badge badge-gold">Kho hàng</span>
-                    </div>
-                    <h3>Sản phẩm & Kho</h3>
-                    <p class="muted">Quản lý danh mục đồ uống, nguyên liệu và tồn kho sản phẩm.</p>
-                    <a th:href="@{/ui/san-pham}"><button class="btn-highlight" style="width: 100%;">Truy cập ngay</button></a>
-                </div>
-            </div>
-
-            <div class="card" sec:authorize="hasAnyRole('QUAN_TRI_VIEN', 'QUAN_TRI_VIEN_CAP_CAO')">
-                <div class="card-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <span style="font-size: 24px;">💳</span>
-                        <span class="badge badge-green">Tài chính</span>
-                    </div>
-                    <h3>Giao dịch & Thanh toán</h3>
-                    <p class="muted">Theo dõi dòng tiền, lịch sử giao dịch MOMO, VNPAY và đối soát tài chính.</p>
-                    <a th:href="@{/ui/thanh-toan}"><button style="width: 100%;">Truy cập ngay</button></a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Customize Modal -->
-<div id="customize-modal" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-    <div class="card" style="width: 90%; max-width: 500px; margin: auto;">
-        <div class="card-content">
-            <h2 id="modal-title" class="brand-font">Tùy chỉnh món</h2>
-            <input type="hidden" id="modal-sp-id">
-            
-            <div style="margin-top: 1.5rem;">
-                <label>Mức đường (%)</label>
-                <select id="modal-sugar" style="width: 100%; margin-bottom: 1rem;">
-                    <option value="100">100% (Bình thường)</option>
-                    <option value="70">70% (Ít đường)</option>
-                    <option value="50">50% (Vừa phải)</option>
-                    <option value="30">30% (Rất ít đường)</option>
-                    <option value="0">0% (Không đường)</option>
-                </select>
-
-                <label>Mức đá (%)</label>
-                <select id="modal-ice" style="width: 100%; margin-bottom: 1rem;">
-                    <option value="100">100% (Bình thường)</option>
-                    <option value="70">70% (Ít đá)</option>
-                    <option value="50">50% (Vừa phải)</option>
-                    <option value="30">30% (Rất ít đá)</option>
-                    <option value="0">0% (Không đá)</option>
-                </select>
-
-                <label>Ghi chú thêm</label>
-                <textarea id="modal-note" placeholder="Ví dụ: Không lấy ống hút, bỏ riêng trân châu..." style="width: 100%; height: 80px; margin-bottom: 1rem;"></textarea>
-
-                <label>Số lượng</label>
-                <input id="modal-quantity" type="number" value="1" min="1" style="width: 100%; margin-bottom: 1.5rem;">
-
-                <div style="display: flex; gap: 1rem;">
-                    <button onclick="closeCustomizeModal()" class="btn-secondary" style="flex: 1;">Hủy</button>
-                    <button onclick="confirmAddToCart()" class="btn-highlight" style="flex: 1;">Thêm vào giỏ</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
 <script>
-    function openCustomizeModal(id, ten) {
-        document.getElementById("modal-sp-id").value = id;
-        document.getElementById("modal-title").innerText = ten;
-        document.getElementById("customize-modal").style.display = "flex";
-        document.getElementById("modal-quantity").value = 1;
-        document.getElementById("modal-note").value = "";
+    const PENDING_CART_KEY = 'pendingAddToCart';
+
+    function viewProductDetail(productId) {
+        window.location.href = '/ui/san-pham/chi-tiet?id=' + encodeURIComponent(productId);
     }
 
-    function closeCustomizeModal() {
-        document.getElementById("customize-modal").style.display = "none";
+    function savePendingCartItem(payload) {
+        sessionStorage.setItem(PENDING_CART_KEY, JSON.stringify(payload));
     }
 
-    async function confirmAddToCart() {
-        const spId = document.getElementById("modal-sp-id").value;
-        const sugar = parseInt(document.getElementById("modal-sugar").value);
-        const ice = parseInt(document.getElementById("modal-ice").value);
-        const note = document.getElementById("modal-note").value;
-        const qty = parseInt(document.getElementById("modal-quantity").value);
+    function getPendingCartItem() {
+        try {
+            const raw = sessionStorage.getItem(PENDING_CART_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clearPendingCartItem() {
+        sessionStorage.removeItem(PENDING_CART_KEY);
+    }
+
+    function redirectToLogin() {
+        const currentUrl = window.location.pathname + window.location.search;
+        window.location.href = '/login?redirect=' + encodeURIComponent(currentUrl);
+    }
+
+    async function processPendingCartItem() {
+        const pending = getPendingCartItem();
+        if (!pending) {
+            return;
+        }
 
         try {
-            // Get current user info from API
-            const user = await api("GET", "/api/nguoi-dung/me"); 
-            
-            await api("POST", "/api/gio-hang/them-mat-hang", {
-                khachHangId: user.id,
-                nuocUongId: spId,
-                soLuong: qty,
-                mucDuong: sugar,
-                mucDa: ice,
-                ghiChu: note
-            });
-            
-            alert("Đã thêm " + qty + " món vào giỏ hàng!");
-            closeCustomizeModal();
-        } catch (e) {
-            if (e.message.includes("401") || e.message.includes("403")) {
-                alert("Vui lòng đăng nhập để thực hiện chức năng này.");
-                window.location.href = "/login";
-            } else {
-                alert("Lỗi: " + e.message);
+            const user = await api("GET", "/api/nguoi-dung/me");
+            if (user && user.id) {
+                pending.khachHangId = user.id;
+                await api("POST", "/api/gio-hang/them-mat-hang", pending);
+                clearPendingCartItem();
+                showMessage('Đã tự động thêm vào giỏ hàng sau khi đăng nhập.');
             }
+        } catch (e) {
+            console.warn('Không thể xử lý giỏ hàng đang chờ:', e);
         }
+    }
+
+    document.addEventListener('DOMContentLoaded', processPendingCartItem);
+
+    function buyNow(productId) {
+        const params = new URLSearchParams({
+            buyNow: 'true',
+            productId: productId,
+            quantity: '1',
+            mucDa: '100',
+            ghiChu: ''
+        });
+        window.location.href = '/ui/don-hang?' + params.toString();
     }
 </script>
 

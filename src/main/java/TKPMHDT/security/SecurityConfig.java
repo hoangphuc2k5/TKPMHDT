@@ -2,11 +2,18 @@ package TKPMHDT.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
@@ -15,21 +22,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
-                        .requestMatchers("/", "/ui/san-pham", "/ui/khuyen-mai").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/uploads/**", "/logo/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
+                        .requestMatchers("/", "/ui/san-pham/**", "/ui/khuyen-mai").permitAll()
+                        .requestMatchers("/ui/admin/**").hasRole("QUAN_TRI_VIEN")
+                        // .requestMatchers("/ui/don-hang").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN")
+                        .requestMatchers("/ui/pos/**").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN")
                         .requestMatchers("/api/nguoi-dung/dang-ky-khach-hang").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/san-pham/**").permitAll()
-                        .requestMatchers("/api/khuyen-mai/ma/**", "/api/khuyen-mai/tinh-tien-giam").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/san-pham/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/san-pham/*/tuy-chinh").hasAuthority("product:customize")
+                        .requestMatchers("/api/khuyen-mai/ma/**", "/api/khuyen-mai/tinh-tien-giam", "/api/khuyen-mai/tinh-cho-gio")
+                                .permitAll()
                         .requestMatchers("/api/nguoi-dung/me").authenticated()
-                        .requestMatchers("/api/gio-hang/**").authenticated()
+                        .requestMatchers("/api/gio-hang/**").hasAuthority("cart:manage")
+                        .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+                        .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self' https: data: 'unsafe-inline'"))
+                        .frameOptions(frame -> frame.sameOrigin())
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
+                        .successHandler(authenticationSuccessHandler())
                         .permitAll()
                 )
                 .logout(logout -> logout
@@ -41,8 +61,59 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return (request, response, authentication) -> {
+            String redirect = request.getParameter("redirect");
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_QUAN_TRI_VIEN"));
+
+            if (redirect != null && !redirect.isBlank() && redirect.startsWith("/") && !redirect.startsWith("//") && !isAdmin) {
+                response.sendRedirect(redirect);
+                return;
+            }
+
+            boolean isPosUser = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_NHAN_VIEN_BAN_HANG"));
+
+            if (isAdmin) {
+                response.sendRedirect("/ui/admin/dashboard");
+                return;
+            }
+
+            if (isPosUser) {
+                response.sendRedirect("/ui/don-hang");
+                return;
+            }
+
+            response.sendRedirect("/");
+        };
+    }
+
+    @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new CompatiblePasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Dùng pattern (không dùng * kèm credentials). Hỗ trợ localhost + domain ngrok đổi theo thời gian.
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://localhost:*",
+                "https://*.ngrok-free.app",
+                "https://*.ngrok.io",
+                "https://*.ngrok.app",
+                "https://*.ngrok.dev",
+                "https://drinkhub.vn",
+                "http://drinkhub.vn"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
-

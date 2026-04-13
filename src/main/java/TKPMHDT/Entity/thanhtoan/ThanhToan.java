@@ -1,6 +1,7 @@
 package TKPMHDT.Entity.thanhtoan;
 
 import TKPMHDT.Entity.donhang.DonHang;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Entity.thanhtoan.enums.TrangThaiThanhToanEnum;
 import jakarta.persistence.Column;
@@ -35,6 +36,7 @@ public class ThanhToan {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonBackReference
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "don_hang_id", nullable = false, unique = true)
     private DonHang donHang;
@@ -49,5 +51,6 @@ public class ThanhToan {
     @Enumerated(EnumType.STRING)
     @Column(name = "trang_thai", nullable = false, length = 30)
     private TrangThaiThanhToanEnum trangThai;
+    
 }
 

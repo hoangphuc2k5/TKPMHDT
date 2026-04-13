@@ -1,210 +1,487 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Chi tiết sản phẩm - TKPMHDT')}"></head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Chi tiết sản phẩm - 4it2run')}"></head>
+
 <body>
-<header th:replace="~{fragments/layout :: header('sanpham')}"></header>
+	<header th:replace="~{fragments/layout :: header('products')}"></header>
+	<main class="container product-detail-page" style="max-width:1100px; padding-top:16px; padding-bottom:48px;">
+		<div style="display:flex; gap: 32px; flex-wrap: wrap;">
+			<div style="flex: 1 1 360px; min-width: 320px; max-width: 520px;">
+				<div style="position: relative;">
+					<img id="mainImage" src=""
+						style="width:100%; max-height:520px; object-fit:cover; border-radius:14px;">
+					<button id="prevImageBtn" onclick="changeImage(-1)"
+						style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: none;">&#10094;</button>
+					<button id="nextImageBtn" onclick="changeImage(1)"
+						style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: none;">&#10095;</button>
+				</div>
+				<div id="subImages" style="display:flex; gap:8px; margin-top:10px; overflow-x:auto;"></div>
+			</div>
+			<div style="flex: 1 1 360px; min-width: 320px;">
+				<div style="margin-bottom:18px;">
+					<h1 id="sanPhamTen" style="margin:0;"></h1>
+					<div class="muted" id="ratingText" style="margin:8px 0;">⭐ 4.8 (120 đánh giá)</div>
+					<p id="sanPhamMoTa" class="muted" style="margin:8px 0;"></p>
+					<h2 id="sanPhamGia"
+						style="color:var(--phuclong-green); margin:8px 0; font-family:'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif; font-weight:700;"></h2>
+				</div>
+				<div class="section-card" style="margin-top:0;">
+					<h3 style="margin-top:0;">Công thức gốc</h3>
+					<div id="congThucChips" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+				</div>
 
-<div class="container" style="padding: 2rem 0;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-        <!-- Hình ảnh sản phẩm -->
-        <div>
-            <div style="background: #f5f5f5; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                <img id="mainImage" src="" alt="Hình ảnh sản phẩm" style="width: 100%; height: auto; border-radius: 8px;">
-            </div>
-            <div style="display: flex; gap: 0.5rem; overflow-x: auto;">
-                <!-- Hình ảnh phụ sẽ được load từ API -->
-            </div>
-        </div>
+				<div id="toppingContainer" class="section-card" style="display:none; margin-top:10px;">
+					<h3 style="margin-top:0;">Chọn topping</h3>
+					<div id="toppingOptions" class="topping-options"></div>
+				</div>
+				<div id="tuyChinhContainer" class="section-card" style="display:none; margin-top:10px;">
+					<h3 style="margin-top:0;">Tùy chỉnh công thức</h3>
 
-        <!-- Thông tin sản phẩm -->
-        <div>
-            <h1 id="sanPhamTen" style="font-size: 2rem; margin-bottom: 0.5rem;"></h1>
-            <p id="sanPhamMoTa" class="muted" style="font-size: 1rem; margin-bottom: 1rem;"></p>
-            
-            <div style="background: var(--phuclong-light); padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
-                <p style="font-size: 0.875rem; color: #666; margin-bottom: 0.5rem;">Giá:</p>
-                <h2 id="sanPhamGia" style="font-size: 2rem; color: var(--phuclong-green); margin: 0;">0 đ</h2>
-            </div>
+					<label>Lượng đá</label>
+					<select id="mucDa" onchange="updateRealtimePrice()">
+						<option value="0">0%</option>
+						<option value="50">50%</option>
+						<option value="100" selected>100%</option>
+					</select>
 
-            <!-- UC07: Tùy chỉnh sản phẩm -->
-            <div id="tuyChinhContainer" style="display: none; background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">🎨 Tùy chỉnh sản phẩm</h3>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label for="mucDuong">Mức đường (%)</label>
-                    <input type="range" id="mucDuong" min="0" max="100" step="10" value="100" style="width: 100%;">
-                    <small id="mucDuongValue" class="muted">100%</small>
-                </div>
+					<label>Ghi chú</label>
+					<textarea id="ghiChu" style="width:100%;"
+						placeholder="Ví dụ: ít ngọt, không đá viên to..."></textarea>
 
-                <div style="margin-bottom: 1rem;">
-                    <label for="mucDa">Mức đá (%)</label>
-                    <input type="range" id="mucDa" min="0" max="100" step="10" value="100" style="width: 100%;">
-                    <small id="mucDaValue" class="muted">100%</small>
-                </div>
+					<label>Số lượng</label>
+					<input type="number" id="soLuong" value="1" min="1" oninput="updateRealtimePrice()">
 
-                <div style="margin-bottom: 1rem;">
-                    <label for="ghiChu">Ghi chú thêm</label>
-                    <textarea id="ghiChu" placeholder="Ví dụ: Ít đường, nhiều đá..." style="width: 100%; border-radius: 8px; padding: 0.5rem; border: 1px solid var(--border-color);"></textarea>
-                </div>
+					<div style="margin-top:10px; font-family:'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif;">
+						<strong>Tạm tính:</strong> <span id="giaTamTinh">0đ</span>
+					</div>
 
-                <!-- Thêm nguyên liệu -->
-                <div>
-                    <label for="themNguyenLieu">Thêm nguyên liệu</label>
-                    <select id="themNguyenLieu" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px;">
-                        <option value="">Chọn nguyên liệu...</option>
-                    </select>
-                </div>
+					<div id="productAddBar"
+						style="margin-top:18px; background:#fff; border:1px solid var(--border-color); border-radius:14px; padding:16px; box-shadow: 0 0 0 1px rgba(0,0,0,.03);">
+						<div
+							style="display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:760px; margin:0 auto;">
+							<div>
+								<div class="muted" style="font-size:0.9rem;">Giá hiện tại</div>
+								<strong id="fixedPrice"
+									style="font-family:'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif; font-weight:700;">0đ</strong>
+							</div>
+							<button id="themVaoGioHangBtn" class="btn-highlight" style="margin-top:0; min-width:180px;">Thêm vào giỏ
+								hàng</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
 
-                <div id="nguyenLieuDaChon" style="margin-top: 1rem; display: none;">
-                    <h4>Nguyên liệu đã chọn:</h4>
-                    <ul id="danhSachNguyenLieu" style="list-style: none; padding: 0;"></ul>
-                </div>
-            </div>
+	<script>
+		const urlParams = new URLSearchParams(window.location.search);
+		const sanPhamId = urlParams.get("id");
+		let basePrice = 0;
+		let toppings = [];
+		let selectedToppingIds = new Set();
+		let productImages = [];
+		let currentImageIndex = 0;
+		const PENDING_CART_KEY = 'pendingAddToCart';
+        const PENDING_EDIT_CART_KEY = 'pendingEditCartItem';
+        const editCartItemId = urlParams.get("editCartItemId");
 
-            <!-- Số lượng và thêm vào giỏ -->
-            <div style="margin-bottom: 2rem;">
-                <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label for="soLuong">Số lượng:</label>
-                        <input type="number" id="soLuong" min="1" value="1" style="width: 80px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 8px;">
-                    </div>
-                </div>
-                <button id="themVaoGioHangBtn" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1rem;">
-                    🛒 Thêm vào giỏ hàng
-                </button>
-            </div>
-
-            <div id="toast" style="display: none; position: fixed; bottom: 2rem; right: 2rem; background: #4caf50; color: white; padding: 1rem 2rem; border-radius: 8px; z-index: 1000;"></div>
-        </div>
-    </div>
-</div>
-
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-
-<script>
-    // Lấy ID sản phẩm từ URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const sanPhamId = urlParams.get('id');
-
-    if (!sanPhamId) {
-        document.body.innerHTML = '<div class="container"><p style="padding: 2rem; text-align: center;">Không tìm thấy sản phẩm</p></div>';
-    } else {
-        loadSanPham();
-    }
-
-    async function loadSanPham() {
-        try {
-            const response = await fetch(`/api/san-pham/nuoc-uong/${sanPhamId}`);
-            const sanPham = await response.json();
-
-            // Hiển thị thông tin sản phẩm
-            document.getElementById('sanPhamTen').textContent = sanPham.ten;
-            document.getElementById('sanPhamMoTa').textContent = sanPham.moTa || 'Sản phẩm tươi mới từ Phúc Long';
-            document.getElementById('sanPhamGia').textContent = new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-            }).format(sanPham.gia);
-
-            // Hình ảnh chính
-            if (sanPham.hinhAnh && sanPham.hinhAnh.length > 0) {
-                document.getElementById('mainImage').src = sanPham.hinhAnh[0];
-            }
-
-            // Kiểm tra có thể tùy chỉnh không
-            const coTheTuyChinh = await fetch(`/api/san-pham/${sanPhamId}/co-the-tuy-chinh`).then(r => r.json());
-            if (coTheTuyChinh.coTheTuyChinh) {
-                document.getElementById('tuyChinhContainer').style.display = 'block';
-                loadNguyenLieuThem();
-            }
-
-            // Thêm vào giỏ hàng
-            document.getElementById('themVaoGioHangBtn').addEventListener('click', themVaoGioHang);
-        } catch (error) {
-            console.error('Lỗi tải sản phẩm:', error);
-            showToast('Lỗi tải thông tin sản phẩm', true);
+        function savePendingCartItem(payload) {
+            sessionStorage.setItem(PENDING_CART_KEY, JSON.stringify(payload));
         }
-    }
 
-    async function loadNguyenLieuThem() {
-        try {
-            const response = await fetch(`/api/san-pham/${sanPhamId}/nguyen-lieu-them`);
-            const nguyenLieus = await response.json();
-
-            const select = document.getElementById('themNguyenLieu');
-            nguyenLieus.forEach(nl => {
-                const option = document.createElement('option');
-                option.value = nl.id;
-                option.textContent = nl.ten;
-                select.appendChild(option);
-            });
-        } catch (error) {
-            console.error('Lỗi tải nguyên liệu:', error);
+        function savePendingEditCartItem(payload) {
+            sessionStorage.setItem(PENDING_EDIT_CART_KEY, JSON.stringify(payload));
         }
-    }
 
-    function themVaoGioHang() {
-        const soLuong = parseInt(document.getElementById('soLuong').value);
-        const mucDuong = parseInt(document.getElementById('mucDuong').value);
-        const mucDa = parseInt(document.getElementById('mucDa').value);
-        const ghiChu = document.getElementById('ghiChu').value;
-
-        (async () => {
+        function getPendingEditCartItem() {
             try {
-                const userResponse = await fetch('/api/nguoi-dung/me');
-                if (!userResponse.ok) {
-                    window.location.href = '/login';
-                    return;
-                }
-                const user = await userResponse.json();
-
-                const res = await fetch('/api/gio-hang/them-mat-hang', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        khachHangId: user.id,
-                        nuocUongId: sanPhamId,
-                        soLuong: soLuong,
-                        mucDuong: mucDuong,
-                        mucDa: mucDa,
-                        ghiChu: ghiChu
-                    })
-                });
-
-                if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                        window.location.href = '/login';
-                        return;
-                    }
-                    const errText = await res.text();
-                    throw new Error(errText || 'Không thể thêm vào giỏ hàng');
-                }
-
-                showToast(`Đã thêm ${soLuong} sản phẩm vào giỏ hàng`, false);
+                const raw = sessionStorage.getItem(PENDING_EDIT_CART_KEY);
+                return raw ? JSON.parse(raw) : null;
             } catch (e) {
-                console.error(e);
-                showToast('Lỗi thêm vào giỏ hàng', true);
+                return null;
             }
-        })();
-    }
+        }
 
-    function showToast(message, isError = false) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.style.background = isError ? '#f44336' : '#4caf50';
-        toast.style.display = 'block';
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 3000);
-    }
+        function clearPendingEditCartItem() {
+            sessionStorage.removeItem(PENDING_EDIT_CART_KEY);
+        }
 
-    // Cập nhật hiển thị % đường/đá
-    document.getElementById('mucDuong').addEventListener('input', (e) => {
-        document.getElementById('mucDuongValue').textContent = e.target.value + '%';
-    });
-    document.getElementById('mucDa').addEventListener('input', (e) => {
-        document.getElementById('mucDaValue').textContent = e.target.value + '%';
-    });
-</script>
+        function getPendingCartItem() {
+            try {
+                const raw = sessionStorage.getItem(PENDING_CART_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
 
+        function clearPendingCartItem() {
+            sessionStorage.removeItem(PENDING_CART_KEY);
+        }
+
+        function redirectToLogin() {
+            const currentUrl = window.location.pathname + window.location.search;
+            window.location.href = '/login?redirect=' + encodeURIComponent(currentUrl);
+        }
+
+        async function processPendingCartItem() {
+            const pendingEdit = getPendingEditCartItem();
+            if (pendingEdit && pendingEdit.nuocUongId === sanPhamId) {
+                try {
+                    const me = await api('GET', '/api/nguoi-dung/me');
+                    if (me && me.id) {
+                        pendingEdit.khachHangId = me.id;
+                        await api('PATCH', `/api/gio-hang/${me.id}/mat-hang/${pendingEdit.editCartItemId}`, pendingEdit);
+                        clearPendingEditCartItem();
+                        alert('Đã tự động cập nhật sản phẩm trong giỏ hàng sau khi đăng nhập.');
+                    }
+                } catch (e) {
+                    console.warn('Không thể tự động cập nhật sản phẩm trong giỏ hàng:', e);
+                }
+                return;
+            }
+
+            const pending = getPendingCartItem();
+            if (!pending || pending.nuocUongId !== sanPhamId) {
+                return;
+            }
+
+            try {
+                const me = await api('GET', '/api/nguoi-dung/me');
+                if (me && me.id) {
+                    pending.khachHangId = me.id;
+                }
+                await api('POST', '/api/gio-hang/them-mat-hang', pending);
+                clearPendingCartItem();
+                alert('Đã tự động thêm sản phẩm vào giỏ hàng sau khi đăng nhập.');
+            } catch (e) {
+                console.warn('Không thể tự động thêm vào giỏ hàng:', e);
+            }
+        }
+
+        function processPendingEditCartItem() {
+            const pending = getPendingEditCartItem();
+            if (!pending || pending.nuocUongId !== sanPhamId) {
+                return;
+            }
+            if (pending.soLuong != null) {
+                document.getElementById("soLuong").value = pending.soLuong;
+            }
+            if (pending.mucDa != null) {
+                document.getElementById("mucDa").value = normalizeMucDa(pending.mucDa);
+            }
+            if (pending.ghiChu != null) {
+                document.getElementById("ghiChu").value = pending.ghiChu;
+            }
+            selectedToppingIds = new Set(
+                Array.isArray(pending.toppings)
+                    ? pending.toppings.map(t => t.toppingId || t.nguyenLieuId).filter(Boolean)
+                    : []
+            );
+            updateToppingSelectionUI();
+            updateRealtimePrice();
+        }
+
+        if (!sanPhamId) {
+            alert("Không tìm thấy sản phẩm");
+        } else {
+            loadSanPham();
+        }
+
+		function changeImage(direction) {
+			if (productImages.length <= 1) return;
+			currentImageIndex = (currentImageIndex + direction + productImages.length) % productImages.length;
+			document.getElementById("mainImage").src = productImages[currentImageIndex];
+			updateNavigationButtons();
+		}
+
+		function updateNavigationButtons() {
+			const prevBtn = document.getElementById("prevImageBtn");
+			const nextBtn = document.getElementById("nextImageBtn");
+			if (productImages.length > 1) {
+				prevBtn.style.display = "block";
+				nextBtn.style.display = "block";
+			} else {
+				prevBtn.style.display = "none";
+				nextBtn.style.display = "none";
+			}
+		}
+
+		async function loadSanPham() {
+			try {
+				const res = await fetch(`/api/san-pham/nuoc-uong/${sanPhamId}/detail`);
+
+				if (!res.ok) {
+					throw new Error("Không tải được sản phẩm");
+				}
+
+				const data = await res.json();
+				const sp = data.sanPham;
+				const formula = data.congThuc || sp.congThucCoBan;
+				if (formula) {
+					sp.congThuc = formula;
+					sp.congThucCoBan = formula;
+				}
+
+				// tên
+				document.getElementById("sanPhamTen").textContent = sp.ten;
+
+				// mô tả
+				document.getElementById("sanPhamMoTa").textContent =
+					sp.moTa || "Không có mô tả";
+
+				const gocKm = Number(data.giaGocKhuyenMai != null ? data.giaGocKhuyenMai : sp.gia || 0);
+				const sauKm = data.giaSauKhuyenMai != null ? Number(data.giaSauKhuyenMai) : gocKm;
+				const coKm = data.coKhuyenMaiGia === true && sauKm < gocKm;
+				basePrice = coKm ? sauKm : gocKm;
+				const nhanKm = data.nhanKhuyenMaiGia || "Khuyến mãi";
+				const fmtVnd = (v) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(v || 0);
+				const giaEl = document.getElementById("sanPhamGia");
+				if (coKm) {
+					giaEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:1rem; margin-right:10px;">${fmtVnd(gocKm)}</span>`
+						+ `<span style="color:var(--phuclong-green);">${fmtVnd(sauKm)}</span>`
+						+ ` <span class="chip pending" style="margin-left:10px; font-size:0.85rem; vertical-align:middle;">${escapeHtmlProduct(nhanKm)}</span>`
+						+ ` <span class="chip pending" style="font-size:0.85rem; vertical-align:middle; background:#0C713D; color:#fff; border-color:#0C713D;">Giảm giá</span>`;
+				} else {
+					giaEl.textContent = fmtVnd(basePrice);
+				}
+
+				// ảnh chính
+				productImages = sp.hinhAnh || [];
+				const mainImage = document.getElementById("mainImage");
+				if (productImages.length > 0) {
+					mainImage.src = productImages[0];
+				} else {
+					mainImage.src = "/uploads/default-drink.jpg";
+				}
+
+				// ảnh phụ
+				const subImages = document.getElementById("subImages");
+				subImages.innerHTML = "";
+
+				if (productImages.length > 1) {
+					productImages.forEach((img, index) => {
+						const thumb = document.createElement("img");
+						thumb.src = img;
+						thumb.style.width = "80px";
+						thumb.style.height = "80px";
+						thumb.style.objectFit = "cover";
+						thumb.style.cursor = "pointer";
+						thumb.style.borderRadius = "8px";
+						thumb.style.border = index === 0 ? "2px solid var(--phuclong-green)" : "2px solid transparent";
+
+						thumb.onclick = () => {
+							currentImageIndex = index;
+							mainImage.src = img;
+							updateThumbnailBorders();
+						};
+
+						subImages.appendChild(thumb);
+					});
+				}
+
+				updateNavigationButtons();
+				renderCongThucGocTuDb(data);
+				renderToppingOptions(data.topping);
+
+				// tùy chỉnh
+				if (data.coTheTuyChinh === true) {
+					document.getElementById("tuyChinhContainer").style.display = "block";
+				}
+
+				// button
+				document.getElementById("themVaoGioHangBtn").onclick = themVaoGioHang;
+				document.getElementById("themVaoGioHangBtn").textContent = editCartItemId ? 'Cập nhật sản phẩm' : 'Thêm vào giỏ hàng';
+				updateRealtimePrice();
+				processPendingEditCartItem();
+				processPendingCartItem();
+
+			} catch (error) {
+				console.error(error);
+				alert("Lỗi tải chi tiết sản phẩm");
+			}
+		}
+
+		function updateThumbnailBorders() {
+			const thumbnails = document.querySelectorAll("#subImages img");
+			thumbnails.forEach((thumb, index) => {
+				thumb.style.border = index === currentImageIndex ? "2px solid var(--phuclong-green)" : "2px solid transparent";
+			});
+		}
+
+		async function themVaoGioHang() {
+			const payload = {
+				nuocUongId: sanPhamId,
+				soLuong: Number(document.getElementById("soLuong").value || 1),
+				mucDa: normalizeMucDa(document.getElementById("mucDa").value),
+				ghiChu: document.getElementById("ghiChu").value || null,
+				toppings: getSelectedToppingsPayload()
+			};
+
+		let me;
+		try {
+			me = await api("GET", "/api/nguoi-dung/me");
+			if (!me || !me.id) {
+				throw new Error('Unauthenticated');
+			}
+			payload.khachHangId = me.id;
+		} catch (e) {
+			if (editCartItemId) {
+				savePendingEditCartItem({ ...payload, editCartItemId });
+			} else {
+				savePendingCartItem(payload);
+			}
+			redirectToLogin();
+			return;
+		}
+
+		try {
+			if (editCartItemId) {
+				await api("PATCH", `/api/gio-hang/${me.id}/mat-hang/${editCartItemId}`, payload);
+			} else {
+				await api("POST", "/api/gio-hang/them-mat-hang", payload);
+			}
+			clearPendingCartItem();
+			clearPendingEditCartItem();
+			alert(editCartItemId ? "Đã cập nhật sản phẩm trong giỏ hàng" : "Đã thêm vào giỏ hàng");
+		} catch (e) {
+			alert("Không thể thêm vào giỏ hàng: " + (e.message || e));
+		}
+	}
+
+	function updateRealtimePrice() {
+		const da = normalizeMucDa(document.getElementById("mucDa").value);
+		const qty = Math.max(1, Number(document.getElementById("soLuong").value || 1));
+
+		const toppingTotalPerUnit = toppings.reduce((sum, item) => {
+			const unitPrice = Number(item.giaDonVi || item.gia || item.giaThem || 5000);
+			return sum + (selectedToppingIds.has(item.id) ? unitPrice : 0);
+		}, 0);
+
+		// Công thức giá: hệ số tăng nhẹ nếu đá nhiều hơn 100% (tùy chỉnh)
+		const heSo = 1 + Math.max(0, (da - 100) / 250);
+		const one = (basePrice * heSo) + toppingTotalPerUnit;
+		const total = one * qty;
+		document.getElementById("giaTamTinh").textContent = formatPrice(total);
+		document.getElementById("fixedPrice").textContent = formatPrice(total);
+	}
+
+	function normalizeMucDa(value) {
+		const n = Number(value);
+		if (n <= 25) return 0;
+		if (n <= 75) return 50;
+		return 100;
+	}
+
+	function getSelectedToppingsPayload() {
+		return toppings
+			.filter(item => selectedToppingIds.has(item.id))
+			.map(item => ({
+				nguyenLieuId: item.id,
+				ten: item.ten,
+				giaThem: Number(item.giaDonVi || item.giaThem || 0),
+				soLuong: 1
+			}));
+	}
+
+	function renderToppingOptions(data) {
+		toppings = Array.isArray(data) ? data.filter(item => item && item.id) : [];
+		const wrap = document.getElementById('toppingOptions');
+		if (!wrap) return;
+		selectedToppingIds = new Set();
+		if (!toppings.length) {
+			wrap.innerHTML = '<span class="muted">Không có topping cho sản phẩm này.</span>';
+			document.getElementById('toppingContainer').style.display = 'block';
+			return;
+		}
+
+		wrap.innerHTML = toppings.map((item) => {
+			const price = Number(item.giaDonVi || item.giaThem || 0);
+			return `
+			<label class="topping-item" for="topping-${item.id}">
+				<input type="checkbox" id="topping-${item.id}" value="${item.id}" onchange="toggleTopping('${item.id}')">
+				<span>${item.ten}</span>
+				<small>+${formatPrice(price)}</small>
+			</label>
+			`;
+		}).join('');
+		document.getElementById('toppingContainer').style.display = 'block';
+	}
+
+	function toggleTopping(id) {
+		if (!id) return;
+		if (selectedToppingIds.has(id)) {
+			selectedToppingIds.delete(id);
+		} else {
+			selectedToppingIds.add(id);
+		}
+		updateToppingSelectionUI();
+		updateRealtimePrice();
+	}
+
+	function updateToppingSelectionUI() {
+		toppings.forEach((item) => {
+			const checkbox = document.getElementById(`topping-${item.id}`);
+			const label = checkbox ? checkbox.closest('.topping-item') : null;
+			if (checkbox) {
+				checkbox.checked = selectedToppingIds.has(item.id);
+			}
+			if (label) {
+				label.classList.toggle('selected', selectedToppingIds.has(item.id));
+			}
+		});
+	}
+
+	function escapeHtmlProduct(s) {
+			if (s == null) return '';
+			const d = document.createElement('div');
+			d.textContent = String(s);
+			return d.innerHTML;
+		}
+
+		/** Công thức gốc: chỉ từ DB (data.congThuc + data.nguyenLieu do backend build từ luong_nguyen_lieu). */
+		function renderCongThucGocTuDb(data) {
+			const wrap = document.getElementById("congThucChips");
+			if (!wrap) return;
+
+			const ct = data.congThuc;
+			let meta = '';
+			if (ct && (ct.ten || ct.moTa)) {
+				const title = ct.ten ? escapeHtmlProduct(ct.ten) : '';
+				const desc = ct.moTa ? escapeHtmlProduct(ct.moTa) : '';
+				meta = `<div class="muted" style="margin-bottom:10px;line-height:1.45;">`
+					+ (title ? `<strong>${title}</strong>` : '')
+					+ (title && desc ? '<br>' : '')
+					+ (desc ? `<span style="font-weight:400;">${desc}</span>` : '')
+					+ `</div>`;
+			}
+
+			const lines = Array.isArray(data.nguyenLieu) ? data.nguyenLieu : [];
+			const isPhaChe = (row) => row.loaiNguyenLieu !== 'TOPPING';
+
+			const chipRows = lines.filter(isPhaChe);
+			const chipsHtml = chipRows.length
+				? chipRows.map((x) => {
+					const name = (x.ten || x.tenNguyenLieu || '').trim() || 'Nguyên liệu';
+					return `<span class="chip pending">${escapeHtmlProduct(name)}</span>`;
+				}).join('')
+				: '';
+
+			if (!meta && !chipsHtml) {
+				wrap.innerHTML = '<span class="muted">Chưa có công thức gốc trong cơ sở dữ liệu (cấu hình công thức cho sản phẩm).</span>';
+				return;
+			}
+
+			wrap.innerHTML = meta + (chipsHtml || '<span class="muted">Chưa có dòng định lượng pha chế trong công thức.</span>');
+		}
+
+		function formatPrice(value) {
+			return new Intl.NumberFormat("vi-VN", {style: "currency", currency: "VND"}).format(value || 0);
+		}
+	</script>
+
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
+
 </html>

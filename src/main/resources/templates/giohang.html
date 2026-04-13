@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Giỏ hàng drink')}"></head>
+<head th:replace="~{fragments/layout :: head('Giỏ hàng - 4it2run')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('cart')}"></header>
 
@@ -24,9 +24,14 @@
                 <div class="card-content">
                     <h3 class="brand-font" style="margin-top: 0;">Tổng đơn hàng</h3>
                     <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+
+                    <label style="display:flex; align-items:center; gap:0.4rem; margin-bottom: 0.8rem;">
+                        <input id="select-all-items" type="checkbox" onchange="toggleSelectAll(this.checked)" style="transform: scale(0.7); margin-top: 0.1rem; width: 18px; height: 18px;">
+                        <span>Chọn tất cả sản phẩm</span>
+                    </label>
                     
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>Tạm tính:</span>
+                        <span>Tạm tính (đã chọn):</span>
                         <span id="subtotal">0đ</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
@@ -47,8 +52,14 @@
                         </div>
                     </div>
 
-                    <button onclick="proceedToCheckout()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
-                        Tiến hành đặt hàng
+                    <div style="margin-top:1rem; padding:10px; border:1px solid var(--border-color); border-radius:8px;">
+                        <div class="muted">Địa chỉ giao hàng mặc định</div>
+                        <div id="defaultAddress" style="font-size:0.9rem;">Đang tải địa chỉ...</div>
+                        <button type="button" class="btn-secondary" onclick="changeAddress()" style="margin-top:8px; padding:8px 12px;">Thay đổi</button>
+                    </div>
+
+                    <button onclick="startCheckout()" class="btn-highlight" style="width: 100%; margin-top: 2rem; padding: 15px;">
+                        Tiếp tục thanh toán
                     </button>
                 </div>
             </div>
@@ -69,6 +80,55 @@
     <div id="loading" style="text-align: center; padding: 5rem 0;">
         <div class="brand-font" style="font-size: 1.5rem;">Đang tải giỏ hàng...</div>
     </div>
+
+    <div id="edit-cart-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeEditCartModal()"></div>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="editCartTitle" class="brand-font" style="margin: 0;">Sửa sản phẩm</h3>
+                <button class="modal-close" onclick="closeEditCartModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+                    <img id="editCartImage" src="/uploads/default-drink.jpg" alt="Sản phẩm" style="width:112px; height:112px; object-fit:cover; border-radius:16px; border:1px solid var(--border-color);">
+                    <div style="flex:1; min-width:220px;">
+                        <div id="editCartProductName" style="font-weight:700; color:var(--phuclong-green); margin-bottom:8px;"></div>
+                        <div id="editCartProductDesc" class="muted" style="font-size:0.95rem;"></div>
+                    </div>
+                </div>
+                <div style="margin-top:18px;">
+                    <label for="editCartQuantity">Số lượng</label>
+                    <input id="editCartQuantity" type="number" min="1" value="1">
+                </div>
+                <div style="margin-top:12px;">
+                    <label for="editCartIce">Đá (%)</label>
+                    <select id="editCartIce">
+                        <option value="0">0%</option>
+                        <option value="50">50%</option>
+                        <option value="100" selected>100%</option>
+                    </select>
+                </div>
+                <div style="margin-top:12px;">
+                    <label for="editCartNote">Ghi chú</label>
+                    <textarea id="editCartNote" rows="3" style="width:100%; min-height:70px;" placeholder="Ví dụ: ít đá, thêm kem cheese..."></textarea>
+                </div>
+                <div style="margin-top:12px;">
+                    <label>Danh sách topping hiện tại</label>
+                    <div class="muted" style="font-size:0.85rem; margin-bottom:6px;">Mỗi ô đang tick ở dưới tương ứng một dòng (cộng dồn theo số lượng đã chọn).</div>
+                    <div id="editCartToppings" class="muted" style="min-height:34px; padding:10px; border:1px solid var(--border-color); border-radius:var(--radius-sm); background:#fafbfc;"></div>
+                    <div id="editCartToppingCount" class="muted" style="font-size:0.85rem; margin-top:6px;"></div>
+                </div>
+                <div style="margin-top:16px;">
+                    <label>Chọn topping</label>
+                    <div id="editCartToppingOptions" class="topping-options" style="margin-top:10px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:12px; margin-top:18px;">
+                <button class="btn-secondary" type="button" onclick="closeEditCartModal()">Hủy</button>
+                <button class="btn-highlight" type="button" onclick="saveCartEdit()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
@@ -76,13 +136,98 @@
 <script>
     let currentCart = null;
     let currentUser = null;
+    let editCartItemData = null;
+    let editCartOptions = [];
 
-    document.addEventListener('DOMContentLoaded', initCart);
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('edit-cart-modal');
+        if (modal) {
+            modal.addEventListener('change', (e) => {
+                if (e.target && e.target.type === 'checkbox' && e.target.closest('#editCartToppingOptions')) {
+                    syncEditCartToppingsPreview();
+                }
+            });
+        }
+        initCart();
+    });
+
+    function escapeHtml(text) {
+        if (text == null) return '';
+        const d = document.createElement('div');
+        d.textContent = String(text);
+        return d.innerHTML;
+    }
+
+    function normalizeMucDa(value) {
+        const n = Number(value);
+        if (n <= 25) return 0;
+        if (n <= 75) return 50;
+        return 100;
+    }
+
+    /** Topping trong danh mục = nguyên liệu loại TOPPING (theo id hoặc trùng tên). */
+    function toppingThuocDanhMucCheckbox(t, catalogOptions) {
+        const opts = (catalogOptions && catalogOptions.length) ? catalogOptions : editCartOptions;
+        if (!opts.length) return false;
+        const catalogIds = new Set(opts.map(o => String(o.id)));
+        if (t.toppingId != null && catalogIds.has(String(t.toppingId))) return true;
+        const nlId = t.nguyenLieu?.id != null ? String(t.nguyenLieu.id)
+            : (t.nguyenLieuId != null ? String(t.nguyenLieuId) : null);
+        if (nlId && catalogIds.has(nlId)) return true;
+        const name = (t.ten || t.nguyenLieu?.ten || '').trim();
+        if (name && opts.some(o => (o.ten || '').trim() === name)) return true;
+        return false;
+    }
+
+    /**
+     * Danh sách hiển thị = topping từ giỏ không có trong danh sách checkbox (nguyên liệu lạ…)
+     * + đúng một dòng cho mỗi checkbox đang tick (cộng dồn).
+     */
+    function syncEditCartToppingsPreview() {
+        const el = document.getElementById('editCartToppings');
+        const countEl = document.getElementById('editCartToppingCount');
+        if (!el) return;
+
+        const unlistedLines = [];
+        if (editCartItemData && Array.isArray(editCartItemData.toppings)) {
+            editCartItemData.toppings.forEach(t => {
+                if (toppingThuocDanhMucCheckbox(t)) return;
+                const name = (t.ten || t.nguyenLieu?.ten || 'Topping').trim() || 'Topping';
+                const q = t.soLuong != null && Number(t.soLuong) > 1 ? ` ×${t.soLuong}` : '';
+                unlistedLines.push(`<li>${escapeHtml(name + q)} <span style="opacity:0.75">(không có trong danh sách chọn)</span></li>`);
+            });
+        }
+
+        const fromChecks = [];
+        document.querySelectorAll('#editCartToppingOptions input[type="checkbox"]:checked').forEach(input => {
+            const option = editCartOptions.find(o => String(o.id) === String(input.value));
+            if (option) {
+                const p = option.giaDonVi || option.giaThem || option.gia || 0;
+                fromChecks.push(`${option.ten || 'Topping'} (+${formatPrice(p)})`);
+            }
+        });
+
+        const liExtra = unlistedLines.join('');
+        const liChecks = fromChecks.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        const totalCount = unlistedLines.length + fromChecks.length;
+
+        if (!liExtra && !liChecks) {
+            el.innerHTML = '<span class="muted">Chưa có topping (chưa tick ô nào bên dưới).</span>';
+        } else {
+            el.innerHTML = '<ul style="margin:0;padding-left:1.25rem;">' + liExtra + liChecks + '</ul>';
+        }
+        if (countEl) {
+            countEl.textContent = totalCount
+                ? `Đang có ${totalCount} topping trong danh sách (${fromChecks.length} từ ô đã chọn).`
+                : '';
+        }
+    }
 
     async function initCart() {
         showLoading(true);
         try {
             currentUser = await api("GET", "/api/nguoi-dung/me");
+            await loadDefaultAddress();
             await loadCart();
         } catch (e) {
             console.error(e);
@@ -103,6 +248,44 @@
         }
     }
 
+    async function startCheckout() {
+        if (!currentCart || !currentCart.cacMatHang || currentCart.cacMatHang.length === 0) {
+            alert("Giỏ hàng đang trống, không thể tiến hành đặt hàng.");
+            return;
+        }
+        const selectedItems = currentCart.cacMatHang.filter(item => item.duocChonThanhToan);
+        if (selectedItems.length === 0) {
+            alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán.");
+            return;
+        }
+
+        showLoading(true);
+        try {
+            const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
+            if (!addresses || addresses.length === 0) {
+                alert("Bạn chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ trước khi đặt hàng.");
+            }
+            window.location.href = "/ui/don-hang";
+        } catch (e) {
+            alert("Lỗi khi tiến hành đặt hàng: " + e.message);
+            console.error(e);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    /** Giá “niêm yết” dòng = (giá gốc đồ uống + topping/đơn vị) × số lượng — để so với thanhTien đã áp KM giá. */
+    function lineListPriceBeforePromo(item) {
+        const sp = item.nuocUong || {};
+        const toppingUnit = (item.toppings || []).reduce((s, t) => {
+            const dg = Number(t.donGia != null ? t.donGia : 0);
+            const q = t.soLuong != null ? Number(t.soLuong) : 1;
+            return s + dg * q;
+        }, 0);
+        const sl = Number(item.soLuong || 1);
+        return (Number(sp.gia || 0) + toppingUnit) * sl;
+    }
+
     function renderCart() {
         const list = document.getElementById("cart-items-list");
         const isEmpty = !currentCart || !currentCart.cacMatHang || currentCart.cacMatHang.length === 0;
@@ -117,26 +300,46 @@
             const sp = item.nuocUong;
             const img = (sp.hinhAnh && sp.hinhAnh.length > 0) ? sp.hinhAnh[0] : '/uploads/default-drink.jpg';
             const tc = item.tuyChinh || {};
+            const toppingSummary = Array.isArray(item.toppings) && item.toppings.length
+                ? item.toppings.map(t => t.ten || t.nguyenLieu?.ten || 'Topping').join(', ')
+                : '';
             
+            const listP = lineListPriceBeforePromo(item);
+            const pay = Number(item.thanhTien || 0);
+            const showKmGia = listP - pay > 0.5;
+            const priceCell = showKmGia
+                ? `<div style="text-align: right;">
+                        <div style="text-decoration: line-through; color: #888; font-weight: 500; font-size: 0.9rem;">${formatPrice(listP)}</div>
+                        <div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(pay)}</div>
+                        <div style="font-size: 0.72rem; color: #b01030; margin-top: 2px;">Khuyến mãi giá</div>
+                   </div>`
+                : `<div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(pay)}</div>`;
+
             const itemHtml = `
-                <div class="card" style="margin-bottom: 1rem;">
-                    <div class="card-content" style="display: flex; gap: 1.5rem; align-items: center;">
+                <div class="card" style="margin-bottom: 1rem;" ondblclick="editCartItem('${item.id}')">
+                    <div class="card-content" style="display: flex; gap: 0.9rem; align-items: flex-start;">
+                        <div style="flex: 0 0 24px; display: flex; justify-content: center; align-items: flex-start; margin-top: 0.2rem;">
+                            <input type="checkbox" ${item.duocChonThanhToan ? 'checked' : ''} onchange="toggleSelectItem('${item.id}', this.checked)" style="transform: scale(0.65);">
+                        </div>
                         <img src="${img}" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);">
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <h3 style="margin: 0; color: var(--phuclong-green);">${sp.ten}</h3>
-                                <button onclick="removeItem('${item.id}')" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                                <div style="display:flex; gap:0.5rem; align-items:center;">
+                                    <button type="button" class="btn-secondary" onclick="editCartItem('${item.id}')">Sửa</button>
+                                    <button onclick="removeItem('${item.id}')" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                                </div>
                             </div>
                             <div style="font-size: 0.85rem; margin-top: 0.5rem;">
-                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px; margin-right: 5px;">Đường: ${tc.mucDuong}%</span>
-                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa}%</span>
+                                <span class="badge" style="background: var(--bg-subtle); color: var(--text-main); padding: 2px 8px; border-radius: 10px;">Đá: ${tc.mucDa ?? 100}%</span>
                                 ${tc.ghiChu ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Ghi chú: ${tc.ghiChu}</i></p>` : ''}
+                                ${toppingSummary ? `<p class="muted" style="margin: 5px 0 0 0;"><i>Topping: ${toppingSummary}</i></p>` : ''}
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 1rem;">
                                 <div style="display: flex; align-items: center; gap: 1rem;">
                                     <span class="muted">Số lượng: <b>${item.soLuong}</b></span>
                                 </div>
-                                <div style="font-weight: bold; color: var(--phuclong-green);">${formatPrice(item.thanhTien)}</div>
+                                ${priceCell}
                             </div>
                         </div>
                     </div>
@@ -145,8 +348,49 @@
             list.innerHTML += itemHtml;
         });
 
-        document.getElementById("subtotal").innerText = formatPrice(currentCart.tongTien);
-        document.getElementById("total").innerText = formatPrice(currentCart.tongTien);
+        const selectedTotal = currentCart.cacMatHang
+            .filter(item => item.duocChonThanhToan)
+            .reduce((sum, item) => sum + (item.thanhTien || 0), 0);
+        document.getElementById("subtotal").innerText = formatPrice(selectedTotal);
+        document.getElementById("select-all-items").checked = currentCart.cacMatHang.length > 0
+            && currentCart.cacMatHang.every(item => item.duocChonThanhToan);
+        refreshCheckoutDiscount(false);
+    }
+
+    /**
+     * @param {boolean} throwOnFail — true khi người dùng vừa bấm Áp dụng; false khi chỉ làm mới giao diện sau đổi giỏ.
+     */
+    async function refreshCheckoutDiscount(throwOnFail) {
+        const discountEl = document.getElementById("discount");
+        const totalEl = document.getElementById("total");
+        const code = sessionStorage.getItem("checkoutMaGiamGia");
+        const selected = (currentCart?.cacMatHang || []).filter(item => item.duocChonThanhToan);
+        const sub = selected.reduce((sum, item) => sum + (Number(item.thanhTien) || 0), 0);
+        if (!code || !selected.length) {
+            if (discountEl) discountEl.innerText = "-0đ";
+            if (totalEl) totalEl.innerText = formatPrice(sub);
+            return;
+        }
+        try {
+            const body = {
+                ma: code.trim(),
+                chiTiet: selected.map(item => ({
+                    nuocUongId: item.nuocUong?.id,
+                    thanhTien: item.thanhTien
+                }))
+            };
+            const r = await api("POST", "/api/khuyen-mai/tinh-cho-gio", body);
+            const giam = Number(r.tienGiam || 0);
+            if (discountEl) discountEl.innerText = "-" + formatPrice(giam);
+            if (totalEl) totalEl.innerText = formatPrice(Number(r.tongTienSauGiam != null ? r.tongTienSauGiam : sub - giam));
+        } catch (e) {
+            sessionStorage.removeItem("checkoutMaGiamGia");
+            if (discountEl) discountEl.innerText = "-0đ";
+            if (totalEl) totalEl.innerText = formatPrice(sub);
+            if (throwOnFail) {
+                throw e;
+            }
+        }
     }
 
     async function removeItem(itemId) {
@@ -159,8 +403,180 @@
         }
     }
 
-    function proceedToCheckout() {
-        window.location.href = "/ui/don-hang";
+    async function editCartItem(itemId) {
+        const item = currentCart?.cacMatHang?.find(i => i.id === itemId);
+        if (!item) {
+            alert('Không tìm thấy sản phẩm cần chỉnh sửa.');
+            return;
+        }
+
+        editCartItemData = item;
+        const sp = item.nuocUong || {};
+
+        document.getElementById('editCartTitle').textContent = `Sửa: ${sp.ten || 'Sản phẩm'}`;
+        document.getElementById('editCartImage').src = (sp.hinhAnh && sp.hinhAnh.length > 0) ? sp.hinhAnh[0] : '/uploads/default-drink.jpg';
+        document.getElementById('editCartProductName').textContent = sp.ten || 'Sản phẩm không xác định';
+        document.getElementById('editCartProductDesc').textContent = sp.moTa || 'Không có mô tả';
+        document.getElementById('editCartQuantity').value = item.soLuong || 1;
+        document.getElementById('editCartIce').value = String(normalizeMucDa(item.tuyChinh?.mucDa ?? 100));
+        document.getElementById('editCartNote').value = item.tuyChinh?.ghiChu || '';
+        document.getElementById('editCartToppings').innerHTML = '<span class="muted">Đang tải danh sách…</span>';
+        const cnt = document.getElementById('editCartToppingCount');
+        if (cnt) cnt.textContent = '';
+
+        const selectedToppingIds = new Set();
+        if (Array.isArray(item.toppings)) {
+            item.toppings.forEach(t => {
+                if (t.nguyenLieu?.id) {
+                    selectedToppingIds.add(String(t.nguyenLieu.id));
+                } else if (t.nguyenLieuId) {
+                    selectedToppingIds.add(String(t.nguyenLieuId));
+                } else if (t.toppingId) {
+                    selectedToppingIds.add(String(t.toppingId));
+                }
+            });
+        }
+
+        const toppingOptionsEl = document.getElementById('editCartToppingOptions');
+        if (toppingOptionsEl) {
+            toppingOptionsEl.innerHTML = '<span class="muted">Đang tải topping...</span>';
+        }
+        editCartOptions = [];
+
+        try {
+            const response = await fetch(`/api/san-pham/nuoc-uong/${sp.id}/detail`);
+            if (response.ok) {
+                const detailData = await response.json();
+                editCartOptions = Array.isArray(detailData.topping) ? detailData.topping : [];
+                // Topping catalog = nguyên liệu TOPPING; ghép checkbox theo tên nếu thiếu id
+                if (Array.isArray(item.toppings)) {
+                    item.toppings.forEach(t => {
+                        if (t.nguyenLieu?.id || t.nguyenLieuId || t.toppingId) return;
+                        const name = (t.ten || t.nguyenLieu?.ten || '').trim();
+                        if (!name) return;
+                        const m = editCartOptions.find(o => (o.ten || '').trim() === name);
+                        if (m) selectedToppingIds.add(String(m.id));
+                    });
+                }
+                renderEditCartToppingOptions(editCartOptions, selectedToppingIds);
+            } else {
+                renderEditCartToppingOptions([], selectedToppingIds);
+            }
+        } catch (e) {
+            console.error('Không tải được topping:', e);
+            renderEditCartToppingOptions([], selectedToppingIds);
+        }
+
+        document.getElementById('edit-cart-modal').classList.remove('hidden');
+    }
+
+    function renderEditCartToppingOptions(options, selectedIds) {
+        const toppingOptionsEl = document.getElementById('editCartToppingOptions');
+        if (!toppingOptionsEl) return;
+
+        if (!Array.isArray(options) || options.length === 0) {
+            toppingOptionsEl.innerHTML = '<div class="muted">Không có topping để chọn.</div>';
+            syncEditCartToppingsPreview();
+            return;
+        }
+
+        toppingOptionsEl.innerHTML = options.map(option => {
+            const checked = selectedIds.has(String(option.id)) ? 'checked' : '';
+            const priceLabel = option.giaDonVi || option.giaThem || option.gia || 0;
+            return `
+                <label style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+                    <input type="checkbox" value="${option.id}" ${checked}>
+                    <span>${escapeHtml(option.ten || 'Topping')} (+${formatPrice(priceLabel)})</span>
+                </label>
+            `;
+        }).join('');
+        syncEditCartToppingsPreview();
+    }
+
+    function closeEditCartModal() {
+        document.getElementById('edit-cart-modal').classList.add('hidden');
+        editCartItemData = null;
+    }
+
+    async function saveCartEdit() {
+        if (!editCartItemData || !currentUser) {
+            alert('Không thể lưu thay đổi. Vui lòng thử lại.');
+            return;
+        }
+
+        const selectedToppings = Array.from(document.querySelectorAll('#editCartToppingOptions input[type="checkbox"]'))
+            .filter(input => input.checked)
+            .map(input => {
+                const option = editCartOptions.find(o => String(o.id) === String(input.value));
+                return {
+                    nguyenLieuId: option?.id || null,
+                    soLuong: 1,
+                    ten: option?.ten || null,
+                    giaThem: option?.giaDonVi || option?.giaThem || option?.gia || 0
+                };
+            });
+
+        // Chỉ giữ topping không có checkbox (nguyên liệu / tùy chỉnh lạ). Topping trong danh mục chỉ đi theo ô đã tick.
+        const preservedToppings = Array.isArray(editCartItemData.toppings)
+            ? editCartItemData.toppings
+                .filter(t => !toppingThuocDanhMucCheckbox(t))
+                .map(t => ({
+                    toppingId: t.toppingId || null,
+                    nguyenLieuId: t.nguyenLieu?.id || t.nguyenLieuId || null,
+                    soLuong: t.soLuong || 1,
+                    ten: t.ten || t.nguyenLieu?.ten || null,
+                    giaThem: t.giaThem || t.donGia || null
+                }))
+            : [];
+
+        // Khớp CapNhatMatHangRequest: các field phẳng, không bọc tuyChinh (Spring không map được).
+        const payload = {
+            soLuong: Number(document.getElementById('editCartQuantity').value || 1),
+            mucDa: normalizeMucDa(document.getElementById('editCartIce').value || 100),
+            ghiChu: (document.getElementById('editCartNote').value || '').trim() || null,
+            toppings: [...selectedToppings, ...preservedToppings]
+        };
+
+        try {
+            await api('PATCH', `/api/gio-hang/${currentUser.id}/mat-hang/${editCartItemData.id}`, payload);
+            await loadCart();
+            closeEditCartModal();
+        } catch (e) {
+            alert('Lỗi lưu thay đổi: ' + e.message);
+            console.error(e);
+        }
+    }
+
+    async function toggleSelectItem(itemId, checked) {
+        try {
+            currentCart = await api("PATCH", `/api/gio-hang/${currentUser.id}/mat-hang/${itemId}/chon`, { duocChon: checked });
+            renderCart();
+        } catch (e) {
+            alert("Lỗi cập nhật lựa chọn: " + e.message);
+            await loadCart();
+        }
+    }
+
+    async function loadDefaultAddress() {
+        try {
+            const list = await api("GET", "/api/dia-chi/" + currentUser.id);
+            const chosen = (list || []).find(x => x.macDinh) || (list || [])[0];
+            document.getElementById("defaultAddress").textContent = chosen
+                ? `${chosen.diaChiChiTiet || ""} (${chosen.soDienThoaiNhan || ""})`
+                : "Chưa có địa chỉ. Vui lòng cập nhật trong tài khoản.";
+        } catch (e) {
+            document.getElementById("defaultAddress").textContent = "Không tải được địa chỉ.";
+        }
+    }
+
+    async function toggleSelectAll(checked) {
+        try {
+            currentCart = await api("PATCH", `/api/gio-hang/${currentUser.id}/chon-tat-ca`, { duocChon: checked });
+            renderCart();
+        } catch (e) {
+            alert("Lỗi cập nhật lựa chọn: " + e.message);
+            await loadCart();
+        }
     }
 
     function formatPrice(price) {
@@ -173,9 +589,31 @@
     }
 
     async function applyCoupon() {
-        const code = document.getElementById("coupon-code").value;
-        if (!code) return;
-        alert("Tính năng áp dụng mã giảm giá đang được cập nhật!");
+        const code = (document.getElementById("coupon-code").value || "").trim();
+        if (!code) {
+            alert("Vui lòng nhập mã.");
+            return;
+        }
+        if (!currentCart || !currentCart.cacMatHang?.length) {
+            alert("Giỏ hàng đang trống.");
+            return;
+        }
+        const selected = currentCart.cacMatHang.filter(item => item.duocChonThanhToan);
+        if (!selected.length) {
+            alert("Vui lòng chọn ít nhất một sản phẩm để áp dụng mã.");
+            return;
+        }
+        try {
+            sessionStorage.setItem("checkoutMaGiamGia", code);
+            await refreshCheckoutDiscount(true);
+            alert("Đã áp dụng mã. Kiểm tra mức giảm ở phần tóm tắt đơn hàng.");
+        } catch (e) {
+            alert(e.message || "Không áp dụng được mã.");
+        }
+    }
+
+    function changeAddress() {
+        window.location.href = "/ui/tai-khoan";
     }
 </script>
 
@@ -184,10 +622,57 @@
         display: inline-block;
         border: 1px solid var(--border-color);
     }
-    input {
+    input, textarea {
         padding: 10px;
         border: 1px solid var(--border-color);
         border-radius: var(--radius-md);
+    }
+    .modal.hidden {
+        display: none;
+    }
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+    }
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        backdrop-filter: blur(1px);
+    }
+    .modal-card {
+        position: relative;
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-card);
+        width: min(760px, 100%);
+        max-height: min(90vh, 760px);
+        overflow-y: auto;
+        z-index: 1;
+        padding: 1.5rem;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 1rem;
+    }
+    .modal-close {
+        border: none;
+        background: transparent;
+        color: var(--text-main);
+        font-size: 1.6rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .modal-footer button {
+        min-width: 120px;
     }
 </style>
 </body>

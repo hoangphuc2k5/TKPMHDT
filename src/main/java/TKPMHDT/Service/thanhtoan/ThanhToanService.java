@@ -1,5 +1,7 @@
 package TKPMHDT.Service.thanhtoan;
 
+import TKPMHDT.DTO.request.TaoThanhToanRequest;
+import TKPMHDT.DTO.response.ThanhToanResponse;
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.thanhtoan.ThanhToan;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
@@ -26,11 +28,10 @@ public class ThanhToanService {
     }
 
     @Transactional
-    public ThanhToan taoThanhToan(UUID donHangId, PhuongThucThanhToanEnum phuongThuc) {
-        Optional<ThanhToan> tonTai = thanhToanRepository.findByDonHangId(donHangId);
-        if (tonTai.isPresent()) {
-            return tonTai.get();
-        }
+    public ThanhToanResponse taoThanhToan(TaoThanhToanRequest request) {
+
+        UUID donHangId = request.getDonHangId();
+        PhuongThucThanhToanEnum phuongThuc = request.getPhuongThuc();
 
         DonHang donHang = donHangRepository.findById(donHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang"));
@@ -41,8 +42,20 @@ public class ThanhToanService {
                 .phuongThuc(phuongThuc)
                 .trangThai(TrangThaiThanhToanEnum.CHO_XU_LY)
                 .build();
+        donHang.setThanhToan(thanhToan);
 
-        return thanhToanRepository.save(thanhToan);
+        thanhToanRepository.save(thanhToan);
+
+        ThanhToanResponse response = ThanhToanResponse.builder()
+                .id(thanhToan.getId())
+                .donHangId(donHangId)
+                .soTien(thanhToan.getSoTien())
+                .phuongThuc(thanhToan.getPhuongThuc())
+                .trangThai(thanhToan.getTrangThai())
+                .build();
+
+        
+        return response;
     }
 
     @Transactional
@@ -56,6 +69,16 @@ public class ThanhToanService {
     @Transactional(readOnly = true)
     public Optional<ThanhToan> layTheoDonHangId(UUID donHangId) {
         return thanhToanRepository.findByDonHangId(donHangId);
+    }
+
+    // Xác nhận thanh toán thành công
+    @Transactional
+    public ThanhToan xacNhanThanhToanThanhCong(UUID thanhToanId) {
+        ThanhToan thanhToan = thanhToanRepository.findById(thanhToanId)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay thanh toan"));
+        thanhToan.setTrangThai(TrangThaiThanhToanEnum.THANH_CONG);
+        return thanhToanRepository.save(thanhToan);
+
     }
 }
 

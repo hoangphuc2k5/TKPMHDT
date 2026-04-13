@@ -1,88 +1,146 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Quản lý Thanh toán - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Thanh toán - 4it2run')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header('payments')}"></header>
+<div class="container" style="max-width:760px; padding-top:16px; padding-bottom:96px;">
+    <h1 style="margin:0 0 12px;">Thanh toán</h1>
+    <p class="muted">Xác nhận địa chỉ, kiểm tra sản phẩm và chọn phương thức thanh toán.</p>
 
-<div class="container">
-    <div style="margin-bottom: 3rem; text-align: center;">
-        <h1 class="brand-font">Cổng Thanh Toán</h1>
-        <p class="muted">Tích hợp đa phương thức thanh toán an toàn và bảo mật.</p>
+    <div class="section-card">
+        <h3 style="margin-top:0;">Địa chỉ giao hàng</h3>
+        <div id="shippingAddress" class="muted">Đang tải địa chỉ mặc định...</div>
     </div>
 
-    <div class="grid">
-        <!-- Initialize (Customer/Staff) -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Khởi tạo giao dịch</h3>
-                <label>Mã đơn hàng<input id="tt_donHangId" placeholder="Nhập mã đơn..."></label>
-                <label>Phương thức
-                    <select id="tt_phuongThuc">
-                        <option value="VNPAY">Cổng VNPAY</option>
-                        <option value="MOMO">Ví MoMo</option>
-                        <option value="TIEN_MAT">Tiền mặt (COD)</option>
-                        <option value="THE">Thẻ ngân hàng</option>
-                    </select>
-                </label>
-                <button onclick="taoThanhToan()" style="width: 100%;">Tạo thanh toán</button>
-            </div>
-        </div>
+    <div class="section-card">
+        <h3 style="margin-top:0;">Sản phẩm</h3>
+        <div id="checkoutItems"></div>
+    </div>
 
-        <!-- Admin Only Status Update -->
-        <div sec:authorize="hasRole('QUAN_TRI_VIEN')" class="card">
-            <div class="card-content">
-                <h3>Xác nhận thanh toán</h3>
-                <label>Mã giao dịch<input id="tt_thanhToanId" placeholder="Nhập mã giao dịch..."></label>
-                <label>Trạng thái
-                    <select id="tt_trangThai">
-                        <option value="CHO_XU_LY">Đang xử lý</option>
-                        <option value="THANH_CONG">Thành công</option>
-                        <option value="THAT_BAI">Thất bại</option>
-                    </select>
-                </label>
-                <button class="btn-highlight" onclick="capNhatTrangThaiTT()" style="width: 100%;">Cập nhật trạng thái</button>
-            </div>
-        </div>
-
-        <!-- Lookup -->
-        <div class="card">
-            <div class="card-content">
-                <h3>Tra cứu giao dịch</h3>
-                <label>Mã đơn hàng<input id="tt_timDonHangId" placeholder="Nhập mã đơn hàng..."></label>
-                <button class="btn-secondary" onclick="layTTTheoDonHang()" style="width: 100%;">Lấy thông tin</button>
-            </div>
+    <div class="section-card">
+        <h3 style="margin-top:0;">Phương thức thanh toán</h3>
+        <div style="display:grid; gap:8px;">
+            <label><input type="radio" name="paymentMethod" value="TIEN_MAT" checked> Tiền mặt</label>
+            <label><input type="radio" name="paymentMethod" value="VI_DIEN_TU"> Ví điện tử</label>
+            <label><input type="radio" name="paymentMethod" value="THE"> Thẻ</label>
+            <label><input type="radio" name="paymentMethod" value="MOMO_ZALO"> Momo / ZaloPay</label>
         </div>
     </div>
 
-    <div style="margin-top: 4rem;">
-        <h2 class="brand-font">Chi tiết thanh toán</h2>
-        <pre id="result" style="background: #f8f9fa; color: #333; border: 1px solid #ddd;">Thông tin giao dịch sẽ hiển thị tại đây...</pre>
+    <div class="section-card">
+        <div style="display:flex; justify-content:space-between;">
+            <span>Tổng thanh toán</span>
+            <strong id="checkoutTotal">0đ</strong>
+        </div>
+    </div>
+
+    <div style="position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--border-color); padding:10px 14px;">
+        <div style="max-width:760px; margin:0 auto; display:flex; justify-content:space-between; align-items:center;">
+            <strong id="checkoutTotalBottom">0đ</strong>
+            <button onclick="datHang()" class="btn-highlight" style="margin-top:0; min-width:160px;">Đặt hàng</button>
+        </div>
     </div>
 </div>
 
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-
 <script>
-    async function taoThanhToan() {
-        const id = document.getElementById("tt_donHangId").value;
-        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("POST", "/api/thanh-toan", {
-            donHangId: id,
-            phuongThuc: document.getElementById("tt_phuongThuc").value
-        }).catch(e => e.message));
+let currentUser = null;
+let cart = null;
+let defaultAddress = null;
+
+document.addEventListener("DOMContentLoaded", initCheckout);
+
+async function initCheckout() {
+    try {
+        currentUser = await api("GET", "/api/nguoi-dung/me");
+        cart = await api("GET", "/api/gio-hang/" + currentUser.id);
+        const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
+        defaultAddress = (addresses || []).find(x => x.macDinh) || (addresses || [])[0] || null;
+        renderAddress();
+        await renderItems();
+    } catch (e) {
+        alert("Không thể tải dữ liệu thanh toán: " + e.message);
     }
-    async function capNhatTrangThaiTT() {
-        const id = document.getElementById("tt_thanhToanId").value;
-        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("PATCH", "/api/thanh-toan/" + id + "/trang-thai", {
-            trangThaiMoi: document.getElementById("tt_trangThai").value
-        }).catch(e => e.message));
+}
+
+function renderAddress() {
+    const wrap = document.getElementById("shippingAddress");
+    if (!defaultAddress) {
+        wrap.textContent = "Chưa có địa chỉ mặc định. Vui lòng cập nhật trong tài khoản.";
+        return;
     }
-    async function layTTTheoDonHang() {
-        const id = document.getElementById("tt_timDonHangId").value;
-        if (!isUUID(id)) { alert("Vui lòng nhập ID đúng định dạng UUID"); return; }
-        showResult("result", await api("GET", "/api/thanh-toan/don-hang/" + id).catch(e => e.message));
+    wrap.textContent = `${defaultAddress.hoTenNhan || ""} - ${defaultAddress.soDienThoaiNhan || ""} | ${defaultAddress.diaChiChiTiet || ""}`;
+}
+
+async function renderItems() {
+    const items = (cart?.cacMatHang || []).filter(x => x.duocChonThanhToan);
+    const wrap = document.getElementById("checkoutItems");
+    if (!items.length) {
+        wrap.innerHTML = "<div class='muted'>Không có sản phẩm được chọn để thanh toán.</div>";
+        await applyCouponToCheckoutTotal([], 0);
+        return;
     }
+    let total = 0;
+    wrap.innerHTML = items.map(item => {
+        total += Number(item.thanhTien || 0);
+        return `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-color);">
+            <span>${item.nuocUong?.ten || "Sản phẩm"} x${item.soLuong || 1}</span>
+            <strong>${formatPrice(item.thanhTien || 0)}</strong>
+        </div>`;
+    }).join("");
+    await applyCouponToCheckoutTotal(items, total);
+}
+
+async function applyCouponToCheckoutTotal(items, gross) {
+    const code = (sessionStorage.getItem("checkoutMaGiamGia") || "").trim();
+    if (!code || !items.length) {
+        updateTotal(gross);
+        return;
+    }
+    try {
+        const r = await api("POST", "/api/khuyen-mai/tinh-cho-gio", {
+            ma: code,
+            chiTiet: items.map((item) => ({
+                nuocUongId: item.nuocUong?.id,
+                thanhTien: item.thanhTien,
+            })),
+        });
+        updateTotal(Number(r.tongTienSauGiam != null ? r.tongTienSauGiam : gross));
+    } catch (e) {
+        sessionStorage.removeItem("checkoutMaGiamGia");
+        updateTotal(gross);
+    }
+}
+
+function updateTotal(total) {
+    const text = formatPrice(total);
+    document.getElementById("checkoutTotal").textContent = text;
+    document.getElementById("checkoutTotalBottom").textContent = text;
+}
+
+async function datHang() {
+    if (!defaultAddress) {
+        alert("Bạn chưa có địa chỉ giao hàng");
+        return;
+    }
+    const paymentMethod = document.querySelector("input[name='paymentMethod']:checked")?.value || "TIEN_MAT";
+    try {
+        const ma = (sessionStorage.getItem("checkoutMaGiamGia") || "").trim() || null;
+        await api("POST", "/api/don-hang/tao-tu-gio-hang", {
+            khachHangId: currentUser.id,
+            diaChiId: defaultAddress.id,
+            maGiamGiaCode: ma,
+            phuongThuc: paymentMethod
+        });
+        sessionStorage.removeItem("checkoutMaGiamGia");
+        alert("Đặt hàng thành công");
+        window.location.href = "/ui/don-hang";
+    } catch (e) {
+        alert("Đặt hàng thất bại: " + e.message);
+    }
+}
+
+function formatPrice(value) {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
+}
 </script>
 </body>
 </html>
