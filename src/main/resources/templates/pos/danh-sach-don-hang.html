@@ -99,13 +99,11 @@
         async function loadOrders() {
             try {
                 const status = document.getElementById('statusFilter').value;
-                let url = `/api/don-hang/pos/orders-offline?page=${currentPage}&size=${pageSize}`;
-                if (status) {
-                    url += `&status=${status}`;
-                }
+                const url = `/api/don-hang/pos/orders-offline?page=${currentPage}&size=${pageSize}`;
 
                 const res = await api('GET', url);
-                const orders = res.content || [];
+                const rawOrders = res.content || [];
+                const orders = status ? rawOrders.filter(o => (o.trangThai || '') === status) : rawOrders;
                 totalPages = res.totalPages || 1;
 
                 const body = document.getElementById('orderTableBody');

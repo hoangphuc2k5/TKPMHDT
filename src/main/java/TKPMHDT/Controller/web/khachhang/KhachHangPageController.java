@@ -36,7 +36,7 @@ public class KhachHangPageController {
 
     @GetMapping("/ui/khuyen-mai")
     public String khuyenMaiPage() {
-        return "khuyenmai";
+        return "redirect:/";
     }
 
     @GetMapping("/ui/tai-khoan")

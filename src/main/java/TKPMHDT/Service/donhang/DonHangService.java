@@ -330,6 +330,14 @@ public class DonHangService {
     }
 
     private XemDonHangResponse mapToXemDonHangResponse(DonHang donHang) {
+        BigDecimal tamTinhHang = donHang.getChiTietDonHangs() == null
+                ? BigDecimal.ZERO
+                : donHang.getChiTietDonHangs().stream()
+                        .map(ChiTietDonHang::getThanhTien)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal tienGiam = donHang.getTienGiamApDung() != null ? donHang.getTienGiamApDung() : BigDecimal.ZERO;
+
         List<ChiTietDonHangResponse> chiTietResponses = donHang.getChiTietDonHangs()
             .stream()
             .map(ct -> {
@@ -368,6 +376,9 @@ public class DonHangService {
                 .diaChiGiaoHang(donHang.getDiaChiGiaoHang())
                 .phuongThucThanhToan(donHang.getThanhToan() != null ? donHang.getThanhToan().getPhuongThuc().name() : "Chưa xác định")
                 .trangThaiThanhToan(donHang.getThanhToan() != null ? donHang.getThanhToan().getTrangThai().name() : "Chưa xác định")      
+                .tamTinhHang(tamTinhHang)
+                .tienGiamApDung(tienGiam)
+                .maGiamGia(donHang.getMaGiamGia() != null ? donHang.getMaGiamGia().getMa() : null)
                 .tongTien(donHang.getTongTien())      
                 .build();
         return response;

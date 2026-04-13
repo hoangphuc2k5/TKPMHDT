@@ -90,32 +90,35 @@
     </header>
 
     <!-- Footer Fragment -->
-    <footer th:fragment="footer" style="margin-top: 80px; padding: 60px 0 30px; border-top: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.5);">
+    <footer th:fragment="footer" style="margin-top: 80px; padding: 60px 0 30px; border-top: 1px solid rgba(255,255,255,0.25); background: var(--phuclong-green); color: #fff;">
         <div class="container" style="padding-top: 0; padding-bottom: 0;">
             <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
                 <div>
-                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Về 4it2run</h3>
-                    <p class="muted" style="font-size: 0.875rem;">Hệ thống đặt đồ uống và quản lý bán hàng — nhanh, tiện và an toàn. Luôn hướng tới trải nghiệm tốt cho khách hàng.</p>
+                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: #fff;">Về 4it2run</h3>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.9);">Hệ thống đặt đồ uống và quản lý bán hàng - nhanh, tiện và an toàn. Luôn hướng tới trải nghiệm tốt cho khách hàng.</p>
                 </div>
                 <div>
-                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Liên kết nhanh</h3>
+                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: #fff;">Liên kết nhanh</h3>
                     <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
-                        <li style="margin-bottom: 10px;"><a th:href="@{/ui/san-pham}" style="text-decoration: none; color: var(--text-muted); transition: color 0.2s;">Sản phẩm mới</a></li>
-                        <li style="margin-bottom: 10px;"><a th:href="@{/ui/khuyen-mai}" style="text-decoration: none; color: var(--text-muted); transition: color 0.2s;">Khuyến mãi Hot</a></li>
-                        <li style="margin-bottom: 10px;"><a th:href="@{/ui/don-hang}" style="text-decoration: none; color: var(--text-muted); transition: color 0.2s;">Theo dõi đơn hàng</a></li>
+                        <li style="margin-bottom: 10px;"><a th:href="@{/}" style="text-decoration: none; color: rgba(255,255,255,0.9); transition: color 0.2s;">Sản phẩm mới</a></li>                        
+                        <li style="margin-bottom: 10px;"><a th:href="@{/}" style="text-decoration: none; color: rgba(255,255,255,0.9); transition: color 0.2s;">Theo dõi đơn hàng</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Hỗ trợ</h3>
+                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: #fff;">Hỗ trợ</h3>
                     <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
-                        <li style="margin-bottom: 10px; color: var(--text-muted);">Hotline: 1900 1234</li>
-                        <li style="margin-bottom: 10px; color: var(--text-muted);">Email: support@4it2run.com</li>
-                        <li style="margin-bottom: 10px; color: var(--text-muted);">Địa chỉ: TP. Hồ Chí Minh</li>
+                        <li style="margin-bottom: 10px; color: rgba(255,255,255,0.9);">Hotline: 1900 1234</li>
+                        <li style="margin-bottom: 10px; color: rgba(255,255,255,0.9);">Email: support@4it2run.com</li>
+                        <li style="margin-bottom: 10px; color: rgba(255,255,255,0.9);">Địa chỉ: TP. Hồ Chí Minh</li>
                     </ul>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                    <img th:src="@{/logo/TYPO_Logo-17.jpg}" alt="4it2run" loading="lazy" decoding="async"
+                        style="width: 480px; max-width: 100%; height: auto; object-fit: contain; border-radius: 12px;">
                 </div>
             </div>
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
-                <p class="muted" style="font-size: 0.75rem;">&copy; 2026 4it2run. All rights reserved.</p>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.25); text-align: center;">
+                <p style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">&copy; 2026 4it2run. All rights reserved.</p>
             </div>
         </div>
     </footer>

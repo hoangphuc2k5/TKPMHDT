@@ -29,5 +29,8 @@ public class XemDonHangResponse {
     private String phuongThucThanhToan;
     private String trangThaiThanhToan;
 
+    private BigDecimal tamTinhHang;
+    private BigDecimal tienGiamApDung;
+    private String maGiamGia;
     private BigDecimal tongTien;
 }

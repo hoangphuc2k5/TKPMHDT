@@ -112,8 +112,14 @@ public class AdminNguyenLieuKhoController {
     }
 
     private ResponseEntity<NguyenLieu> capNhatKho(CapNhatKhoRequest request, String loai) {
+        if (request == null || request.nguyenLieuId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn nguyên liệu");
+        }
+        if (request.soLuong() == null || request.soLuong().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+        }
         return sanPhamService.layNguyenLieuTheoId(request.nguyenLieuId()).map(nguyenLieu -> {
-            BigDecimal soLuong = request.soLuong() == null ? BigDecimal.ZERO : request.soLuong();
+            BigDecimal soLuong = request.soLuong();
             BigDecimal tonTruoc = nguyenLieu.getSoLuongTon() == null ? BigDecimal.ZERO : nguyenLieu.getSoLuongTon();
             BigDecimal tonSau = "NHAP".equalsIgnoreCase(loai) ? tonTruoc.add(soLuong) : tonTruoc.subtract(soLuong);
             if (tonSau.compareTo(BigDecimal.ZERO) < 0) {

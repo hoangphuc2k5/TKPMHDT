@@ -15,8 +15,6 @@
         <button class="btn-secondary" style="margin-top:0; padding:10px 14px;" onclick="timNuocUong()">Lọc</button>
     </div>
 
-    <div id="productCount" class="muted" style="margin-bottom:16px;">0 sản phẩm</div>
-
     <form role="search" class="input-with-action" style="margin-bottom:10px;" autocomplete="on"
           onsubmit="event.preventDefault(); timNuocUong(); return false;">
         <input id="search-input" name="q" type="search" inputmode="search" enterkeyhint="search"
@@ -37,7 +35,7 @@
 <script>
 let allProducts = [];
 let activeCategory = 'Tất cả';
-const DEFAULT_CATEGORIES = ['Tất cả', 'Trà sữa', 'Cà phê', 'Sinh tố', 'Topping'];
+const DEFAULT_CATEGORIES = ['Tất cả', 'Trà sữa', 'Cà phê', 'Sinh tố'];
 
 document.addEventListener("DOMContentLoaded", async () => {
     const searchEl = document.getElementById("search-input");
@@ -144,13 +142,15 @@ function renderProducts(products) {
 function renderCategories() {
     const derived = new Set(DEFAULT_CATEGORIES);
     allProducts.forEach(p => {
-        if (p.danhMuc) derived.add(p.danhMuc);
+        if (p.danhMuc && p.danhMuc.trim().toLowerCase() !== 'topping') {
+            derived.add(p.danhMuc);
+        }
     });
     const tabs = Array.from(derived);
     const container = document.getElementById('category-tabs');
     container.innerHTML = tabs.map(cat => `
         <button class="category-tab ${activeCategory === cat ? 'active' : ''}" onclick="setCategory('${cat.replace(/'/g, "\\'")}')">${cat}</button>
-    `).join('');
+    `).join('') + `<span id="productCount" class="category-tab" style="cursor:default; background:#f5f5f5;">0 sản phẩm</span>`;
 }
 
 function setCategory(cat) {

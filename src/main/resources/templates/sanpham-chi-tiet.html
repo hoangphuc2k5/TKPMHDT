@@ -23,7 +23,8 @@
 					<h1 id="sanPhamTen" style="margin:0;"></h1>
 					<div class="muted" id="ratingText" style="margin:8px 0;">⭐ 4.8 (120 đánh giá)</div>
 					<p id="sanPhamMoTa" class="muted" style="margin:8px 0;"></p>
-					<h2 id="sanPhamGia" style="color:var(--phuclong-green); margin:8px 0;"></h2>
+					<h2 id="sanPhamGia"
+						style="color:var(--phuclong-green); margin:8px 0; font-family:'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif; font-weight:700;"></h2>
 				</div>
 				<div class="section-card" style="margin-top:0;">
 					<h3 style="margin-top:0;">Công thức gốc</h3>
@@ -38,14 +39,11 @@
 					<h3 style="margin-top:0;">Tùy chỉnh công thức</h3>
 
 					<label>Lượng đá</label>
-					<div style="display:flex; gap:8px; align-items:center;">
-						<button class="btn-secondary" type="button" style="margin-top:0; padding:6px 10px;"
-							onclick="changeRange('mucDa', -10)">-</button>
-						<input type="range" id="mucDa" min="0" max="100" value="100" oninput="updateRealtimePrice()">
-						<button class="btn-secondary" type="button" style="margin-top:0; padding:6px 10px;"
-							onclick="changeRange('mucDa', 10)">+</button>
-					</div>
-					<small id="mucDaValue">100%</small>
+					<select id="mucDa" onchange="updateRealtimePrice()">
+						<option value="0">0%</option>
+						<option value="50">50%</option>
+						<option value="100" selected>100%</option>
+					</select>
 
 					<label>Ghi chú</label>
 					<textarea id="ghiChu" style="width:100%;"
@@ -54,7 +52,7 @@
 					<label>Số lượng</label>
 					<input type="number" id="soLuong" value="1" min="1" oninput="updateRealtimePrice()">
 
-					<div style="margin-top:10px;">
+					<div style="margin-top:10px; font-family:'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif;">
 						<strong>Tạm tính:</strong> <span id="giaTamTinh">0đ</span>
 					</div>
 
@@ -64,7 +62,8 @@
 							style="display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:760px; margin:0 auto;">
 							<div>
 								<div class="muted" style="font-size:0.9rem;">Giá hiện tại</div>
-								<strong id="fixedPrice">0đ</strong>
+								<strong id="fixedPrice"
+									style="font-family:'Inter', system-ui, -apple-system, 'Segoe UI', 'Noto Sans', sans-serif; font-weight:700;">0đ</strong>
 							</div>
 							<button id="themVaoGioHangBtn" class="btn-highlight" style="margin-top:0; min-width:180px;">Thêm vào giỏ
 								hàng</button>
@@ -170,7 +169,7 @@
                 document.getElementById("soLuong").value = pending.soLuong;
             }
             if (pending.mucDa != null) {
-                document.getElementById("mucDa").value = pending.mucDa;
+                document.getElementById("mucDa").value = normalizeMucDa(pending.mucDa);
             }
             if (pending.ghiChu != null) {
                 document.getElementById("ghiChu").value = pending.ghiChu;
@@ -315,7 +314,7 @@
 			const payload = {
 				nuocUongId: sanPhamId,
 				soLuong: Number(document.getElementById("soLuong").value || 1),
-				mucDa: Number(document.getElementById("mucDa").value || 100),
+				mucDa: normalizeMucDa(document.getElementById("mucDa").value),
 				ghiChu: document.getElementById("ghiChu").value || null,
 				toppings: getSelectedToppingsPayload()
 			};
@@ -351,19 +350,8 @@
 		}
 	}
 
-	function changeRange(field, delta) {
-		const input = document.getElementById(field);
-		if (!input) return;
-		const current = Number(input.value || 0);
-		const min = Number(input.min || 0);
-		const max = Number(input.max || 100);
-		const next = Math.min(max, Math.max(min, current + delta));
-		input.value = next;
-		updateRealtimePrice();
-	}
-
 	function updateRealtimePrice() {
-		const da = Number(document.getElementById("mucDa").value || 100);
+		const da = normalizeMucDa(document.getElementById("mucDa").value);
 		const qty = Math.max(1, Number(document.getElementById("soLuong").value || 1));
 
 		const toppingTotalPerUnit = toppings.reduce((sum, item) => {
@@ -371,14 +359,19 @@
 			return sum + (selectedToppingIds.has(item.id) ? unitPrice : 0);
 		}, 0);
 
-		document.getElementById("mucDaValue").textContent = da + "%";
-
 		// Công thức giá: hệ số tăng nhẹ nếu đá nhiều hơn 100% (tùy chỉnh)
 		const heSo = 1 + Math.max(0, (da - 100) / 250);
 		const one = (basePrice * heSo) + toppingTotalPerUnit;
 		const total = one * qty;
 		document.getElementById("giaTamTinh").textContent = formatPrice(total);
 		document.getElementById("fixedPrice").textContent = formatPrice(total);
+	}
+
+	function normalizeMucDa(value) {
+		const n = Number(value);
+		if (n <= 25) return 0;
+		if (n <= 75) return 50;
+		return 100;
 	}
 
 	function getSelectedToppingsPayload() {
@@ -471,11 +464,7 @@
 			const chipsHtml = chipRows.length
 				? chipRows.map((x) => {
 					const name = (x.ten || x.tenNguyenLieu || '').trim() || 'Nguyên liệu';
-					const qty = x.soLuong != null && x.soLuong !== '' ? String(x.soLuong).trim() : '';
-					const unit = (x.donVi || '').trim();
-					const qtyPart = [qty, unit].filter(Boolean).join(' ');
-					const label = qtyPart ? `${name} — ${qtyPart}` : name;
-					return `<span class="chip pending">${escapeHtmlProduct(label)}</span>`;
+					return `<span class="chip pending">${escapeHtmlProduct(name)}</span>`;
 				}).join('')
 				: '';
 
@@ -492,9 +481,7 @@
 		}
 	</script>
 
-	<div class="product-detail-footer-wrap">
-		<footer th:replace="~{fragments/layout :: footer}"></footer>
-	</div>
+	<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 
 </html>

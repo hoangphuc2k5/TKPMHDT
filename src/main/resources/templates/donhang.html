@@ -66,7 +66,7 @@
                                     <input id="new-addr-city" type="text" style="width: 100%;">
                                 </div>
                             </div>
-                            <button onclick="openAddAddressModal()" class="btn-secondary"
+                            <button onclick="saveInlineAddress()" class="btn-secondary"
                                 style="width: 100%; margin-top: 1rem;">
                                 + Thêm địa chỉ mới
                             </button>
@@ -233,7 +233,6 @@
             const addresses = await api("GET", "/api/dia-chi/" + currentUser.id);
             const list = document.getElementById("address-list");
             list.innerHTML = "";
-            selectedAddressId = null;
             document.getElementById("new-address-checkbox").checked = false;
             document.getElementById("new-address-form").style.display = 'none';
 
@@ -244,11 +243,16 @@
                 return;
             }
 
-            const macDinh = addresses.find(a => a.laMacDinh);
-            if (macDinh) {
-                selectedAddressId = macDinh.id;
+            const selectedStillExists = selectedAddressId && addresses.some(a => a.id === selectedAddressId);
+            if (selectedStillExists) {
+                // Giữ địa chỉ người dùng vừa chọn thay vì luôn quay về mặc định.
             } else {
-                selectedAddressId = addresses[0].id;
+                const macDinh = addresses.find(a => a.laMacDinh);
+                if (macDinh) {
+                    selectedAddressId = macDinh.id;
+                } else {
+                    selectedAddressId = addresses[0].id;
+                }
             }
 
             addresses.forEach((addr) => {
@@ -276,7 +280,6 @@
             document.getElementById("new-address-form").style.display = enabled ? 'block' : 'none';
             if (enabled) {
                 selectedAddressId = null;
-                loadAddresses();
             }
         }
 
@@ -662,6 +665,16 @@
                         <div><strong>Phương thức thanh toán:</strong> ${order.phuongThucThanhToan || 'Chưa xác định'}</div>
                         <div><strong>Trạng thái thanh toán:</strong> ${order.trangThaiThanhToan || 'Chưa xử lý'}</div>
                     </div>
+                    <div style="margin-top: 1rem; padding: 0.9rem; background: #f8fafc; border-radius: var(--radius-md);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem;">
+                            <span>Tạm tính:</span>
+                            <span>${formatPrice(order.tamTinhHang || 0)}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem; color:#e74c3c;">
+                            <span>Giảm giá ${order.maGiamGia ? `(${order.maGiamGia})` : ''}:</span>
+                            <span>-${formatPrice(order.tienGiamApDung || 0)}</span>
+                        </div>
+                    </div>
                     <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; color: var(--phuclong-green); margin-top: 1rem;">
                         <span>Tổng cộng:</span>
                         <span>${formatPrice(order.tongTien)}</span>
@@ -825,6 +838,11 @@
                         <strong>Thanh toán:</strong> ${escapeHtmlInvoice(order.phuongThucThanhToan || '—')}
                         &nbsp;|&nbsp; <strong>Trạng thái TT:</strong> ${escapeHtmlInvoice(order.trangThaiThanhToan || '—')}
                     </div>
+                    <div class="pay">
+                        <strong>Tạm tính:</strong> ${formatPrice(order.tamTinhHang || 0)}
+                        &nbsp;|&nbsp; <strong>Mã giảm giá:</strong> ${escapeHtmlInvoice(order.maGiamGia || 'Không có')}
+                        &nbsp;|&nbsp; <strong>Giảm:</strong> -${formatPrice(order.tienGiamApDung || 0)}
+                    </div>
 
                     <table>
                         <thead>
@@ -841,8 +859,17 @@
                         </tbody>
                     </table>
 
-                    <div class="total">
-                        Tổng cộng: <span style="color: #16a34a;">${formatPrice(order.tongTien)}</span>
+                    <div class="total" style="font-size: 15px; font-weight: normal;">
+                        <div style="margin-bottom: 6px;">
+                            Tạm tính: <strong>${formatPrice(order.tamTinhHang || 0)}</strong>
+                        </div>
+                        <div style="margin-bottom: 6px; color: #e74c3c;">
+                            Giảm giá ${order.maGiamGia ? `(Mã: ${escapeHtmlInvoice(order.maGiamGia)})` : ''}:
+                            <strong>-${formatPrice(order.tienGiamApDung || 0)}</strong>
+                        </div>
+                        <div style="font-size: 18px; font-weight: bold;">
+                            Tổng cộng: <span style="color: #16a34a;">${formatPrice(order.tongTien)}</span>
+                        </div>
                     </div>
 
                     <div class="footer">
@@ -865,6 +892,39 @@
 
         function openAddAddressModal() { document.getElementById("address-modal").style.display = "flex"; }
         function closeAddressModal() { document.getElementById("address-modal").style.display = "none"; }
+
+        async function saveInlineAddress() {
+            const useNewAddress = document.getElementById("new-address-checkbox").checked;
+            if (!useNewAddress) {
+                alert("Vui lòng bật 'Sử dụng địa chỉ mới' để nhập và lưu địa chỉ.");
+                return;
+            }
+
+            const data = collectNewAddress();
+            if (!data) {
+                alert("Vui lòng điền đầy đủ thông tin địa chỉ mới.");
+                return;
+            }
+
+            try {
+                const savedAddress = await api("POST", "/api/dia-chi/" + currentUser.id, data);
+                selectedAddressId = savedAddress.id;
+
+                document.getElementById("new-address-checkbox").checked = false;
+                document.getElementById("new-address-form").style.display = 'none';
+
+                document.getElementById("new-addr-name").value = "";
+                document.getElementById("new-addr-phone").value = "";
+                document.getElementById("new-addr-detail").value = "";
+                document.getElementById("new-addr-ward").value = "";
+                document.getElementById("new-addr-district").value = "";
+                document.getElementById("new-addr-city").value = "";
+
+                await loadAddresses();
+            } catch (e) {
+                alert("Lỗi: " + e.message);
+            }
+        }
 
         async function saveAddress() {
             const data = {

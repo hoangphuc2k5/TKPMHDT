@@ -269,6 +269,12 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 0 3px rgba(12, 113, 61, 0.1);
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+    width: auto;
+    padding: 0;
+}
+
 /* Buttons */
 button {
     background: var(--phuclong-green);
@@ -350,12 +356,13 @@ pre {
 }
 
 .admin-container {
-    max-width: 1400px;
+    max-width: 1800px;
+    width: 100%;
 }
 
 .admin-shell {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: 220px minmax(0, 1fr);
     gap: 20px;
     align-items: start;
 }
@@ -400,6 +407,7 @@ pre {
 
 .admin-main {
     display: grid;
+    width: 100%;
 }
 
 .admin-section {
@@ -444,10 +452,48 @@ pre {
     margin-bottom: 10px;
 }
 
+.admin-toolbar input,
+.admin-toolbar select {
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+
+.admin-toolbar button,
+.admin-toolbar .btn-secondary,
+.admin-toolbar .btn-highlight {
+    margin-top: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 .admin-split {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
     gap: 14px;
+}
+
+.admin-section .card {
+    width: 100%;
+}
+
+.admin-section .card .card-content {
+    overflow-x: auto;
+}
+
+.admin-section .admin-table {
+    min-width: 100%;
+}
+
+#kmGiaTu,
+#kmGiaDen {
+    flex: 0 0 auto !important;
+    width: 190px;
+    max-width: 100%;
+    min-width: 0;
+    height: 38px;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    line-height: 1.2;
 }
 
 .admin-table {
@@ -812,6 +858,10 @@ pre {
     pointer-events: none;
 }
 
+.auth-page.auth-page-no-decor::before {
+    display: none;
+}
+
 .auth-shell {
     position: relative;
     z-index: 1;
@@ -1026,15 +1076,4 @@ button.tab-btn[data-tab="xoa-tai-khoan"] {
     object-fit: cover;
 }
 
-/* Trang chi tiết sản phẩm — footer tách nội dung, đồng bộ màu thương hiệu */
-.product-detail-footer-wrap footer {
-    margin-top: 28px !important;
-    padding: 40px 0 28px !important;
-    border-top: 2px solid rgba(12, 113, 61, 0.15) !important;
-    background: linear-gradient(180deg, rgba(12, 113, 61, 0.04) 0%, #fff 45%) !important;
-}
-
-.product-detail-footer-wrap footer .container h3 {
-    color: var(--phuclong-green);
-}
 

@@ -102,8 +102,11 @@
                 </div>
                 <div style="margin-top:12px;">
                     <label for="editCartIce">Đá (%)</label>
-                    <input id="editCartIce" type="range" min="0" max="100" value="100" oninput="document.getElementById('editCartIceValue').textContent = this.value + '%';">
-                    <div class="muted" style="margin-top:6px;" id="editCartIceValue">100%</div>
+                    <select id="editCartIce">
+                        <option value="0">0%</option>
+                        <option value="50">50%</option>
+                        <option value="100" selected>100%</option>
+                    </select>
                 </div>
                 <div style="margin-top:12px;">
                     <label for="editCartNote">Ghi chú</label>
@@ -153,6 +156,13 @@
         const d = document.createElement('div');
         d.textContent = String(text);
         return d.innerHTML;
+    }
+
+    function normalizeMucDa(value) {
+        const n = Number(value);
+        if (n <= 25) return 0;
+        if (n <= 75) return 50;
+        return 100;
     }
 
     /** Topping trong danh mục = nguyên liệu loại TOPPING (theo id hoặc trùng tên). */
@@ -408,8 +418,7 @@
         document.getElementById('editCartProductName').textContent = sp.ten || 'Sản phẩm không xác định';
         document.getElementById('editCartProductDesc').textContent = sp.moTa || 'Không có mô tả';
         document.getElementById('editCartQuantity').value = item.soLuong || 1;
-        document.getElementById('editCartIce').value = item.tuyChinh?.mucDa ?? 100;
-        document.getElementById('editCartIceValue').textContent = `${item.tuyChinh?.mucDa ?? 100}%`;
+        document.getElementById('editCartIce').value = String(normalizeMucDa(item.tuyChinh?.mucDa ?? 100));
         document.getElementById('editCartNote').value = item.tuyChinh?.ghiChu || '';
         document.getElementById('editCartToppings').innerHTML = '<span class="muted">Đang tải danh sách…</span>';
         const cnt = document.getElementById('editCartToppingCount');
@@ -523,7 +532,7 @@
         // Khớp CapNhatMatHangRequest: các field phẳng, không bọc tuyChinh (Spring không map được).
         const payload = {
             soLuong: Number(document.getElementById('editCartQuantity').value || 1),
-            mucDa: Number(document.getElementById('editCartIce').value || 100),
+            mucDa: normalizeMucDa(document.getElementById('editCartIce').value || 100),
             ghiChu: (document.getElementById('editCartNote').value || '').trim() || null,
             toppings: [...selectedToppings, ...preservedToppings]
         };

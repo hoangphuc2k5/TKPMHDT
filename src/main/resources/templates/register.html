@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Đăng ký tài khoản - 4it2run')}"></head>
-<body class="auth-page">
+<body class="auth-page auth-page-no-decor">
 <div class="auth-shell">
     <a th:href="@{/}" class="auth-brand" style="text-decoration: none; color: inherit; display: inline-flex; flex-direction: column; align-items: center; gap: 10px;" title="4it2run">
         <img th:src="@{/logo/TYPO_Logo-17.jpg}" alt="4it2run" class="auth-brand-logo" width="200" height="56" loading="eager" decoding="async">
@@ -67,12 +67,6 @@
                 </div>
             </div>
 
-            <!-- Địa chỉ -->
-            <div>
-                <label for="address">Địa chỉ giao hàng</label>
-                <input type="text" id="address" placeholder="123 Đường ABC, Quận X, TP. Hồ Chí Minh" required>
-            </div>
-
             <!-- Checkbox đồng ý -->
             <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 0.5rem;">
                 <input type="checkbox" id="agreeTerms" required style="margin-top: 3px;">
@@ -118,11 +112,10 @@
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
         const passwordConfirm = document.getElementById('passwordConfirm').value;
-        const address = document.getElementById('address').value.trim();
         const agreeTerms = document.getElementById('agreeTerms').checked;
 
         // Validate
-        if (!fullName || !email || !phone || !username || !password || !address) {
+        if (!fullName || !email || !phone || !username || !password) {
             showError('Vui lòng điền đầy đủ thông tin');
             return;
         }

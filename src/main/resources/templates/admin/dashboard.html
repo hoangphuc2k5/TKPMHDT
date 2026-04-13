@@ -406,10 +406,10 @@
                         </div>
                         <div class="admin-toolbar" style="flex-wrap:wrap;margin-top:0.5rem;">
                             <label class="muted" style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">Bắt đầu
-                                <input id="kmGiaTu" type="datetime-local">
+                                <input id="kmGiaTu" type="date" style="width:270px; min-width:270px; max-width:270px; height:45px; padding:6px 8px;">
                             </label>
                             <label class="muted" style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">Kết thúc
-                                <input id="kmGiaDen" type="datetime-local">
+                                <input id="kmGiaDen" type="date" style="width:270px; min-width:270px; max-width:270px; height:45px; padding:6px 8px;">
                             </label>
                             <button class="btn-highlight" style="align-self:flex-end;" onclick="saveKmGiaPromotion()">Lưu khuyến mãi giá</button>
                         </div>
@@ -750,9 +750,12 @@
         const iceDef = document.getElementById('customIceDefault');
         if (iceDef) iceDef.value = data.mucDaMacDinh || 'Bình thường';
         const selectedTopping = new Set(data.toppingChoPhep || []);
-        document.getElementById('customToppingList').innerHTML = (data.toppingCoSan || []).map(t => `
-            <label><input type="checkbox" value="${t.id}" ${selectedTopping.has(t.id) ? 'checked' : ''}> ${t.ten} (${formatCurrency(t.giaDonVi != null ? t.giaDonVi : t.giaThem)})</label>
-        `).join('') || '<div class="muted">Chưa có topping — thêm nguyên liệu loại TOPPING trong Quản lý kho</div>';
+        const customToppingList = document.getElementById('customToppingList');
+        if (customToppingList) {
+            customToppingList.innerHTML = (data.toppingCoSan || []).map(t => `
+                <label><input type="checkbox" value="${t.id}" ${selectedTopping.has(t.id) ? 'checked' : ''}> ${t.ten} (${formatCurrency(t.giaDonVi != null ? t.giaDonVi : t.giaThem)})</label>
+            `).join('') || '<div class="muted">Chưa có topping — thêm nguyên liệu loại TOPPING trong Quản lý kho</div>';
+        }
         syncRecipeIngredientForm();
     }
 
@@ -943,9 +946,11 @@
 
     function stockPayload() {
         const nguyenLieuId = document.getElementById('stockIngredientId').value.trim();
+        const raw = (document.getElementById('stockQuantity').value || '').trim().replace(',', '.');
+        const soLuong = Number(raw);
         return {
             nguyenLieuId: nguyenLieuId || null,
-            soLuong: Number(document.getElementById('stockQuantity').value || 0),
+            soLuong,
             ghiChu: document.getElementById('stockNote').value.trim()
         };
     }
@@ -953,7 +958,7 @@
     async function stockIn() {
         const p = stockPayload();
         if (!p.nguyenLieuId) return showMessage('Chọn nguyên liệu để nhập kho', 'error');
-        if (!p.soLuong || p.soLuong <= 0) return showMessage('Nhập số lượng lớn hơn 0', 'error');
+        if (!Number.isFinite(p.soLuong) || p.soLuong <= 0) return showMessage('Nhập số lượng hợp lệ lớn hơn 0', 'error');
         try {
             await api('POST', '/api/admin/kho/nhap', p);
             showMessage('Đã nhập kho');
@@ -967,7 +972,7 @@
     async function stockOut() {
         const p = stockPayload();
         if (!p.nguyenLieuId) return showMessage('Chọn nguyên liệu để xuất kho', 'error');
-        if (!p.soLuong || p.soLuong <= 0) return showMessage('Nhập số lượng lớn hơn 0', 'error');
+        if (!Number.isFinite(p.soLuong) || p.soLuong <= 0) return showMessage('Nhập số lượng hợp lệ lớn hơn 0', 'error');
         try {
             await api('POST', '/api/admin/kho/xuat', p);
             showMessage('Đã xuất kho');
@@ -1506,6 +1511,11 @@
         return s;
     }
 
+    function toDateValue(iso) {
+        if (!iso) return '';
+        return String(iso).slice(0, 10);
+    }
+
     function fillKmGiaDanhMucDatalist() {
         const dl = document.getElementById('kmGiaDanhMucList');
         if (!dl) return;
@@ -1577,8 +1587,8 @@
         document.getElementById('kmGiaLoai').value = p.loaiGiam === 'SO_TIEN_CO_DINH' ? 'SO_TIEN_CO_DINH' : 'PHAN_TRAM';
         document.getElementById('kmGiaTri').value = p.giaTri != null ? p.giaTri : '';
         document.getElementById('kmGiaKichHoat').checked = p.kichHoat !== false;
-        document.getElementById('kmGiaTu').value = toDatetimeLocalValue(p.thoiGianBatDau);
-        document.getElementById('kmGiaDen').value = toDatetimeLocalValue(p.thoiGianKetThuc);
+        document.getElementById('kmGiaTu').value = toDateValue(p.thoiGianBatDau);
+        document.getElementById('kmGiaDen').value = toDateValue(p.thoiGianKetThuc);
         toggleKmGiaPhamVi();
         populateKmGiaSingleSelect(p.sanPhamDonId || '');
         document.getElementById('kmGiaDanhMuc').value = p.danhMuc || '';
@@ -1609,8 +1619,8 @@
             phamVi,
             loaiGiam: document.getElementById('kmGiaLoai').value,
             giaTri: Number(document.getElementById('kmGiaTri').value || 0),
-            thoiGianBatDau: document.getElementById('kmGiaTu').value ? document.getElementById('kmGiaTu').value : null,
-            thoiGianKetThuc: document.getElementById('kmGiaDen').value ? document.getElementById('kmGiaDen').value : null,
+            thoiGianBatDau: document.getElementById('kmGiaTu').value ? document.getElementById('kmGiaTu').value + 'T00:00:00' : null,
+            thoiGianKetThuc: document.getElementById('kmGiaDen').value ? document.getElementById('kmGiaDen').value + 'T23:59:59' : null,
             kichHoat: document.getElementById('kmGiaKichHoat').checked,
             sanPhamDonId: phamVi === 'MOT_SAN_PHAM' ? (document.getElementById('kmGiaSanPhamDon').value || null) : null,
             sanPhamIds: phamVi === 'NHIEU_SAN_PHAM' ? sanPhamIds : null,
