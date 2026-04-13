@@ -47,12 +47,21 @@ public class QuenMatKhauService {
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay email"));
 
-        String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
+        LocalDateTime now = LocalDateTime.now();
         long ttlMinutes = 5;
+        passwordResetOtpRepository.findTopByNguoiDungIdOrderByHetHanLucDesc(nguoiDung.getId())
+                .ifPresent(otpGanNhat -> {
+                    if (otpGanNhat.getHetHanLuc().isAfter(now)) {
+                        throw new IllegalArgumentException(
+                                "Bạn chỉ có thể nhận 1 OTP mỗi 5 phút. Vui lòng thử lại sau ít phút.");
+                    }
+                });
+
+        String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
         PasswordResetOtp record = PasswordResetOtp.builder()
                 .nguoiDung(nguoiDung)
                 .otpCode(otp)
-                .hetHanLuc(LocalDateTime.now().plusMinutes(ttlMinutes))
+                .hetHanLuc(now.plusMinutes(ttlMinutes))
                 .daSuDung(false)
                 .build();
         passwordResetOtpRepository.save(record);

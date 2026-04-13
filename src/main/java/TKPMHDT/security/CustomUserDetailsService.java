@@ -28,7 +28,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhap(username)
+        String dinhDanh = username == null ? "" : username.trim();
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(dinhDanh)
+                .or(() -> nguoiDungRepository.findBySoDienThoai(dinhDanh))
                 .orElseThrow(() -> new UsernameNotFoundException("Khong tim thay tai khoan: " + username));
 
         String roleName = "ROLE_" + nguoiDung.getVaiTro().name();

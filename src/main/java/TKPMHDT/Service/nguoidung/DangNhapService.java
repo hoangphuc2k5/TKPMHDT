@@ -42,15 +42,24 @@ public class DangNhapService {
 
     @Transactional(readOnly = true)
     public NguoiDung xacThucDangNhapBangDinhDanh(String dinhDanh, String matKhau) {
-        try {
-            return xacThucDangNhap(tenDangNhapFrom(dinhDanh), matKhau);
-        } catch (IllegalArgumentException ex) {
-            return xacThucDangNhapByEmail(dinhDanh, matKhau);
+        String dinhDanhDaChuanHoa = tenDangNhapFrom(dinhDanh);
+        NguoiDung nguoiDung = timNguoiDungTheoDinhDanh(dinhDanhDaChuanHoa)
+                .orElseThrow(() -> new IllegalArgumentException("Tài khoản hoặc mật khẩu không đúng"));
+
+        if (!passwordEncoder.matches(matKhau, nguoiDung.getMatKhauHash())) {
+            throw new IllegalArgumentException("Tài khoản hoặc mật khẩu không đúng");
         }
+
+        return nguoiDung;
     }
 
     private String tenDangNhapFrom(String raw) {
         return raw == null ? "" : raw.trim();
+    }
+
+    private java.util.Optional<NguoiDung> timNguoiDungTheoDinhDanh(String dinhDanh) {
+        return nguoiDungRepository.findByEmail(dinhDanh)
+                .or(() -> nguoiDungRepository.findBySoDienThoai(dinhDanh));
     }
 
     /**

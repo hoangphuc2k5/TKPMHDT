@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PasswordResetOtpRepository extends JpaRepository<PasswordResetOtp, UUID> {
     Optional<PasswordResetOtp> findTopByNguoiDungIdAndDaSuDungFalseOrderByHetHanLucDesc(UUID nguoiDungId);
+    Optional<PasswordResetOtp> findTopByNguoiDungIdOrderByHetHanLucDesc(UUID nguoiDungId);
 }
 
