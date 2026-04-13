@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.api.chung;
 
 import TKPMHDT.Entity.nguoidung.NguoiDung;
 import TKPMHDT.Service.nguoidung.DangKyService;
@@ -14,11 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * AuthController - Quản lý xác thực người dùng
- * UC01: Đăng ký tài khoản
- * UC02: Đăng nhập
- * UC03: Đăng xuất
- * UC04: Quên mật khẩu (OTP)
+ * Xác thực dùng chung mọi vai trò (trước / sau đăng nhập theo endpoint).
+ * UC01–UC04: đăng ký, đăng nhập, đăng xuất, quên mật khẩu.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -40,9 +37,6 @@ public class AuthController {
         this.quenMatKhauService = quenMatKhauService;
     }
 
-    /**
-     * UC01: Đăng ký tài khoản
-     */
     @PostMapping("/dang-ky")
     public ResponseEntity<?> dangKy(@RequestBody DangKyRequest request) {
         try {
@@ -50,9 +44,8 @@ public class AuthController {
                     request.tenDangNhap(),
                     request.email(),
                     request.matKhau(),
-                    request.hoTen()
-            );
-            
+                    request.hoTen());
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Đăng ký tài khoản thành công");
@@ -62,22 +55,17 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    /**
-     * UC02: Đăng nhập
-     */
     @PostMapping("/dang-nhap")
     public ResponseEntity<?> dangNhap(@RequestBody DangNhapRequest request) {
         try {
             NguoiDung nguoiDung = dangNhapService.xacThucDangNhapBangDinhDanh(
                     request.tenDangNhapHoacEmail(),
-                    request.matKhau()
-            );
-            
+                    request.matKhau());
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Đăng nhập thành công");
@@ -89,26 +77,18 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    /**
-     * UC03: Đăng xuất
-     */
     @PostMapping("/dang-xuat")
     public ResponseEntity<?> dangXuat() {
         dangXuatService.xoaPhoiBanHienTai();
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Đăng xuất thành công"
-        ));
+                "message", "Đăng xuất thành công"));
     }
 
-    /**
-     * UC04: Quên mật khẩu - Gửi OTP
-     */
     @PostMapping("/quen-mat-khau/gui-otp")
     public ResponseEntity<?> guiOtp(@RequestBody Map<String, String> body) {
         try {
@@ -116,63 +96,51 @@ public class AuthController {
             if (email == null || email.isBlank()) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "success", false,
-                        "message", "Email là bắt buộc"
-                ));
+                        "message", "Email là bắt buộc"));
             }
             quenMatKhauService.taoVaGuiOtp(email);
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "OTP đã được gửi đến email của bạn"
-            ));
+                    "message", "OTP đã được gửi đến email của bạn"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    /**
-     * UC04: Quên mật khẩu - Đặt lại mật khẩu
-     */
     @PostMapping("/quen-mat-khau/dat-lai")
     public ResponseEntity<?> datLaiMatKhau(@RequestBody DatLaiMatKhauRequest request) {
         try {
             quenMatKhauService.xacThucOtpVaDatLaiMatKhau(
                     request.email(),
                     request.otp(),
-                    request.matKhauMoi()
-            );
+                    request.matKhauMoi());
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "Mật khẩu đã được đặt lại thành công"
-            ));
+                    "message", "Mật khẩu đã được đặt lại thành công"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    // ==================== Request/Response Records ====================
-    
     public record DangKyRequest(
             String tenDangNhap,
             String email,
             String matKhau,
-            String hoTen
-    ) {}
+            String hoTen) {
+    }
 
     public record DangNhapRequest(
             String tenDangNhapHoacEmail,
-            String matKhau
-    ) {}
+            String matKhau) {
+    }
 
     public record DatLaiMatKhauRequest(
             String email,
             String otp,
-            String matKhauMoi
-    ) {}
+            String matKhauMoi) {
+    }
 }
-

@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.api.khachhang;
 
 import TKPMHDT.Entity.nguoidung.DiaChi;
 import TKPMHDT.Service.nguoidung.DiaChiService;

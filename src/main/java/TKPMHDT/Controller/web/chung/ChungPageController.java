@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.web.chung;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,12 +8,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import TKPMHDT.Service.sanpham.SanPhamService;
 
+/**
+ * Trang dùng chung: trang chủ (có chuyển hướng theo vai trò), đăng nhập / đăng ký / quên mật khẩu.
+ */
 @Controller
-public class PageController {
+public class ChungPageController {
 
     private final SanPhamService sanPhamService;
 
-    public PageController(SanPhamService sanPhamService) {
+    public ChungPageController(SanPhamService sanPhamService) {
         this.sanPhamService = sanPhamService;
     }
 
@@ -35,35 +38,6 @@ public class PageController {
         return "index";
     }
 
-    @GetMapping("/ui/nguoi-dung")
-    public String nguoiDungPage() {
-        return "nguoidung";
-    }
-
-    @GetMapping("/ui/san-pham")
-    public String sanPhamPage() {
-        return "sanpham";
-    }
-    @GetMapping("/ui/san-pham/chi-tiet")
-    public String chiTietSanPhamPage() {
-        return "sanpham-chi-tiet";
-    }
-
-    @GetMapping("/ui/gio-hang")
-    public String gioHangPage() {
-        return "giohang";
-    }
-
-    @GetMapping("/ui/thanh-toan")
-    public String thanhToanPage() {
-        return "thanhtoan";
-    }
-
-    @GetMapping("/ui/khuyen-mai")
-    public String khuyenMaiPage() {
-        return "khuyenmai";
-    }
-
     @GetMapping("/login")
     public String loginPage() {
         return "login";
@@ -78,32 +52,4 @@ public class PageController {
     public String forgotPasswordPage() {
         return "forgot-password";
     }
-
-    @GetMapping("/ui/admin/dashboard")
-    public String adminDashboard() {
-        return "admin/dashboard";
-    }
-
-    @GetMapping("/ui/tai-khoan")
-    public String taiKhoanPage() {
-        return "tai-khoan";
-    }
-        
-    @GetMapping("/ui/don-hang")
-    public String donHangPage() {
-        return "donhang";
-    }
-
-    @GetMapping({"/ui/pos/tao-don", "/ui/pos/tao-don/"})
-    public String posPage() {
-        return "pos/pos-interface";
-    }
-
-
-    @GetMapping({"/ui/pos", "/ui/pos/danh-sach-don-hang"})
-    public String posDanhSachDonHang() {
-        return "pos/danh-sach-don-hang";
-    }
-    
 }
-

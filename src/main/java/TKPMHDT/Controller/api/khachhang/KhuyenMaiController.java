@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.api.khachhang;
 
 import TKPMHDT.DTO.request.TinhTienGiamGioHangRequest;
 import TKPMHDT.Entity.khuyenmai.MaGiamGia;

@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.api.khachhang;
 
 import TKPMHDT.Entity.giohang.GioHang;
 import TKPMHDT.Service.giohang.GioHangService;

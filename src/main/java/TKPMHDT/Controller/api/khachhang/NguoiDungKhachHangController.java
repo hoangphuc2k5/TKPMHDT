@@ -1,20 +1,15 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.api.khachhang;
 
-import TKPMHDT.Entity.nguoidung.KhachHang;
-import TKPMHDT.Entity.nguoidung.NguoiDung;
-import TKPMHDT.Service.FileStorageService;
-import TKPMHDT.Service.nguoidung.NguoiDungService;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,27 +17,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import TKPMHDT.Entity.nguoidung.KhachHang;
+import TKPMHDT.Entity.nguoidung.NguoiDung;
+import TKPMHDT.Service.FileStorageService;
+import TKPMHDT.Service.nguoidung.NguoiDungService;
+
 /**
- * NguoiDungController - Quản lý người dùng
- * UC12: Quản lý tài khoản cá nhân
+ * API người dùng — tài khoản khách hàng (UC12) và đăng ký khách qua API.
  */
 @RestController
 @RequestMapping("/api/nguoi-dung")
-public class NguoiDungController {
+public class NguoiDungKhachHangController {
 
     private final NguoiDungService nguoiDungService;
     private final FileStorageService fileStorageService;
 
-    public NguoiDungController(NguoiDungService nguoiDungService, FileStorageService fileStorageService) {
+    public NguoiDungKhachHangController(NguoiDungService nguoiDungService, FileStorageService fileStorageService) {
         this.nguoiDungService = nguoiDungService;
         this.fileStorageService = fileStorageService;
     }
 
-    // ==================== UC12: Quản lý tài khoản cá nhân ====================
-
-    /**
-     * UC12: Lấy thông tin tài khoản hiện tại (của người dùng đang đăng nhập)
-     */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<NguoiDung> getCurrentUser() {
@@ -52,12 +46,9 @@ public class NguoiDungController {
         }
         return nguoiDungService.timTheoTenDangNhap(auth.getName())
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(401).build());
+                .orElseGet(() -> ResponseEntity.status(401).build());
     }
 
-    /**
-     * UC12: Cập nhật thông tin tài khoản
-     */
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/me")
     public ResponseEntity<Map<String, Object>> updateCurrentUser(@RequestBody UpdateNguoiDungRequest request) {
@@ -70,7 +61,6 @@ public class NguoiDungController {
             NguoiDung nguoiDung = nguoiDungService.timTheoTenDangNhap(auth.getName())
                     .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
 
-            // Cập nhật thông tin
             if (request.email() != null && !request.email().isBlank()) {
                 nguoiDung.setEmail(request.email());
             }
@@ -95,14 +85,10 @@ public class NguoiDungController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    /**
-     * UC12: Upload avatar
-     */
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/me/avatar")
     public ResponseEntity<Map<String, Object>> uploadAvatar(@RequestParam("avatar") MultipartFile file) {
@@ -128,14 +114,10 @@ public class NguoiDungController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    /**
-     * UC12: Thay đổi mật khẩu
-     */
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/me/doi-mat-khau")
     public ResponseEntity<Map<String, Object>> doiMatKhau(@RequestBody DoiMatKhauRequest request) {
@@ -154,14 +136,10 @@ public class NguoiDungController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
 
-    /**
-     * Xóa tài khoản của người dùng hiện tại
-     */
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/me")
     public ResponseEntity<Map<String, Object>> xoaTaiKhoanHienTai() {
@@ -183,77 +161,34 @@ public class NguoiDungController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", e.getMessage()
-            ));
+                    "message", e.getMessage()));
         }
     }
-
-    // ==================== Admin: Quản lý người dùng ====================
 
     @PostMapping("/dang-ky-khach-hang")
     public ResponseEntity<KhachHang> dangKyKhachHang(@RequestBody DangKyKhachHangRequest request) {
         KhachHang khachHang = nguoiDungService.dangKyKhachHang(
                 request.tenDangNhap(),
                 request.email(),
-                request.matKhauHash()
-        );
+                request.matKhauHash());
         return ResponseEntity.ok(khachHang);
     }
-
-    @PostMapping("/{id}/avatar")
-    public ResponseEntity<NguoiDung> uploadAvatar(
-            @PathVariable UUID id,
-            @RequestParam("avatar") MultipartFile file) {
-        return nguoiDungService.timTheoId(id).map(nguoiDung -> {
-            String url = fileStorageService.storeFile(file);
-            nguoiDung.setAvatar(url);
-            return ResponseEntity.ok(nguoiDungService.luuNguoiDung(nguoiDung));
-        }).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<NguoiDung> layTheoId(@PathVariable UUID id) {
-        return nguoiDungService.timTheoId(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/ten-dang-nhap/{tenDangNhap}")
-    public ResponseEntity<NguoiDung> layTheoTenDangNhap(@PathVariable String tenDangNhap) {
-        return nguoiDungService.timTheoTenDangNhap(tenDangNhap)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/tim-theo-email")
-    public ResponseEntity<?> layTheoEmail(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        if (email == null || email.isBlank()) {
-            return ResponseEntity.badRequest().body("Email is required");
-        }
-        return nguoiDungService.timTheoEmail(email)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    // ==================== Request Classes ====================
 
     public record DangKyKhachHangRequest(
             String tenDangNhap,
             String email,
-            String matKhauHash
-    ) {}
+            String matKhauHash) {
+    }
 
     public record UpdateNguoiDungRequest(
             String email,
             String hoTen,
-            String soDienThoai
-    ) {}
+            String soDienThoai) {
+    }
 
     public record DoiMatKhauRequest(
             String matKhauCu,
             String matKhauMoi,
-            String xacNhanMatKhau
-    ) {}
+            String xacNhanMatKhau) {
+    }
 }
-

@@ -1,4 +1,4 @@
-package TKPMHDT.Controller;
+package TKPMHDT.Controller.api.khachhang;
 
 import TKPMHDT.DTO.response.NuocUongHienThiKhachHang;
 import TKPMHDT.Entity.sanpham.NguyenLieu;
