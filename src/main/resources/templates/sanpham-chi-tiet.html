@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
-<head th:replace="~{fragments/layout :: head('Chi tiết sản phẩm')}"></head>
+<head th:replace="~{fragments/layout :: head('Chi tiết sản phẩm - 4it2run')}"></head>
 
 <body>
 	<header th:replace="~{fragments/layout :: header('products')}"></header>
@@ -57,12 +57,6 @@
 					<div style="margin-top:10px;">
 						<strong>Tạm tính:</strong> <span id="giaTamTinh">0đ</span>
 					</div>
-					<div id="ingredientAdjustSection" style="margin-top:18px; display:none;">
-						<h4 style="margin:0 0 10px; font-size:1rem;">Điều chỉnh nguyên liệu</h4>
-						<div class="table-wrap">
-							<table id="ingredientAdjustTable" class="data-table"></table>
-						</div>
-					</div>
 
 					<div id="productAddBar"
 						style="margin-top:18px; background:#fff; border:1px solid var(--border-color); border-radius:14px; padding:16px; box-shadow: 0 0 0 1px rgba(0,0,0,.03);">
@@ -87,7 +81,6 @@
 		let basePrice = 0;
 		let toppings = [];
 		let selectedToppingIds = new Set();
-		let ingredientAdjustments = [];
 		let productImages = [];
 		let currentImageIndex = 0;
 		const PENDING_CART_KEY = 'pendingAddToCart';
@@ -292,7 +285,6 @@
 				updateNavigationButtons();
 				renderCongThucGocTuDb(data);
 				renderToppingOptions(data.topping);
-				initIngredientAdjustments(data);
 
 				// tùy chỉnh
 				if (data.coTheTuyChinh === true) {
@@ -374,17 +366,6 @@
 		const da = Number(document.getElementById("mucDa").value || 100);
 		const qty = Math.max(1, Number(document.getElementById("soLuong").value || 1));
 
-		const ingredientDelta = ingredientAdjustments.reduce((sum, row) => {
-			const ratio = Number(document.getElementById(`ing-${row.key}`)?.value || 100);
-			const delta = Math.max(0, ratio - 100) / 100;
-			const deltaMoney = row.unitPrice * delta;
-			const priceCell = document.getElementById(`ing-price-${row.key}`);
-			if (priceCell) {
-				priceCell.textContent = "+" + formatPrice(deltaMoney);
-			}
-			return sum + deltaMoney;
-		}, 0);
-
 		const toppingTotalPerUnit = toppings.reduce((sum, item) => {
 			const unitPrice = Number(item.giaDonVi || item.gia || item.giaThem || 5000);
 			return sum + (selectedToppingIds.has(item.id) ? unitPrice : 0);
@@ -394,7 +375,7 @@
 
 		// Công thức giá: hệ số tăng nhẹ nếu đá nhiều hơn 100% (tùy chỉnh)
 		const heSo = 1 + Math.max(0, (da - 100) / 250);
-		const one = (basePrice * heSo) + ingredientDelta + toppingTotalPerUnit;
+		const one = (basePrice * heSo) + toppingTotalPerUnit;
 		const total = one * qty;
 		document.getElementById("giaTamTinh").textContent = formatPrice(total);
 		document.getElementById("fixedPrice").textContent = formatPrice(total);
@@ -457,43 +438,6 @@
 				label.classList.toggle('selected', selectedToppingIds.has(item.id));
 			}
 		});
-	}
-
-	function initIngredientAdjustments(data) {
-		const rows = [];
-		if (Array.isArray(data.nguyenLieu)) {
-			data.nguyenLieu
-				.filter((x) => x.loaiNguyenLieu !== 'TOPPING')
-				.forEach((x, index) => {
-				rows.push({
-					key: index,
-					ten: x.ten || x.tenNguyenLieu || `Nguyên liệu ${index + 1}`,
-					soLuong: x.soLuong != null ? x.soLuong : '',
-					donVi: x.donVi || '',
-					unitPrice: Number(x.donGia || 0)
-				});
-			});
-		}
-		ingredientAdjustments = rows;
-		const section = document.getElementById("ingredientAdjustSection");
-		const table = document.getElementById("ingredientAdjustTable");
-		if (!table || !section) {
-			return;
-		}
-		section.style.display = rows.length ? 'block' : 'none';
-		if (!rows.length) {
-			table.innerHTML = "<tr><td colspan='3' class='muted'>Chưa có công thức nguyên liệu để tùy chỉnh.</td></tr>";
-			return;
-		}
-		table.innerHTML = rows.map((row) => `
-        <tr>
-            <td style="padding:6px 0;">${row.ten}<br><small class='muted'>${row.soLuong} ${row.donVi}</small></td>
-            <td style="padding:6px 0;">
-                <input id="ing-${row.key}" type="range" min="50" max="150" value="100" oninput="updateRealtimePrice()">
-            </td>
-            <td id="ing-price-${row.key}" style="padding:6px 0; text-align:right;">+0đ</td>
-        </tr>
-    `).join("");
 	}
 
 	function escapeHtmlProduct(s) {

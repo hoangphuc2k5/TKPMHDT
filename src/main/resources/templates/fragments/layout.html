@@ -3,7 +3,8 @@
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${title}">TKPMHDT</title>
+    <title th:text="${title}">4it2run</title>
+    <meta name="application-name" content="4it2run">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <script th:src="@{/js/app.js}"></script>
     <script>
@@ -40,14 +41,9 @@
     <header th:fragment="header(activePage)">
         <div class="nav">
             <!-- Logo: admin → dashboard; nhân viên → đơn hàng; còn lại → trang chủ -->
-            <a th:href="${activePage == 'admin'} ? @{/ui/admin/dashboard} : (${#authorization.expression('hasRole(''NHAN_VIEN_BAN_HANG'')')} ? @{/ui/don-hang} : @{/})" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;">
-                <div style="background: var(--phuclong-green); padding: 6px; border-radius: 8px;">
-                    <span style="font-size: 24px;">🥤</span>
-                </div>
-                <div style="display: flex; flex-direction: column; line-height: 1;">
-                    <span class="brand-font" style="font-size: 1.6rem; letter-spacing: 1px; color: var(--phuclong-green);">DRINK</span>
-                    <span style="font-size: 0.6rem; font-weight: 700; color: var(--phuclong-gold); letter-spacing: 2px;">COFFEE & TEA</span>
-                </div>
+            <a th:href="${activePage == 'admin'} ? @{/ui/admin/dashboard} : (${#authorization.expression('hasRole(''NHAN_VIEN_BAN_HANG'')')} ? @{/ui/don-hang} : @{/})" class="header-brand-link" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;" title="4it2run">
+                <img th:src="@{/logo/TYPO_Logo-17.jpg}" alt="4it2run" class="header-brand-logo" width="160" height="44" loading="eager" decoding="async">
+                <span class="visually-hidden">4it2run</span>
             </a>
 
             <!-- Điều hướng nhân viên (đồng bộ POS / đơn hàng) -->
@@ -98,8 +94,8 @@
         <div class="container" style="padding-top: 0; padding-bottom: 0;">
             <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
                 <div>
-                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Về TKPMHDT</h3>
-                    <p class="muted" style="font-size: 0.875rem;">Hệ thống quản lý bán hàng đồ uống hiện đại, nhanh chóng và an toàn. Luôn mang đến trải nghiệm tốt nhất cho khách hàng.</p>
+                    <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Về 4it2run</h3>
+                    <p class="muted" style="font-size: 0.875rem;">Hệ thống đặt đồ uống và quản lý bán hàng — nhanh, tiện và an toàn. Luôn hướng tới trải nghiệm tốt cho khách hàng.</p>
                 </div>
                 <div>
                     <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Liên kết nhanh</h3>
@@ -113,13 +109,13 @@
                     <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--text-main);">Hỗ trợ</h3>
                     <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
                         <li style="margin-bottom: 10px; color: var(--text-muted);">Hotline: 1900 1234</li>
-                        <li style="margin-bottom: 10px; color: var(--text-muted);">Email: support@tkpmhdt.com</li>
+                        <li style="margin-bottom: 10px; color: var(--text-muted);">Email: support@4it2run.com</li>
                         <li style="margin-bottom: 10px; color: var(--text-muted);">Địa chỉ: TP. Hồ Chí Minh</li>
                     </ul>
                 </div>
             </div>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
-                <p class="muted" style="font-size: 0.75rem;">&copy; 2026 TKPMHDT Project. All rights reserved.</p>
+                <p class="muted" style="font-size: 0.75rem;">&copy; 2026 4it2run. All rights reserved.</p>
             </div>
         </div>
     </footer>

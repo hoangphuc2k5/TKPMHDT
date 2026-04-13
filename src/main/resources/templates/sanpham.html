@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head th:replace="~{fragments/layout :: head('Thực đơn drink')}"></head>
+<head th:replace="~{fragments/layout :: head('Thực đơn - 4it2run')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header('products')}"></header>
 
 <div class="container" style="padding-top:18px; padding-bottom:84px;">
     <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
         <div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:1.6rem;">🥤</span>
-                <span class="brand-font" style="font-size:1.8rem;">DrinkHub</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <img th:src="@{/logo/TYPO_Logo-17.jpg}" alt="4it2run" class="header-brand-logo" style="height:48px; max-width:180px;" width="180" height="48" loading="lazy" decoding="async">
             </div>
             <p class="muted" style="margin:10px 0 0; max-width:560px;">Thực đơn đồ uống tươi ngon, topping phong phú và đặt hàng nhanh chóng. Chọn sản phẩm và xem chi tiết ngay.</p>
         </div>

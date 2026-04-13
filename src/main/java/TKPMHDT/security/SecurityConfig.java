@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/uploads/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/uploads/**", "/logo/**", "/error", "/login", "/register", "/quen-mat-khau").permitAll()
                         .requestMatchers("/", "/ui/san-pham/**", "/ui/khuyen-mai").permitAll()
                         .requestMatchers("/ui/admin/**").hasRole("QUAN_TRI_VIEN")
                         // .requestMatchers("/ui/don-hang").hasAnyRole("NHAN_VIEN_BAN_HANG", "QUAN_TRI_VIEN")
@@ -97,9 +97,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:8080", "https://drinkhub.vn"));
+        // Dùng pattern (không dùng * kèm credentials). Hỗ trợ localhost + domain ngrok đổi theo thời gian.
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://localhost:*",
+                "https://*.ngrok-free.app",
+                "https://*.ngrok.io",
+                "https://*.ngrok.app",
+                "https://*.ngrok.dev",
+                "https://drinkhub.vn",
+                "http://drinkhub.vn"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

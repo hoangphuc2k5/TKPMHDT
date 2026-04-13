@@ -1,3 +1,21 @@
+/**
+ * Ngrok (bản miễn phí): thêm header để API không trả trang HTML cảnh báo thay vì JSON.
+ * Áp dụng cho mọi fetch() sau khi file này được load (layout đã gắn app.js).
+ */
+(function () {
+  if (typeof window === "undefined" || typeof window.fetch !== "function") return;
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = function (resource, init) {
+    const next = init ? { ...init } : {};
+    const headers = new Headers(next.headers);
+    if (!headers.has("ngrok-skip-browser-warning")) {
+      headers.set("ngrok-skip-browser-warning", "true");
+    }
+    next.headers = headers;
+    return nativeFetch(resource, next);
+  };
+})();
+
 /** Đồng bộ với TKPMHDT.security.PasswordPolicyValidator */
 function isPasswordPolicyCompliant(rawPassword) {
   if (rawPassword == null || typeof rawPassword !== "string") {

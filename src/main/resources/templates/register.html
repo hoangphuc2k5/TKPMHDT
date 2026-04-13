@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Đăng ký tài khoản - TKPMHDT')}"></head>
+<head th:replace="~{fragments/layout :: head('Đăng ký tài khoản - 4it2run')}"></head>
 <body class="auth-page">
 <div class="auth-shell">
-    <div class="auth-brand">
-        <div style="font-size:34px;">🥤</div>
-        <div class="brand-font" style="font-size:2rem;">DrinkHub</div>
-    </div>
+    <a th:href="@{/}" class="auth-brand" style="text-decoration: none; color: inherit; display: inline-flex; flex-direction: column; align-items: center; gap: 10px;" title="4it2run">
+        <img th:src="@{/logo/TYPO_Logo-17.jpg}" alt="4it2run" class="auth-brand-logo" width="200" height="56" loading="eager" decoding="async">
+        <span class="visually-hidden">4it2run</span>
+    </a>
     <div class="auth-tabs">
         <a class="auth-tab" th:href="@{/login}">Đăng nhập</a>
         <a class="auth-tab active" th:href="@{/register}">Đăng ký</a>
