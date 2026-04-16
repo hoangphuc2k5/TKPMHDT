@@ -1,14 +1,27 @@
 package TKPMHDT.Entity.thanhtoan.strategy;
 
-import java.math.BigDecimal;
+import org.springframework.stereotype.Component;
 
 import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.thanhtoan.ThanhToan;
+import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
+import TKPMHDT.Entity.thanhtoan.enums.TrangThaiThanhToanEnum;
 
+@Component
 public class ChienLuocVNPay implements ChienLuocThanhToan {
+
+    @Override
+    public PhuongThucThanhToanEnum phuongThucHoTro() {
+        return PhuongThucThanhToanEnum.VNPAY;
+    }
+
     @Override
     public ThanhToan thanhToan(DonHang donHang) {
-        return null;
+        return ThanhToan.builder()
+                .donHang(donHang)
+                .soTien(donHang.getTongTien())
+                .phuongThuc(PhuongThucThanhToanEnum.VNPAY)
+                .trangThai(TrangThaiThanhToanEnum.CHO_XU_LY)
+                .build();
     }
 }
-

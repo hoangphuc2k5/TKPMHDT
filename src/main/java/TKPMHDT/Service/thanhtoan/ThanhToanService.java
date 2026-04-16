@@ -6,8 +6,12 @@ import TKPMHDT.Entity.donhang.DonHang;
 import TKPMHDT.Entity.thanhtoan.ThanhToan;
 import TKPMHDT.Entity.thanhtoan.enums.PhuongThucThanhToanEnum;
 import TKPMHDT.Entity.thanhtoan.enums.TrangThaiThanhToanEnum;
+import TKPMHDT.Entity.thanhtoan.strategy.ChienLuocThanhToan;
 import TKPMHDT.Repository.donhang.DonHangRepository;
 import TKPMHDT.Repository.thanhtoan.ThanhToanRepository;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -18,13 +22,19 @@ public class ThanhToanService {
 
     private final ThanhToanRepository thanhToanRepository;
     private final DonHangRepository donHangRepository;
+    private final Map<PhuongThucThanhToanEnum, ChienLuocThanhToan> chienLuocTheoPhuongThuc;
 
     public ThanhToanService(
             ThanhToanRepository thanhToanRepository,
-            DonHangRepository donHangRepository
+            DonHangRepository donHangRepository,
+            List<ChienLuocThanhToan> tatCaChienLuoc
     ) {
         this.thanhToanRepository = thanhToanRepository;
         this.donHangRepository = donHangRepository;
+        this.chienLuocTheoPhuongThuc = new EnumMap<>(PhuongThucThanhToanEnum.class);
+        for (ChienLuocThanhToan chienLuoc : tatCaChienLuoc) {
+            this.chienLuocTheoPhuongThuc.put(chienLuoc.phuongThucHoTro(), chienLuoc);
+        }
     }
 
     @Transactional
@@ -36,12 +46,12 @@ public class ThanhToanService {
         DonHang donHang = donHangRepository.findById(donHangId)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay don hang"));
 
-        ThanhToan thanhToan = ThanhToan.builder()
-                .donHang(donHang)
-                .soTien(donHang.getTongTien())
-                .phuongThuc(phuongThuc)
-                .trangThai(TrangThaiThanhToanEnum.CHO_XU_LY)
-                .build();
+        ChienLuocThanhToan chienLuoc = chienLuocTheoPhuongThuc.get(phuongThuc);
+        if (chienLuoc == null) {
+            throw new IllegalArgumentException("Chua ho tro phuong thuc thanh toan: " + phuongThuc);
+        }
+
+        ThanhToan thanhToan = chienLuoc.thanhToan(donHang);
         donHang.setThanhToan(thanhToan);
 
         thanhToanRepository.save(thanhToan);
